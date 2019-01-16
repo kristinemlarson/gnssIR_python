@@ -1,4 +1,4 @@
-#gnssIR_lomb
+# gnssIR_lomb.py
 This is a first cut at a python code that will compute reflector heights fairly automatically.
 Some things to know:
 
@@ -48,17 +48,17 @@ See sample file called input_smm3_example.
 Your output files will go in REFL/YYYY/results/aaaa 
 This is basically a text listing of individual arc reflector heights. 
 
-  ```sh
+```sh
 maxF is the reflector height in meters
 sat is satellite number, where 1-32 is for GPS, 101-199 is for Glonass, 201-299 is for Galileo
 Azim is average azimuth over a given track, in degrees.
 Amp is the spectral amplitude in volts/volts
 eminO and emaxO are the observed min and max elevation angles in the track
 Nv: number of observations used in the Lomb Scargle Periodogram (LSP)
-  ```
+```
 
 freq is the frequency used:
-  ```sh
+```sh
 1 GPS L1
 2 GPS L2
 20 GPS L2C
@@ -67,13 +67,14 @@ freq is the frequency used:
 102 Glonass L2
 201, 205, 206, 207, 208: Galileo frequencies
 301 etc: Beidou  
-  ```
+ ```
 rise is an integer value, rise = 1 and set = -1
+
 PkNoise is the spectral amplitude divided by an average noise value calculated
 for a reflector height range you prescribe in the code.
 
 EXAMPLE year, doy, maxF,sat,UTCtime, Azim, Amp,  eminO, emaxO,  Nv,freq,rise,Edot, PkNoise
-  ```sh
+ ```sh
  2018 253 15.200   1 15.367 105.22  29.95   5.03  14.97  288   1 -1 -0.00693   5.26
  2018 253 15.260   1 10.454 201.50  26.56   5.02  14.97  273   1  1  0.00731   4.70
  2018 253 14.725   1  2.785 303.43  25.90   5.03  14.99  362   1 -1 -0.00553   4.89
@@ -81,7 +82,7 @@ EXAMPLE year, doy, maxF,sat,UTCtime, Azim, Amp,  eminO, emaxO,  Nv,freq,rise,Edo
  2018 253 15.280   2 20.175 179.09  32.12   5.01  14.97  279   1 -1 -0.00717   4.85
  2018 253 15.060   2 15.264 271.00  38.34   5.03  14.97  297   1  1  0.00672   4.64
  2018 253 15.170   3 17.150  77.74  35.24   5.00  14.98  291   1 -1 -0.00688   4.68
-  ```
+ ```
 
 
 
