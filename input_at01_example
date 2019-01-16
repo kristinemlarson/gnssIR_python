@@ -1,0 +1,19 @@
+# comment lines start with a #
+# inputs to lomb scargle code 
+# lat long (degrees) ellipsoidal ht (in meters)
+63.4840 -162.0064 21.6
+# elmin elmax and optionally emin/emax for polyfit
+5 13 5 30
+# azimuth ranges 
+0 45 45 90 90 135 135 180 180 225 225 270  
+# frequency and required amplitude - beware - it will vary with eranges and frequencies...
+# there should be as many as there are frequencies
+# 20 will mean L2C, but you will not necessarily get it.
+# L1 GPS is 1, L1 glonass is 101, 20 is L2C etc
+# amplitude of 8 is completely adhoc
+1 8 20 8 5 8 101 8 102 8 201 8 205 8  206 8  207 8 208 8
+# default polynomial value, precision of LSP (m), minH(m), maxH(m)
+# relatively large minH is because of peaks at ~2 meters
+# ediff set to 1 degree 
+# noise range 10-16 meters
+4 0.01 4 20 1 10 16
