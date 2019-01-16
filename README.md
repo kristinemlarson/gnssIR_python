@@ -48,14 +48,17 @@ See sample file called input_smm3_example.
 Your output files will go in REFL/YYYY/results/aaaa 
 This is basically a text listing of individual arc reflector heights. 
 
+  ```sh
 maxF is the reflector height in meters
 sat is satellite number, where 1-32 is for GPS, 101-199 is for Glonass, 201-299 is for Galileo
 Azim is average azimuth over a given track, in degrees.
 Amp is the spectral amplitude in volts/volts
 eminO and emaxO are the observed min and max elevation angles in the track
 Nv: number of observations used in the Lomb Scargle Periodogram (LSP)
+  ```
 
 freq is the frequency used:
+  ```sh
 1 GPS L1
 2 GPS L2
 20 GPS L2C
@@ -64,6 +67,7 @@ freq is the frequency used:
 102 Glonass L2
 201, 205, 206, 207, 208: Galileo frequencies
 301 etc: Beidou  
+  ```
 rise is an integer value, rise = 1 and set = -1
 PkNoise is the spectral amplitude divided by an average noise value calculated
 for a reflector height range you prescribe in the code.
