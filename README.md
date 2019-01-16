@@ -69,6 +69,7 @@ PkNoise is the spectral amplitude divided by an average noise value calculated
 for a reflector height range you prescribe in the code.
 
 EXAMPLE year, doy, maxF,sat,UTCtime, Azim, Amp,  eminO, emaxO,  Nv,freq,rise,Edot, PkNoise
+  ```sh
  2018 253 15.200   1 15.367 105.22  29.95   5.03  14.97  288   1 -1 -0.00693   5.26
  2018 253 15.260   1 10.454 201.50  26.56   5.02  14.97  273   1  1  0.00731   4.70
  2018 253 14.725   1  2.785 303.43  25.90   5.03  14.99  362   1 -1 -0.00553   4.89
@@ -76,6 +77,7 @@ EXAMPLE year, doy, maxF,sat,UTCtime, Azim, Amp,  eminO, emaxO,  Nv,freq,rise,Edo
  2018 253 15.280   2 20.175 179.09  32.12   5.01  14.97  279   1 -1 -0.00717   4.85
  2018 253 15.060   2 15.264 271.00  38.34   5.03  14.97  297   1  1  0.00672   4.64
  2018 253 15.170   3 17.150  77.74  35.24   5.00  14.98  291   1 -1 -0.00688   4.68
+  ```
 
 
 
