@@ -11,7 +11,7 @@ import datetime
 from scipy.interpolate import interp1d
 import pickle
 # don't think it is being used
-#import math
+import math
 # do not know what this is
 import re
 import scipy.signal as spectral
@@ -71,6 +71,32 @@ def define_filename(station,year,doy,snr):
     xdir = str(os.environ['REFL_CODE'])
     cdoy = '{:03d}'.format(doy)
     cyy = '{:02d}'.format(year-2000)
+    f= station + str(cdoy) + '0.' + cyy + '.snr' + str(snr)
+    fname = xdir + '/' + str(year) + '/snr/' + station + '/' + f 
+    print('snr filename is ', f) 
+    return fname 
+
+def define_filename_prevday(station,year,doy,snr):
+    """
+    given station name, year, doy, snr type
+    returns snr filename for the PREVIOUS day
+    author: Kristine Larson
+    """
+    xdir = str(os.environ['REFL_CODE'])
+    year = int(year)
+    doy = int(doy)
+    if (doy == 1):
+        pyear = year -1
+        print('found january 1, so previous day is december 31')
+        doyx,cdoyx = ymd2doy(pyear,12,31)
+        pdoy = doyx 
+    else:
+#       doy is decremented by one and year stays the same
+        pdoy = doy - 1
+        pyear = year
+
+    cdoy = '{:03d}'.format(pdoy)
+    cyy = '{:02d}'.format(pyear-2000)
     f= station + str(cdoy) + '0.' + cyy + '.snr' + str(snr)
     fname = xdir + '/' + str(year) + '/snr/' + station + '/' + f 
     print('snr filename is ', f) 
@@ -1573,6 +1599,7 @@ def window_data(s1,s2,s5,s6,s7,s8, sat,ele,azi,seconds,edot,f,az1,az2,e1,e2,satN
     new: pele are the elevation angle limits for the polynomial fit. these are appplied
     before you start windowing the data
     """
+    cunit = 1
     dat = []; x=[]; y=[]
 #   get scale factor
 #   added glonass, 101 and 102
@@ -1594,14 +1621,15 @@ def window_data(s1,s2,s5,s6,s7,s8, sat,ele,azi,seconds,edot,f,az1,az2,e1,e2,satN
     cf = arc_scaleF(f,satNu)
 
 #   if not, frequency does not exist, will be tripped by Nv
+#   remove the direct signal component
     if (cf > 0):
         x,y,sat,azi,seconds,edot  = removeDC(dat, satNu, sat,ele, pele, azi,az1,az2,edot,seconds) 
 
 #
-    Nv = len(y); Nvv = 0
+    Nv = len(y); Nvv = 0 ; 
 #   some defaults in case there are no data in this region
-    meanTime = 0.0; avgAzim = 0.0; avgEdot = 0.0; Nvv = 0
-    avgEdot_file =0.0
+    meanTime = 0.0; avgAzim = 0.0; avgEdot = 1; Nvv = 0
+    avgEdot_fit =1; delT = 0.0
 #   no longer have to look for specific satellites. some minimum number of points required 
     if Nv > 30:
         model = np.polyfit(x,y,pfitV)
@@ -1625,14 +1653,21 @@ def window_data(s1,s2,s5,s6,s7,s8, sat,ele,azi,seconds,edot,f,az1,az2,e1,e2,satN
 #       calculate average time in UTC (actually it is GPS time) in hours and average azimuth
         if (Nvv > 0):
             dd = np.diff(t)
-#            if (np.max(dd) > 3000):
-#                print('possible midnite crossing arc')
-            model = np.polyfit(t,x,1)
-            avgEdot_file = model[0]
+#           edot, in radians/sec
+            model = np.polyfit(t,x*np.pi/180,1)
+#  edot in radians/second
+            avgEdot_fit = model[0]
             avgAzim = np.mean(a)
             meanTime = np.mean(t)/3600
             avgEdot = np.mean(ed) 
-    return x,y,Nvv,cf,meanTime,avgAzim,avgEdot, avgEdot_file
+#  delta Time in minutes
+            delT = (np.max(t) - np.min(t))/60 
+# average tan(elev)
+            cunit =np.mean(np.tan(np.pi*x/180))
+#           return tan(e)/edot, in units of radians/hour now. used for RHdot correction
+    outFact2 = cunit/(avgEdot_fit*3600) 
+    outFact1 = cunit/(avgEdot*3600) 
+    return x,y,Nvv,cf,meanTime,avgAzim,outFact1, outFact2, delT
 
 def arc_scaleF(f,satNu):
     """
@@ -1884,8 +1919,9 @@ def open_outputfile(station,year,doy):
     try:
         fout=open(filepath1,'w+')
 #       put a header in the output file
-        fout.write("%year, doy, maxF,sat,UTCtime, Azim, Amp,  eminO, emaxO,  Nv,freq,rise,Edot, PkNoise \n")
-        fout.write("% (1)  (2)   (3) (4)  (5)     (6)   (7)    (8)    (9)   (10) (11) (12) (13)  (14)   \n")
+        fout.write("%year, doy, maxF,sat,UTCtime, Azim, Amp,  eminO, emaxO,  Nv,freq,rise,EdotF, PkNoise  DelT     MJD \n")
+        fout.write("% (1)  (2)   (3) (4)  (5)     (6)   (7)    (8)    (9)   (10) (11) (12) (13)  (14)     (15)     (16)\n")
+        fout.write("%            m         hrs    deg   v/v    deg    deg                  hrs            min      \n")
     except:
         print('problem on first attempt - so try making results directory')
         cm = 'mkdir ' + xdir + '/' + str(year) + '/results/'
@@ -2013,3 +2049,47 @@ def mjd(y,m,d,hour,minute,second):
     s = hour*3600 + minute*60 + second
     fracDay = s/86400
     return mjd, fracDay
+
+
+def doy2ymd(year, doy):
+    """
+    inputs: year and day of year (doy)
+    returns: some kind of datetime construct which can be used to get MM and DD
+    """
+
+    d = datetime.datetime(year, 1, 1) + datetime.timedelta(days=(doy-1))
+    print('ymd',d)
+    return d 
+
+def getMJD(year,month,day,fract_hour):
+    """
+    inputs are year, month, day and fractional hour
+    return is modified julian day (real8)
+    """
+#   convert fract_hour to HH MM SS
+#   ignore fractional seconds for now
+    hours = math.floor(fract_hour) 
+    leftover = fract_hour - hours
+    minutes = math.floor(leftover*60)
+    seconds = math.floor(leftover*3600 - minutes*60)
+#    print(fract_hour, hours, minutes, seconds)
+    MJD, fracS = mjd(year,month,day,hours,minutes,seconds)
+    MJD = MJD + fracS
+    return MJD
+def update_plot(plt_screen,x,y,px,pz):
+    """
+    input plt_screen integer value from gnssIR_lomb.
+    (value of one means update the SNR and LSP plot)
+    and values of the SNR data (x,y) and LSP (px,pz)
+    """
+    if (plt_screen == 1):
+        plt.subplot(211)  
+        plt.plot(x,y)
+        plt.subplot(212)  
+        plt.plot(px,pz)
+def open_plot(plt_screen):
+    """
+    simple code to open a figure, called by gnssIR_lomb
+    """
+    if (plt_screen == 1):
+        plt.figure()
