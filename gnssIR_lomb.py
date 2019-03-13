@@ -18,6 +18,8 @@
 # 
 # 19mar01, added refraction and MJD to output
 # 19mar02, added multiple days
+# 19mar13, snow (one day only) vs water levels (midnite crossing corrected by using
+# the day before)
 """
 import sys
 import os
@@ -45,10 +47,11 @@ os.environ['REFL_CODE'] = '/Users/kristine/Documents/Research'
 xdir = os.environ['REFL_CODE']
  
 # for some applications, allowing tracks that cross midnite is fine (such as snow)
-# but for tides, these is illegal. For now this is allowed.
-allowMidniteCross = True
+# but for tides, these is illegal. 
+allowMidniteCross = False
 
 # eventually we will use something else but this restricts arcs to one hour
+# units of minutes
 delTmax = 60
 #
 # user inputs the observation file information
@@ -99,7 +102,8 @@ minNumPts = 20
 
 
 
-# get the month and day and the modified julian day, currently using fake date since we are not using
+# get the month and day and the modified julian day, 
+# currently using fake date since we are not using
 # time varying refraction yet
 d = g.doy2ymd(year,doy); month = d.month; day = d.day
 dmjd, fracS = g.mjd(year,month,day,0,0,0)
@@ -108,7 +112,7 @@ dmjd, fracS = g.mjd(year,month,day,0,0,0)
 # retrieve the inputs needed to window the data and compute Lomb Scargle Periodograms 
 lat,long,ht,elval,azval,freqs,reqAmp,polyV,desiredP,Hlimits,ediff,pele,NReg = g.read_inputs(station) 
 
-# You can have peaks in two regions, and you may only be interested in one them.
+# You can have peaks in two regions, and you may only be interested in one of them.
 # You should refine the region you care about here.
 # minimum and maximum LSP limits
 minH = Hlimits[0]; maxH = Hlimits[1]
@@ -118,7 +122,7 @@ e1 = elval[0]; e2 = elval[1]
 
 # number of azimuth regions
 naz = int(len(azval)/2)
-print('number of azimuth pairs',naz)
+print('number of azimuth pairs:',naz)
 
 # this is for when you want to run the code with just a single frequency, i.e. input at the console
 # rather than using the input restrictions
@@ -147,11 +151,14 @@ for doy in doy_list:
 # find the observation file name and try to read it
     obsfile = g.define_filename(station,year,doy,snr_type)
     obsfile2 = g.define_filename_prevday(station,year,doy,snr_type)
+#   define two datasets - one from one day snr file and the other with 24 hours that
+#   have three hours from before midnite and first 21 hours on the given day
     twoDays = False
     allGood,sat,ele,azi,t,edot,s1,s2,s5,s6,s7,s8,snrE = snr.read_snr_multiday(obsfile,obsfile2,twoDays)
     twoDays = True
 #   21:00-23:59 day before plus 0-21:00 day of
-    allGoodP,Psat,Pele,Pazi,Pt,Pedot,Ps1,Ps2,Ps5,Ps6,Ps7,Ps8,PsnrE = snr.read_snr_multiday(obsfile,obsfile2,twoDays)
+# comment out for now - need to correct the elevation angles eventually
+#   allGoodP,Psat,Pele,Pazi,Pt,Pedot,Ps1,Ps2,Ps5,Ps6,Ps7,Ps8,PsnrE = snr.read_snr_multiday(obsfile,obsfile2,twoDays)
     print('successfully read the SNR file')
     if RefractionCorrection:
         print('<<<<<< apply refraction correction >>>>>>') 
@@ -180,8 +187,8 @@ for doy in doy_list:
                 satlist = [onesat]
 # for a given satellite
             for satNu in satlist:
-# and azimuth range
                 print('>> Sat number ', satNu)
+# and azimuth range
                 for a in range(naz):
                     az1 = azval[(a*2)] ; az2 = azval[(a*2 + 1)]
 # window the data
@@ -196,6 +203,8 @@ for doy in doy_list:
                             Noise = np.mean(nij)
 #                    print(len(nij),NReg[0], NReg[1],eminObs,emaxObs,maxAmp/Noise)
 #                   I  will write out the Edot2 value, as Edot is not provided in all snr files
+#
+#  this is the main QC statement
                         if (delT < delTmax) & (eminObs < (e1 + ediff)) & (emaxObs > (e2 - ediff)) & (maxAmp > reqAmp[ct]) & (maxAmp/Noise > PkNoise):
                             fout.write(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} \
 {8:6.2f} {9:4.0f} {10:3.0f} {11:2.0f} {12:8.5f} {13:6.2f} {14:7.2f} {15:12.6f} \n".format(year,doy,maxF,satNu, UTCtime,\
