@@ -12,6 +12,11 @@ def read_snr_multiday(obsfile,obsfile2,twoDays):
     input: observation filenames and whether you want just the first day (twoDays)
     output: contents of the file, withe various other metrics
     """
+#   defaults so all returned vectors have something stored in them
+    sat=[]; ele =[]; azi = []; t=[]; edot=[]; s1=[];
+    s2=[]; s5=[]; s6=[]; s7=[]; s8=[];
+    snrE = np.array([False, True, True,False,False,True,True,True,True],dtype = bool)
+#
     allGood1 = 0; allGood2 = 0
     # set these for now.  should be passed 
     e1 = 5
@@ -25,8 +30,7 @@ def read_snr_multiday(obsfile,obsfile2,twoDays):
 #        stats are done above this function
 #        g.print_file_stats(ele,sat,s1,s2,s5,s6,s7,s8,e1,e2)
     except:
-        print('failed')
-        sys.exit()
+        print('failed to read the first file')
 #
 #
 #
@@ -60,7 +64,7 @@ def read_snr_multiday(obsfile,obsfile2,twoDays):
             Psat, Pele, Pazi, Pt, Pedot, Ps1, Ps2, Ps5, Ps6, Ps7, Ps8, PsnrE = read_one_snr(obsfile2,2)
             allGood2 = 1
         except: 
-            print('failed')
+            print('failed to read second file')
     if (twoDays) & (allGood1 == 1) & (allGood2 == 1):
         print('stack the two days')
         ele = np.hstack((Pele,Qele))
@@ -85,6 +89,7 @@ def read_one_snr(obsfile,ifile):
 
 #SNR existance array : s0, s1,s2,s3,s4,s5,s6,s7,s8.  fields 0,3,4 are always false
 #
+
     snrE = np.array([False, True, True,False,False,True,True,True,True],dtype = bool)
     f = np.genfromtxt(obsfile,comments='%')
     print('reading from a snr file ',obsfile)
@@ -124,9 +129,6 @@ def read_one_snr(obsfile,ifile):
 #
 #   sometimes these records exist, sometimes not
 #   depends on when the file was made, which version was used
-    s5 = []
-    s7 = []
-    s8 = []
     if c > 8:
         s5 = f[:,8]
         if (sum(s5) > 0):

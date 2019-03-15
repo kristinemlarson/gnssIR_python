@@ -153,19 +153,21 @@ for doy in doy_list:
     obsfile2 = g.define_filename_prevday(station,year,doy,snr_type)
 #   define two datasets - one from one day snr file and the other with 24 hours that
 #   have three hours from before midnite and first 21 hours on the given day
+#
     twoDays = False
     allGood,sat,ele,azi,t,edot,s1,s2,s5,s6,s7,s8,snrE = snr.read_snr_multiday(obsfile,obsfile2,twoDays)
-    twoDays = True
+#
+#   twoDays = True
 #   21:00-23:59 day before plus 0-21:00 day of
 # comment out for now - need to correct the elevation angles eventually
 #   allGoodP,Psat,Pele,Pazi,Pt,Pedot,Ps1,Ps2,Ps5,Ps6,Ps7,Ps8,PsnrE = snr.read_snr_multiday(obsfile,obsfile2,twoDays)
-    print('successfully read the SNR file')
-    if RefractionCorrection:
-        print('<<<<<< apply refraction correction >>>>>>') 
-        corrE = refr.corr_el_angles(ele, p,T)
-        ele = corrE
-#        g.print_file_stats(ele,sat,s1,s2,s5,s6,s7,s8,e1,e2) 
     if (allGood == 1):
+        print('successfully read the first SNR file')
+        if RefractionCorrection:
+            print('<<<<<< apply refraction correction >>>>>>') 
+            corrE = refr.corr_el_angles(ele, p,T)
+            ele = corrE
+#           g.print_file_stats(ele,sat,s1,s2,s5,s6,s7,s8,e1,e2) 
         ct = 0
 # good arcs saved to a plain text file, rejected arcs to local file. Open those file names
         fout,frej = g.open_outputfile(station,year,doy) 

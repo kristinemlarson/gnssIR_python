@@ -73,7 +73,7 @@ def define_filename(station,year,doy,snr):
     cyy = '{:02d}'.format(year-2000)
     f= station + str(cdoy) + '0.' + cyy + '.snr' + str(snr)
     fname = xdir + '/' + str(year) + '/snr/' + station + '/' + f 
-    print('snr filename is ', f) 
+    print('snr filename is ', fname) 
     return fname 
 
 def define_filename_prevday(station,year,doy,snr):
@@ -99,7 +99,7 @@ def define_filename_prevday(station,year,doy,snr):
     cyy = '{:02d}'.format(pyear-2000)
     f= station + str(cdoy) + '0.' + cyy + '.snr' + str(snr)
     fname = xdir + '/' + str(year) + '/snr/' + station + '/' + f 
-    print('snr filename is ', f) 
+    print('snr filename for the previous day is ', fname) 
     return fname 
 
 def read_inputs(station):
@@ -187,6 +187,7 @@ def read_inputs(station):
         f.close
     except:
         print('some kind of problem reading input file')
+        sys.exit()
 
     return lat,long,h,elang, azval, freqs, reqAmp,polyFit, desiredP, Hlimits, ediff, pele,noiseRegion
 
@@ -1651,7 +1652,8 @@ def window_data(s1,s2,s5,s6,s7,s8, sat,ele,azi,seconds,edot,f,az1,az2,e1,e2,satN
             x = []; y=[] ; Nv = 0 ; Nvv = 0
         Nvv = len(y)
 #       calculate average time in UTC (actually it is GPS time) in hours and average azimuth
-        if (Nvv > 0):
+#       this is fairly arbitrary, but can't be so small you can't fit a polymial to it
+        if (Nvv > 10):
             dd = np.diff(t)
 #           edot, in radians/sec
             model = np.polyfit(t,x*np.pi/180,1)
