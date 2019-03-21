@@ -4,6 +4,7 @@
 # will try to use this as a library.  however, i am not very competent
 import sys
 import os
+import wget
 import numpy as np
 import matplotlib.pyplot as plt
 from ftplib import FTP
@@ -466,6 +467,7 @@ def rinex_unavco(station, year, month, day):
     picks up a RINEX file from unavco.  I think it picks up compressed
     version, uncompresses it, and then moves it to a txt file
     only works for version 2 and is hardwired for my executables
+    note: year is 4 character
     """
     doy,cdoy = ymd2doy(year,month,day)
 
@@ -558,32 +560,50 @@ def getnavfile(year, month, day):
 def getsp3file(year,month,day):
     """
     author: kristine larson
-    retrieves sp3 precise orbit file from CDDIS
-    inputs are year, month, and date
+    retrieves IGS sp3 precise orbit file from CDDIS
+    inputs are year, month, and day 
+    modified in 2019 to use wget 
     """
-    n,clkn=igsname(year,month,day)
-    print(n)
-    gps_week = n[3:7]
-    print(gps_week)
-    file1 = n + '.Z'
-    # not sure why they do this
-    filepath1 = file1
-    filename1 = '/gnss/products/' + str(gps_week) + '/'+file1
-
+    name,clkn=igsname(year,month,day)
+    gps_week = name[3:7]
+    file1 = name + '.Z'
+    filename1 = '/gnss/products/' + str(gps_week) + '/' + file1
+    cddis = 'ftp://cddis.nasa.gov'
+    url = cddis + filename1 
+    print(url)
     try:
-        ftp = FTP('cddis.gsfc.nasa.gov')
-        ftp.login()
-        f1 = open(filepath1,'wb')
-        print('Retrieving: '+file1)
-        ftp.retrbinary("RETR " + filename1,f1.write)
-        f1.close()
-        cmd = 'gunzip -f ' + filepath1
-        print(cmd)
+        wget.download(url,file1)
+        cmd = 'uncompress ' + file1
         os.system(cmd)
     except:
         print('some kind of problem-remove empty file')
-        cmd = 'rm -f ' + filepath1
+        cmd = 'rm -f ' + file1
         os.system(cmd)
+
+def getsp3file_flex(year,month,day,pCtr):
+    """
+    author: kristine larson
+    retrieves sp3 orbit files from CDDIS
+    inputs are year, month, and day  (integers), and 
+    pCtr, the processing center  (3 characters)
+    """
+    # this returns default igs orbit product
+    name,clkn=igsname(year,month,day)
+    gps_week = name[3:7]
+    file1 = pCtr + name[3:8] + '.sp3.Z'
+    filename1 = '/gnss/products/' + str(gps_week) + '/' + file1
+    cddis = 'ftp://cddis.nasa.gov'
+    url = cddis + filename1 
+    print(url)
+    try:
+        wget.download(url,file1)
+        cmd = 'uncompress ' + file1
+        os.system(cmd)
+    except:
+        print('some kind of problem-remove empty file')
+        cmd = 'rm -f ' + file1
+        os.system(cmd)
+
 def codclock(year,month,day):
     """
     author: kristine lasron
