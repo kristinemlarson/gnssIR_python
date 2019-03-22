@@ -472,7 +472,7 @@ def rinex_unavco(station, year, month, day):
     doy,cdoy = ymd2doy(year,month,day)
 
     try:
-        y2 = str(year - 2000)
+        y2 = '{:02d}'.format(year-2000)
         ftp = FTP('data-out.unavco.org')
         ftp.login()
         fname = station + cdoy + '0.' +y2 + 'd'
@@ -486,18 +486,21 @@ def rinex_unavco(station, year, month, day):
         print(cmd)
         os.system(cmd)
         # then you need to decompress it
-        cmd = '/Users/kristine/bin/RNXCMPdir/bin/CRX2RNX ' + fname
+        exedir = os.environ['EXE'] 
+        cmd = exedir + '/RNXCMPdir/bin/CRX2RNX ' + fname
         print(cmd)
         os.system(cmd)
-       # cmd = 'mv ' + fnameo + ' ' + fnameo + '.txt'
-        #print(cmd)
-        #os.system(cmd)
+#       get rid of Hatanaka file
+        cmd = 'rm -f ' + fname
+        print(cmd)
+        os.system(cmd)
 
         
     except:
         print('some kind of problem with download',filename1)
         cmd = 'rm -f ' + filepath1
         os.system(cmd)
+    return fnameo
  
 def rinex_sopac(station, year, month, day):
     """
@@ -551,12 +554,14 @@ def getnavfile(year, month, day):
         cmd = 'rm -f ' + fname  
         print('clean up hatanaka version')
         os.system(cmd)
+        store_orbitfile(navname,year,'nav') 
 
     except:
         print('some kind of problem with nav download',fname)
         cmd = 'rm -f ' + filepath1
         os.system(cmd)
 
+    return navname
 def getsp3file(year,month,day):
     """
     author: kristine larson
@@ -564,21 +569,30 @@ def getsp3file(year,month,day):
     inputs are year, month, and day 
     modified in 2019 to use wget 
     """
-    name,clkn=igsname(year,month,day)
-    gps_week = name[3:7]
-    file1 = name + '.Z'
-    filename1 = '/gnss/products/' + str(gps_week) + '/' + file1
+    name, fdir = sp3_name(year,month,day,'igs') 
+    print(name)
+    print(fdir)
     cddis = 'ftp://cddis.nasa.gov'
-    url = cddis + filename1 
-    print(url)
-    try:
-        wget.download(url,file1)
-        cmd = 'uncompress ' + file1
-        os.system(cmd)
-    except:
-        print('some kind of problem-remove empty file')
-        cmd = 'rm -f ' + file1
-        os.system(cmd)
+    if (os.path.isfile(fdir + '/' + name ) == True):
+        print('sp3file already exists')
+    else:
+        gps_week = name[3:7]
+        file1 = name + '.Z'
+        filename1 = '/gnss/products/' + str(gps_week) + '/' + file1
+        url = cddis + filename1 
+        print(url)
+        try:
+            wget.download(url,file1)
+            cmd = 'uncompress ' + file1
+            os.system(cmd)
+            store_orbitfile(name,year,'sp3') 
+        except:
+            print('some kind of problem-remove empty file')
+            cmd = 'rm -f ' + file1
+            os.system(cmd)
+
+#   return the name of the file so that if you want to store it
+    return name, fdir
 
 def getsp3file_flex(year,month,day,pCtr):
     """
@@ -588,9 +602,12 @@ def getsp3file_flex(year,month,day,pCtr):
     pCtr, the processing center  (3 characters)
     """
     # this returns default igs orbit product
-    name,clkn=igsname(year,month,day)
+    name, fdir = sp3_name(year,month,day,pCtr) 
+    print(name)
+    print(fdir)
     gps_week = name[3:7]
     file1 = pCtr + name[3:8] + '.sp3.Z'
+    name = pCtr + name[3:8] + '.sp3'
     filename1 = '/gnss/products/' + str(gps_week) + '/' + file1
     cddis = 'ftp://cddis.nasa.gov'
     url = cddis + filename1 
@@ -603,6 +620,56 @@ def getsp3file_flex(year,month,day,pCtr):
         print('some kind of problem-remove empty file')
         cmd = 'rm -f ' + file1
         os.system(cmd)
+#   return the name of the file so that if you want to store it
+    return name, fdir
+
+def getsp3file_mgex(year,month,day,pCtr):
+    """
+    author: kristine larson
+    retrieves MGEX sp3 orbit files 
+    inputs are year, month, and day  (integers), and 
+    pCtr, the processing center  (3 characters)
+    right now it checks for the "new" name, but only for GFZ
+    """
+    # this returns default igs orbit product name
+    name,clkn=igsname(year,month,day)
+    gps_week = name[3:7]
+    file1 = pCtr + name[3:8] + '.sp3.Z'
+    # get the name for the new format
+    doy,cdoy = ymd2doy(year,month,day)
+    file2 = 'GFZ0MGXRAP_' + str(year)   + cdoy + '0000_01D_05M_ORB.SP3.gz'
+    print(file2)
+
+    #
+    filename1 = '/gps/products/mgex/' + str(gps_week) + '/' + file1
+    cddis = 'ftp://cddis.nasa.gov'
+    url = cddis + filename1 
+    print(url)
+    try:
+        wget.download(url,file1)
+        cmd = 'uncompress ' + file1
+        os.system(cmd)
+        name = file1[:-2]
+    except:
+        print('some kind of problem-remove empty file')
+        cmd = 'rm -f ' + file1
+        os.system(cmd)
+        # try the second file
+        try:
+            filename1 = '/gps/products/mgex/' + str(gps_week) + '/' + file2
+            url = cddis + filename1 
+            print(url)
+            wget.download(url,file2)
+            # gunzip
+            cmd = 'gunzip ' + file2
+            os.system(cmd)
+            # name to return
+            name = file2[:-3]
+        except:
+            print('some kind of problem with the 2nd kind of file')
+
+    print(name)
+    return name
 
 def codclock(year,month,day):
     """
@@ -2115,3 +2182,122 @@ def open_plot(plt_screen):
     """
     if (plt_screen == 1):
         plt.figure()
+
+def quick_rinex_snr(year, doy, station, option, orbtype):
+    """
+    inputs: year and day of year (integers) and station name
+    option is for the snr creation
+    orbtype can be nav or sp3.  if the former, then gpsSNR is used.
+    if the later, then gnssSNR
+    this assumes you follow my definitions for where things go,
+    i.e. REFL_CODE and ORBITS
+    """
+    # FIRST MAKE SURE YOU HAVE THE ORBITS YOU NEED
+    d = doy2ymd(year,doy); 
+    month = d.month; day = d.day
+    if orbtype == 'sp3':
+        f,orbdir=getsp3file(year,month,day)
+        snrexe = os.environ['EXE']  + '/gnssSNR.e' 
+    if orbtype == 'nav':
+        f,orbdir=getnavfile(year, month, day) 
+        snrexe = os.environ['EXE']  + '/gpsSNR.e' 
+    #
+    # NOW MAKE SURE YOU HAVE THE RINEX FILE
+    rinexfile = rinex_name(station, year, month, day)
+    print(rinexfile)
+    if (os.path.isfile(rinexfile) == False):
+        print('go get the rinex file')
+        rinexfile=rinex_unavco(station, year, month, day)
+    # found it
+    if (os.path.isfile(rinexfile) == True):
+        #convert to SNR file
+        snrname = rinexfile[:-1] + '.snr' + str(option)
+        orbfile = orbdir + '/' + f
+        cmd = snrexe + ' ' + rinexfile + ' ' + snrname + ' ' + orbfile + ' ' + str(option)
+        print(cmd)
+        os.system(cmd)
+#       remove the rinexfile
+        os.system('rm -f ' + rinexfile)
+#       move the snr file to its proper place
+        store_snrfile(snrname,year,station) 
+    else:
+        print('rinex file does not exist, so there is nothing to convert')
+
+def store_orbitfile(filename,year,orbtype):
+    """
+    simple code to move an orbit file to the right place 
+    inputs are the filename, the year, and the kind of orbit
+    (sp3 or nav)
+    """
+    xdir = str(os.environ['ORBITS']) + '/' + str(year)
+    # check that directories exist
+    if not os.path.isdir(xdir): #if year folder doesn't exist, make it
+        os.makedirs(xdir)
+    xdir = str(os.environ['ORBITS']) + '/' + str(year) + '/' + orbtype
+    if not os.path.isdir(xdir): #if year folder doesn't exist, make it
+        os.makedirs(xdir)
+    if (os.path.isfile(filename) == True):
+        cmd = 'mv ' + filename + ' ' + xdir 
+        print(cmd)
+        os.system(cmd)
+    else:
+        print('file did not exist, so it was not stored')
+    return xdir
+
+
+def store_snrfile(filename,year,station):
+    """
+    simple code to move an snr file to the right place 
+    inputs are the filename, the year, and the station name
+    """
+    xdir = str(os.environ['REFL_CODE']) + '/' + str(year)
+    # check that directories exist
+    if not os.path.isdir(xdir): #if year folder doesn't exist, make it
+        os.makedirs(xdir)
+    xdir = xdir + '/snr'
+    if not os.path.isdir(xdir): #if year folder doesn't exist, make it
+        os.makedirs(xdir)
+    xdir = xdir + '/' + station 
+    if not os.path.isdir(xdir): #if year folder doesn't exist, make it
+        os.makedirs(xdir)
+    if (os.path.isfile(filename) == True):
+        cmd = 'mv ' + filename + ' ' + xdir 
+        print(cmd)
+        os.system(cmd)
+    else:
+        print('file does not exist, so nothing was moved')
+
+def rinex_name(station, year, month, day):
+    """
+    author: kristine larson
+    given station (4 char), year, month, day, return rinexfile name
+    """
+    doy,cdoy = ymd2doy(year,month,day)
+    cyy = '{:02d}'.format(year-2000)
+
+    fnameo = station + cdoy + '0.' + cyy + 'o'
+    return fnameo
+
+def nav_name(year, month, day):
+    """
+    kristine m. larson
+    inputs are year month and day
+    returns nav file name and directory
+    """
+    doy,cdoy = ymd2doy(year,month,day)
+    y2 = '{:02d}'.format(year-2000)
+    navfilename = 'auto'  + cdoy + '0.' + str(y2) +  'n'
+    navfiledir = str(os.environ['ORBITS']) + '/' + str(year) + '/nav'
+    return navfilename,navfiledir
+
+def sp3_name(year,month,day,pCtr):
+    """
+    kristine m. larson
+    inputs are year month and day and processing center
+    returns sp3 file name and directory
+    """
+    name,clkn=igsname(year,month,day)
+    gps_week = name[3:7]
+    sp3name = pCtr + name[3:8] + '.sp3'
+    sp3dir = str(os.environ['ORBITS']) + '/' + str(year) + '/sp3'
+    return sp3name, sp3dir
