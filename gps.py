@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!usr/bin/env python
 # -*- coding: utf-8 -*-
 # kristine larson, june 2017
 # will try to use this as a library.  however, i am not very competent
@@ -455,11 +455,14 @@ def ymd2doy(year,month,day):
     """
     takes in year, month, day and returns day of year (doy)
     and the character version of that day of year
+    19mar20: and now it returns character versions of 4 and 2 character years
     """
     today=datetime.datetime(year,month,day)
     doy = (today - datetime.datetime(today.year, 1, 1)).days + 1
     cdoy = '{:03d}'.format(doy)
-    return doy, cdoy
+    cyyyy = '{:04d}'.format(year)
+    cyy = '{:02d}'.format(year-2000)
+    return doy, cdoy, cyyyy, cyy
 
 def rinex_unavco(station, year, month, day):
     """
@@ -506,62 +509,55 @@ def rinex_sopac(station, year, month, day):
     """
     author: kristine larson
     inputs: station name, year, month, day
-    picks up a RINEX file from SOPAC
+    picks up a RINEX file from SOPAC - but these appear to only be hatanaka
     """
     doy,cdoy = ymd2doy(year,month,day)
-
+    sopac = 'ftp://garner.ucsd.edu'
+    oname,fname = rinex_name(station, year, month, day) 
+    file1 = fname + '.Z'
+    path1 = '/pub/rinex/' + str(year) + '/' + cdoy + '/' 
+    url = sopac + path1 + file1 
+    print(url)
     try:
-        y2 = year - 2000
-        ftp = FTP('garner.ucsd.edu')
-        ftp.login()
-        fname = station + cdoy + '0.' + str(y2) +  'd'
-        filepath1 = fname + '.Z'
-        f1=open(filepath1,'wb')
-        filename1 = '/pub/rinex/' + str(year) + '/' + cdoy + '/' + filepath1
-        ftp.retrbinary("RETR " + filename1,f1.write)
-        f1.close()
-        cmd = 'gunzip -f ' + filepath1
+        wget.download(url,file1)
+        cmd = 'uncompress ' + file1
         print(cmd)
         os.system(cmd)
 
     except:
-        print('some kind of problem with download',filename1)
-        cmd = 'rm -f ' + filepath1
+        print('some kind of problem with download',file1)
+        cmd = 'rm -f ' + file1
         os.system(cmd)
 
 def getnavfile(year, month, day):
     """
     author: kristine larson
     given year, month, day it picks up a GPS nav file from SOPAC
+    and stores it
 
     """
     doy,cdoy = ymd2doy(year,month,day)
-    y2 = year - 2000
-    fname = 'auto' + cdoy + '0.' + str(y2) +  'n.Z'
-    navname = 'auto' + cdoy + '0.' + str(y2) + 'n'
-    print(fname)
-    try:
-        ftp = FTP('garner.ucsd.edu')
-        ftp.login()       
-        filepath1 = fname  
-        f1=open(filepath1,'wb')
-        filename1 = '/pub/rinex/' + str(year) + '/' + cdoy + '/' + filepath1
-        ftp.retrbinary("RETR " + filename1,f1.write)
-        f1.close()
-        cmd = 'uncompress ' + filepath1
-        print(cmd)
-        os.system(cmd)
-        cmd = 'rm -f ' + fname  
-        print('clean up hatanaka version')
-        os.system(cmd)
-        store_orbitfile(navname,year,'nav') 
+    sopac = 'ftp://garner.ucsd.edu'
+    navname,navdir = nav_name(year, month, day)
+    file1 = navname + '.Z'
+    path1 = '/pub/rinex/' + str(year) + '/' + cdoy + '/'
+    url = sopac + path1 + file1
+    print(url)
+    if (os.path.isfile(navdir + '/' + navname ) == True):
+        print('nav file already exists')
+    else:
+        print('pick up the nav file ')
+        try:
+            wget.download(url,file1)
+            cmd = 'uncompress ' + file1
+            os.system(cmd)
+            store_orbitfile(navname,year,'nav') 
+        except:
+            print('some kind of problem with nav download',navname)
+            cmd = 'rm -f ' + file1
+            os.system(cmd)
+    return navname,navdir
 
-    except:
-        print('some kind of problem with nav download',fname)
-        cmd = 'rm -f ' + filepath1
-        os.system(cmd)
-
-    return navname
 def getsp3file(year,month,day):
     """
     author: kristine larson
@@ -601,25 +597,29 @@ def getsp3file_flex(year,month,day,pCtr):
     inputs are year, month, and day  (integers), and 
     pCtr, the processing center  (3 characters)
     """
-    # this returns default igs orbit product
+    # returns name and the directory
     name, fdir = sp3_name(year,month,day,pCtr) 
     print(name)
     print(fdir)
     gps_week = name[3:7]
     file1 = pCtr + name[3:8] + '.sp3.Z'
     name = pCtr + name[3:8] + '.sp3'
-    filename1 = '/gnss/products/' + str(gps_week) + '/' + file1
-    cddis = 'ftp://cddis.nasa.gov'
-    url = cddis + filename1 
-    print(url)
-    try:
-        wget.download(url,file1)
-        cmd = 'uncompress ' + file1
-        os.system(cmd)
-    except:
-        print('some kind of problem-remove empty file')
-        cmd = 'rm -f ' + file1
-        os.system(cmd)
+    if (os.path.isfile(fdir + '/' + name ) == True):
+        print('sp3file already exists')
+    else:
+        filename1 = '/gnss/products/' + str(gps_week) + '/' + file1
+        cddis = 'ftp://cddis.nasa.gov'
+        url = cddis + filename1 
+        print(url)
+        try:
+            wget.download(url,file1)
+            cmd = 'uncompress ' + file1
+            os.system(cmd)
+            store_orbitfile(name,year,'sp3') 
+        except:
+            print('some kind of problem-remove empty file')
+            cmd = 'rm -f ' + file1
+            os.system(cmd)
 #   return the name of the file so that if you want to store it
     return name, fdir
 
@@ -631,44 +631,61 @@ def getsp3file_mgex(year,month,day,pCtr):
     pCtr, the processing center  (3 characters)
     right now it checks for the "new" name, but only for GFZ
     """
-    # this returns default igs orbit product name
-    name,clkn=igsname(year,month,day)
+    # this returns sp3 orbit product name
+    name, fdir = sp3_name(year,month,day,pCtr) 
     gps_week = name[3:7]
-    file1 = pCtr + name[3:8] + '.sp3.Z'
-    # get the name for the new format
+    file1 = name + '.Z'
+    print(file1)
+
+    # get the sp3 filename for the new format
     doy,cdoy = ymd2doy(year,month,day)
     file2 = 'GFZ0MGXRAP_' + str(year)   + cdoy + '0000_01D_05M_ORB.SP3.gz'
     print(file2)
+    name2 = file2[:-3] 
 
-    #
-    filename1 = '/gps/products/mgex/' + str(gps_week) + '/' + file1
+    # where the files live at CDDIS
     cddis = 'ftp://cddis.nasa.gov'
-    url = cddis + filename1 
-    print(url)
-    try:
-        wget.download(url,file1)
-        cmd = 'uncompress ' + file1
-        os.system(cmd)
+    dirlocation = '/gps/products/mgex/' + str(gps_week) + '/'
+    url = cddis + dirlocation  + file1; print(url)
+    url2 = cddis + dirlocation + file2; print(url2)
+    mgex = 0
+    if (os.path.isfile(fdir + '/' + name ) == True):
+        print('first kind of MGEX sp3file already exists')
+        mgex = 1
+    if (os.path.isfile(fdir + '/' + name2 ) == True):
+        print('second kind of MGEX sp3file already exists')
+        mgex = 2
+# there has to be a better way ... but for now  this works
+# only try to download if neither exists
+    if (mgex == 2):
+        name = name2
+    if (mgex == 1):
         name = file1[:-2]
-    except:
-        print('some kind of problem-remove empty file')
-        cmd = 'rm -f ' + file1
-        os.system(cmd)
-        # try the second file
+    if (mgex == 0):
         try:
-            filename1 = '/gps/products/mgex/' + str(gps_week) + '/' + file2
-            url = cddis + filename1 
-            print(url)
-            wget.download(url,file2)
-            # gunzip
-            cmd = 'gunzip ' + file2
+            wget.download(url,file1)
+            cmd = 'uncompress ' + file1
             os.system(cmd)
-            # name to return
-            name = file2[:-3]
+            name = file1[:-2]
+        # store the file in its proper place
+            store_orbitfile(name,year,'sp3') 
         except:
-            print('some kind of problem with the 2nd kind of file')
+            print('some kind of problem trying to get first file')
+            cmd = 'rm -f ' + file1
+            os.system(cmd)
+            name = file2[:-3]
+        # try the second file
+            try:
+                wget.download(url2,file2)
+                cmd = 'gunzip ' + file2
+                os.system(cmd)
+                # name to return
+                name = file2[:-3]
+            # store the file in its proper place
+                store_orbitfile(name,year,'sp3') 
+            except:
+                print('some kind of problem downloading 2nd kind of MGEX file')
 
-    print(name)
     return name
 
 def codclock(year,month,day):
@@ -1078,7 +1095,7 @@ def read_files(year,month,day,station):
     rinexfile = station + cdoy + '0.' + str(y2) + 'o'
     navfilename = 'auto'  + cdoy + '0.' + str(y2) +  'n'
     if os.path.isfile(rinexfile):
-        print('rinex file exists')
+        print('rinexfile exists')
     else:
         print(rinexfile)
         print('get the rinex file')
@@ -2238,7 +2255,7 @@ def store_orbitfile(filename,year,orbtype):
         os.makedirs(xdir)
     if (os.path.isfile(filename) == True):
         cmd = 'mv ' + filename + ' ' + xdir 
-        print(cmd)
+        print('moving ', filename, ' to ', xdir)
         os.system(cmd)
     else:
         print('file did not exist, so it was not stored')
@@ -2271,12 +2288,24 @@ def rinex_name(station, year, month, day):
     """
     author: kristine larson
     given station (4 char), year, month, day, return rinexfile name
+    and the hatanaka equivalent
     """
-    doy,cdoy = ymd2doy(year,month,day)
-    cyy = '{:02d}'.format(year-2000)
+    doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
 
     fnameo = station + cdoy + '0.' + cyy + 'o'
-    return fnameo
+    fnamed = station + cdoy + '0.' + cyy + 'd'
+    return fnameo, fnamed
+
+def snr_name(station, year, month, day,option):
+    """
+    author: kristine larson
+    given station (4 char), year, month, day, and snr option,
+    return name using my system
+    """
+    doy,cdoy,cyyy,cyy = ymd2doy(year,month,day)
+
+    fname = station + cdoy + '0.' + cyy + '.snr' + str(option)
+    return fname
 
 def nav_name(year, month, day):
     """
@@ -2301,3 +2330,24 @@ def sp3_name(year,month,day,pCtr):
     sp3name = pCtr + name[3:8] + '.sp3'
     sp3dir = str(os.environ['ORBITS']) + '/' + str(year) + '/sp3'
     return sp3name, sp3dir
+
+def rinex_unavco_obs(station, year, month, day):
+    """
+    author: kristine larson
+    picks up a RINEX file from unavco.  
+    normal observation file - not Hatanaka
+    """
+    doy,cdoy = ymd2doy(year,month,day)
+    rinexfile = rinex_name(station, year, month, day) 
+    unavco= 'ftp://data-out.unavco.org' 
+    filename = rinexfile + '.Z'
+    url = unavco+ '/pub/rinex/obs/' + str(year) + '/' + cdoy + '/' + filename
+    print(url)
+    try:
+        wget.download(url,filename)
+        cmd = 'uncompress ' + filename
+        os.system(cmd) 
+    except:
+        print('some kind of problem with download',rinexfile)
+    return rinexfile
+
