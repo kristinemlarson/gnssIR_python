@@ -89,7 +89,7 @@ def define_filename_prevday(station,year,doy,snr):
     if (doy == 1):
         pyear = year -1
         print('found january 1, so previous day is december 31')
-        doyx,cdoyx = ymd2doy(pyear,12,31)
+        doyx,cdoyx,cyyyy,cyy = ymd2doy(pyear,12,31)
         pdoy = doyx 
     else:
 #       doy is decremented by one and year stays the same
@@ -472,14 +472,12 @@ def rinex_unavco(station, year, month, day):
     only works for version 2 and is hardwired for my executables
     note: year is 4 character
     """
-    doy,cdoy = ymd2doy(year,month,day)
-
+    doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
+# this should be fixed
     try:
-        y2 = '{:02d}'.format(year-2000)
         ftp = FTP('data-out.unavco.org')
         ftp.login()
-        fname = station + cdoy + '0.' +y2 + 'd'
-        fnameo = station + cdoy + '0.' +y2 + 'o'
+        fname,fnameo = rinex_name(station,year,month,day)
         filepath1 = fname + '.Z'
         f1=open(filepath1,'wb')
         filename1 = '/pub/rinex/obs/' + str(year) + '/' + cdoy + '/' + filepath1
@@ -497,7 +495,6 @@ def rinex_unavco(station, year, month, day):
         cmd = 'rm -f ' + fname
         print(cmd)
         os.system(cmd)
-
         
     except:
         print('some kind of problem with download',filename1)
@@ -511,11 +508,11 @@ def rinex_sopac(station, year, month, day):
     inputs: station name, year, month, day
     picks up a RINEX file from SOPAC - but these appear to only be hatanaka
     """
-    doy,cdoy = ymd2doy(year,month,day)
+    doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     sopac = 'ftp://garner.ucsd.edu'
     oname,fname = rinex_name(station, year, month, day) 
     file1 = fname + '.Z'
-    path1 = '/pub/rinex/' + str(year) + '/' + cdoy + '/' 
+    path1 = '/pub/rinex/' + cyyyy + '/' + cdoy + '/' 
     url = sopac + path1 + file1 
     print(url)
     try:
@@ -536,13 +533,12 @@ def getnavfile(year, month, day):
     and stores it
 
     """
-    doy,cdoy = ymd2doy(year,month,day)
+    doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     sopac = 'ftp://garner.ucsd.edu'
     navname,navdir = nav_name(year, month, day)
     file1 = navname + '.Z'
-    path1 = '/pub/rinex/' + str(year) + '/' + cdoy + '/'
+    path1 = '/pub/rinex/' + cyyyy + '/' + cdoy + '/'
     url = sopac + path1 + file1
-    print(url)
     if (os.path.isfile(navdir + '/' + navname ) == True):
         print('nav file already exists')
     else:
@@ -556,6 +552,7 @@ def getnavfile(year, month, day):
             print('some kind of problem with nav download',navname)
             cmd = 'rm -f ' + file1
             os.system(cmd)
+
     return navname,navdir
 
 def getsp3file(year,month,day):
@@ -638,8 +635,8 @@ def getsp3file_mgex(year,month,day,pCtr):
     print(file1)
 
     # get the sp3 filename for the new format
-    doy,cdoy = ymd2doy(year,month,day)
-    file2 = 'GFZ0MGXRAP_' + str(year)   + cdoy + '0000_01D_05M_ORB.SP3.gz'
+    doy,cdoy,cyy,cyyyy = ymd2doy(year,month,day)
+    file2 = 'GFZ0MGXRAP_' + cyyyy + cdoy + '0000_01D_05M_ORB.SP3.gz'
     print(file2)
     name2 = file2[:-3] 
 
@@ -1090,10 +1087,10 @@ def read_files(year,month,day,station):
     """
     """   
 
-    doy,cdoy = ymd2doy(year,month,day)
-    y2=year-2000
-    rinexfile = station + cdoy + '0.' + str(y2) + 'o'
-    navfilename = 'auto'  + cdoy + '0.' + str(y2) +  'n'
+    doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
+    # i have a function for this ....
+    rinexfile = station + cdoy + '0.' + cyy + 'o'
+    navfilename = 'auto'  + cdoy + '0.' + cyy +  'n'
     if os.path.isfile(rinexfile):
         print('rinexfile exists')
     else:
@@ -1109,7 +1106,7 @@ def read_files(year,month,day,station):
         print('nav exists')
     else:
         print('get nav')
-        getnavfile(year,month,day)
+        navname,navdir = getnavfile(year,month,day)
     print('read in the broadcast ephemeris')
     ephemdata = myreadnav(navfilename)
     if os.path.isfile(cname):
@@ -2209,36 +2206,40 @@ def quick_rinex_snr(year, doy, station, option, orbtype):
     this assumes you follow my definitions for where things go,
     i.e. REFL_CODE and ORBITS
     """
-    # FIRST MAKE SURE YOU HAVE THE ORBITS YOU NEED
-    d = doy2ymd(year,doy); 
-    month = d.month; day = d.day
-    if orbtype == 'sp3':
-        f,orbdir=getsp3file(year,month,day)
-        snrexe = os.environ['EXE']  + '/gnssSNR.e' 
-    if orbtype == 'nav':
-        f,orbdir=getnavfile(year, month, day) 
-        snrexe = os.environ['EXE']  + '/gpsSNR.e' 
-    #
-    # NOW MAKE SURE YOU HAVE THE RINEX FILE
-    rinexfile = rinex_name(station, year, month, day)
-    print(rinexfile)
-    if (os.path.isfile(rinexfile) == False):
-        print('go get the rinex file')
-        rinexfile=rinex_unavco(station, year, month, day)
-    # found it
-    if (os.path.isfile(rinexfile) == True):
-        #convert to SNR file
-        snrname = rinexfile[:-1] + '.snr' + str(option)
-        orbfile = orbdir + '/' + f
-        cmd = snrexe + ' ' + rinexfile + ' ' + snrname + ' ' + orbfile + ' ' + str(option)
-        print(cmd)
-        os.system(cmd)
-#       remove the rinexfile
-        os.system('rm -f ' + rinexfile)
-#       move the snr file to its proper place
-        store_snrfile(snrname,year,station) 
+    # FIRST, check to see if the SNR file already exists
+    snrname_full = define_filename(station,year,doy,option)
+    if (os.path.isfile(snrname_full) == True):
+        print('snrfile already exists:', snrname_full)
     else:
-        print('rinex file does not exist, so there is nothing to convert')
+    # SECOND MAKE SURE YOU HAVE THE ORBITS YOU NEED
+        d = doy2ymd(year,doy); 
+        month = d.month; day = d.day
+        if orbtype == 'sp3':
+            f,orbdir=getsp3file(year,month,day)
+            snrexe = os.environ['EXE']  + '/gnssSNR.e' 
+        if orbtype == 'nav':
+            f,orbdir=getnavfile(year, month, day) 
+            snrexe = os.environ['EXE']  + '/gpsSNR.e' 
+    # NOW MAKE SURE YOU HAVE THE RINEX FILE
+        rinexfile,rinexfiled = rinex_name(station, year, month, day)
+        print(rinexfile)
+        if (os.path.isfile(rinexfile) == False):
+            print('go get the rinex file')
+            # new version
+            rinex_unavco_obs(station, year, month, day) 
+    # check to see if you found it
+        if (os.path.isfile(rinexfile) == True):
+            #convert to SNR file
+            snrname = snr_name(station, year,month,day,option)
+            orbfile = orbdir + '/' + f
+            cmd = snrexe + ' ' + rinexfile + ' ' + snrname + ' ' + orbfile + ' ' + str(option)
+            print(cmd); os.system(cmd)
+#       remove the rinexfile
+            os.system('rm -f ' + rinexfile)
+#       move the snr file to its proper place
+            store_snrfile(snrname,year,station) 
+        else:
+            print('rinex file does not exist, so there is nothing to convert')
 
 def store_orbitfile(filename,year,orbtype):
     """
@@ -2300,7 +2301,7 @@ def snr_name(station, year, month, day,option):
     """
     author: kristine larson
     given station (4 char), year, month, day, and snr option,
-    return name using my system
+    return snr filename (and directory) using my system
     """
     doy,cdoy,cyyy,cyy = ymd2doy(year,month,day)
 
@@ -2313,10 +2314,9 @@ def nav_name(year, month, day):
     inputs are year month and day
     returns nav file name and directory
     """
-    doy,cdoy = ymd2doy(year,month,day)
-    y2 = '{:02d}'.format(year-2000)
-    navfilename = 'auto'  + cdoy + '0.' + str(y2) +  'n'
-    navfiledir = str(os.environ['ORBITS']) + '/' + str(year) + '/nav'
+    doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
+    navfilename = 'auto'  + cdoy + '0.' + cyy  +  'n'
+    navfiledir = str(os.environ['ORBITS']) + '/' + cyyyy + '/nav'
     return navfilename,navfiledir
 
 def sp3_name(year,month,day,pCtr):
@@ -2337,8 +2337,8 @@ def rinex_unavco_obs(station, year, month, day):
     picks up a RINEX file from unavco.  
     normal observation file - not Hatanaka
     """
-    doy,cdoy = ymd2doy(year,month,day)
-    rinexfile = rinex_name(station, year, month, day) 
+    doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
+    rinexfile,rinexfiled = rinex_name(station, year, month, day) 
     unavco= 'ftp://data-out.unavco.org' 
     filename = rinexfile + '.Z'
     url = unavco+ '/pub/rinex/obs/' + str(year) + '/' + cdoy + '/' + filename
