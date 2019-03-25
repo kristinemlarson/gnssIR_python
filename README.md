@@ -36,7 +36,37 @@ used in the fortran conversion code.
 COORDS = where the coordinates are kept for sites with large speeds, i.e. Greenland and Antarctica.
 See knut.txt for sample. This is only used in the fortran conversion code.
 
-# Inputs
+# Inputs for Rinex translation code
+
+The driver is rinex2snr.py It will need to know where the the gpsSNR.e or gnssSNR.e translator
+codes are (for GPS only or GNSS) so make sure the EXE environment variable is set. Those 
+codes are available on this gitHub in the gpsonlySNR and gnssSNR folders. If I have more
+users of these codes, I will probably change to python Rinex readers.
+
+Sample call of rinex2snr.py would be
+
+python3 rinex2snr.py at01 2019 75 80 66 gbm
+
+where at01 is the station name, 2019 is the year, 70 and 80 and the starting and ending day of years.
+66 is the snr option type (see the translator code for more inforamtion).  The last input is the 
+orbit type. Basically:
+
+nav - is using the GPS nav message, so your Rinex file should be GPS only
+sp3 - is using the IGS sp3 file, so again, yoru Rine file should be GPS only.
+gbm - is now my only option for getting a GNSS orbit file.  It is also in sp3 format. It comes from
+the group at GFZ.
+
+Unless the rinex data are sitting there in your work directory, the code attempts to 
+pick up your rinex file at UNAVCO. Currently it only uses the default low-rate files.
+Eventually I will add the high-rate directories. Code to download files from SOPAC is also in gps.py
+but is not currently called.
+
+One more thing- it is very comon for GPS archives to store files in the Hatanaka format.
+So currently it tries to get the regular Rinex file but if that fails, it tries to download
+Hatanaka format. You need the Hatanaka decompression code to translate this.  Look for 
+CRX2RNX in gps.py to see where my code assumes that it lives.  
+
+# Inputs for reflector code
 
 
 The expected SNR files must be translated from RINEX before you run this code. 
