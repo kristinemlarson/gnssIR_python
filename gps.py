@@ -2209,6 +2209,8 @@ def quick_rinex_snr(year, doy, station, option, orbtype):
     this assumes you follow my definitions for where things go,
     i.e. REFL_CODE and ORBITS
     """
+    # define directory for the conversion executables
+    exedir = os.environ['EXE']
     # FIRST, check to see if the SNR file already exists
     snrname_full = define_filename(station,year,doy,option)
     if (os.path.isfile(snrname_full) == True):
@@ -2220,18 +2222,18 @@ def quick_rinex_snr(year, doy, station, option, orbtype):
         if orbtype == 'mgex':
             # this means you are using multi-GNSS and GFZ
             f,orbdir=getsp3file_mgex(year,month,day,'gbm')
-            snrexe = os.environ['EXE']  + '/gnssSNR.e' 
+            snrexe = exedir  + '/gnssSNR.e' 
         if orbtype == 'sp3':
             # this uses default IGS orbits, so only GPS
             f,orbdir=getsp3file(year,month,day)
-            snrexe = os.environ['EXE']  + '/gnssSNR.e' 
+            snrexe = exedir + '/gnssSNR.e' 
         if orbtype == 'gbm':
             # this uses GFZ multi-GNSS 
             f,orbdir=getsp3file_mgex(year,month,day,'gbm')
-            snrexe = os.environ['EXE']  + '/gnssSNR.e' 
+            snrexe = exedir + '/gnssSNR.e' 
         if orbtype == 'nav':
             f,orbdir=getnavfile(year, month, day) 
-            snrexe = os.environ['EXE']  + '/gpsSNR.e' 
+            snrexe = exedir  + '/gpsSNR.e' 
     # NOW MAKE SURE YOU HAVE THE RINEX FILE
         rinexfile,rinexfiled = rinex_name(station, year, month, day)
         print(rinexfile)
