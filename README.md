@@ -11,16 +11,13 @@ I do not (yet) check for data arcs that cross midnite.  This has to be fixed
 for tides. This has much more limited impact on snow where daily averages are typically
 used.  
 
-I have added some python codes that allows the user to make snr files. It still expects you
-to use the fortran translator, but it is called within python.
+I have added some python codes (driver is rinex2snr.py) that allows the user 
+to make snr files. It still expects you
+to use the fortran translator, but it is now called within python.
 
 A simple refraction error correction has been added.
 
 I will be adding a RH dot correction which is needed for tides.
-
-I have added a python script called rinex2snr.py which allows you to make SNR files more 
-directly.  It needs station name, year, doy span (i.e. starting day and ending day) and
-a few other choices.  More details to come.
 
 
 # Environment variables
@@ -39,7 +36,7 @@ See knut.txt for sample. This is only used in the fortran conversion code.
 # Inputs for Rinex translation code
 
 The driver is rinex2snr.py It will need to know where the the gpsSNR.e or gnssSNR.e translator
-codes are (for GPS only or GNSS) so make sure the EXE environment variable is set. Those 
+executables are (for GPSonly or GNSS) so make sure the EXE environment variable is set. Those 
 codes are available on this gitHub in the gpsonlySNR and gnssSNR folders. If I have more
 users of these codes, I will probably change to python Rinex readers.
 
@@ -53,20 +50,23 @@ orbit type. Basically:
 
 nav - is using the GPS nav message, so your Rinex file should be GPS only
 
-sp3 - is using the IGS sp3 file, so again, yoru Rine file should be GPS only.
+sp3 - is using the IGS sp3 file, so again, your Rinex file should be GPS only.
 
 gbm - is now my only option for getting a GNSS orbit file.  It is also in sp3 format. It comes from
 the group at GFZ.  
 
+The code attempts to pick up these orbits for you. They are stored in the ORBITS directory
+
 Unless the rinex data are sitting there in your work directory, the code attempts to 
 pick up your rinex file at UNAVCO. Currently it only uses the default low-rate files.
 Eventually I will add the high-rate directories. Code to download files from SOPAC is also in gps.py
-but is not currently called.
+but is not currently called. The snr files are stored in REFL_CODE/YYYY/results
 
 One more thing- it is very comon for GPS archives to store files in the Hatanaka format.
 So currently it tries to get the regular Rinex file but if that fails, it tries to download
 Hatanaka format. You need the Hatanaka decompression code to translate this.  Look for 
 CRX2RNX in gps.py to see where my code assumes that it lives.  
+
 
 # Inputs for reflector code
 
@@ -82,7 +82,7 @@ https://link.springer.com/article/10.1007/s10291-018-0744-8
 
 The code assumes you are going to have a working directory for input and outputfiles.  
 An environment variable is set at the top of gnssIR_lomb.py, so you should change that for your work area.
-If I call that REFL, then your snr files should be in REFL/YYYY/snr/aaaa, where YYYY is 4 character
+If I call that REFL_CODE, then your snr files should be in REFL_CODE/YYYY/snr/aaaa, where YYYY is 4 character
 year and aaaa is station name.  
 
 * SNR file. You must use the following name conventions:
