@@ -467,9 +467,12 @@ def ymd2doy(year,month,day):
 def rinex_unavco(station, year, month, day):
     """
     author: kristine larson
-    picks up a RINEX file from unavco.  I think it picks up compressed
-    version, uncompresses it, and then moves it to a txt file
-    only works for version 2 and is hardwired for my exedir = os.environ['EXE'] 
+    picks up a RINEX file from unavco.  it tries to pick up an o file,
+    but if it does not work, it tries the "d" version, which must be
+    decompressed.  the location of this executable is defined in the crnxpath
+    variable. This is from the main unavco directory - not the highrate directory.
+
+    WARNING: only rinex version 2 in this world
     """
     exedir = os.environ['EXE']
     crnxpath = exedir + '/RNXCMPdir/bin/CRX2RNX '
@@ -478,6 +481,7 @@ def rinex_unavco(station, year, month, day):
     unavco= 'ftp://data-out.unavco.org'
     filename1 = rinexfile + '.Z'
     filename2 = rinexfiled + '.Z'
+    # URL path for the o file and the d file
     url1 = unavco+ '/pub/rinex/obs/' + cyyyy + '/' + cdoy + '/' + filename1
     url2 = unavco+ '/pub/rinex/obs/' + cyyyy + '/' + cdoy + '/' + filename2
     print(url1)
@@ -498,7 +502,7 @@ def rinex_unavco(station, year, month, day):
             cmd = 'rm -f ' + rinexfiled; os.system(cmd)
             print('found d file and converted to o file')
         except:
-            print('failed to find either file')
+            print('failed to find either RINEX file at unavco')
 
 
 def rinex_sopac(station, year, month, day):
@@ -506,6 +510,7 @@ def rinex_sopac(station, year, month, day):
     author: kristine larson
     inputs: station name, year, month, day
     picks up a hatanaka RINEX file from SOPAC - converts to o
+    hatanaka exe hardwired  for my machine
     """
     exedir = os.environ['EXE']
     crnxpath = exedir + '/RNXCMPdir/bin/CRX2RNX '
@@ -533,6 +538,7 @@ def getnavfile(year, month, day):
     author: kristine larson
     given year, month, day it picks up a GPS nav file from SOPAC
     and stores it
+    returns the name of the file and its directory
 
     """
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
@@ -563,6 +569,7 @@ def getsp3file(year,month,day):
     retrieves IGS sp3 precise orbit file from CDDIS
     inputs are year, month, and day 
     modified in 2019 to use wget 
+    returns the name of the file and its directory
     """
     name, fdir = sp3_name(year,month,day,'igs') 
     print(name)
@@ -595,6 +602,7 @@ def getsp3file_flex(year,month,day,pCtr):
     retrieves sp3 orbit files from CDDIS
     inputs are year, month, and day  (integers), and 
     pCtr, the processing center  (3 characters)
+    returns the name of the file and its directory
     """
     # returns name and the directory
     name, fdir = sp3_name(year,month,day,pCtr) 
@@ -638,7 +646,7 @@ def getsp3file_mgex(year,month,day,pCtr):
     print(file1)
 
     # get the sp3 filename for the new format
-    doy,cdoy,cyy,cyyyy = ymd2doy(year,month,day)
+    doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     file2 = 'GFZ0MGXRAP_' + cyyyy + cdoy + '0000_01D_05M_ORB.SP3.gz'
     print(file2)
     name2 = file2[:-3] 
@@ -2242,7 +2250,10 @@ def quick_rinex_snr(year, doy, station, option, orbtype):
             # new version
             rinex_unavco_obs(station, year, month, day) 
     # check to see if you found the rinex file
-        if (os.path.isfile(rinexfile) == True):
+    # should check that the orbit really exists too
+        oexist = os.path.isfile(orbdir + '/' + f) == True
+        rexist = os.path.isfile(rinexfile) == True
+        if (oexist and rexist):
             #convert to SNR file
             snrname = snr_name(station, year,month,day,option)
             orbfile = orbdir + '/' + f
@@ -2258,7 +2269,7 @@ def quick_rinex_snr(year, doy, station, option, orbtype):
             else:
                 store_snrfile(snrname,year,station) 
         else:
-            print('rinex file does not exist, so there is nothing to convert')
+            print('rinex file or orbit file does not exist, so there is nothing to convert')
 
 def store_orbitfile(filename,year,orbtype):
     """

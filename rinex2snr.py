@@ -15,7 +15,12 @@ import datetime
 # set an environment variable for where you are keeping your LSP
 # instructions and input files 
 # DEFINE REFL_CODE on your system
-xdir = os.environ['REFL_CODE']
+#xdir = os.environ['REFL_CODE']
+# this should be done in your .bashrc file
+
+#WARNING - THIS CODE ASSUMES IF YOU USE HATANAKA RINEX
+# FILES, YOU NEED THE APPROPRIATE EXECUTABLE
+# SEE rinex_unavco.py for details
  
 #
 # user inputs the observation file information
