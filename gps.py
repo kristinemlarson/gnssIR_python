@@ -108,7 +108,7 @@ def read_inputs(station):
     given station name, read LSP parameters for strip_snrfile.py
     author: Kristine M Larson
     """
-#   directory name is currently hardwired
+#   directory name is currently defined using REFL_CODE
     xdir = str(os.environ['REFL_CODE'])
     fname = xdir + '/input/' + station
     print('default inputs: ', fname)
@@ -469,39 +469,37 @@ def rinex_unavco(station, year, month, day):
     author: kristine larson
     picks up a RINEX file from unavco.  I think it picks up compressed
     version, uncompresses it, and then moves it to a txt file
-    only works for version 2 and is hardwired for my executables
-    note: year is 4 character
+    only works for version 2 and is hardwired for my exedir = os.environ['EXE'] 
     """
+    exedir = os.environ['EXE']
+    crnxpath = exedir + '/RNXCMPdir/bin/CRX2RNX '
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
-# this should be fixed
+    rinexfile,rinexfiled = rinex_name(station, year, month, day)
+    unavco= 'ftp://data-out.unavco.org'
+    filename1 = rinexfile + '.Z'
+    filename2 = rinexfiled + '.Z'
+    url1 = unavco+ '/pub/rinex/obs/' + cyyyy + '/' + cdoy + '/' + filename1
+    url2 = unavco+ '/pub/rinex/obs/' + cyyyy + '/' + cdoy + '/' + filename2
+    print(url1)
+    print(url2)
     try:
-        ftp = FTP('data-out.unavco.org')
-        ftp.login()
-        fname,fnameo = rinex_name(station,year,month,day)
-        filepath1 = fname + '.Z'
-        f1=open(filepath1,'wb')
-        filename1 = '/pub/rinex/obs/' + str(year) + '/' + cdoy + '/' + filepath1
-        ftp.retrbinary("RETR " + filename1,f1.write)
-        f1.close()
-        cmd = 'gunzip -f ' + filepath1
-        print(cmd)
-        os.system(cmd)
-        # then you need to decompress it
-        exedir = os.environ['EXE'] 
-        cmd = exedir + '/RNXCMPdir/bin/CRX2RNX ' + fname
-        print(cmd)
-        os.system(cmd)
-#       get rid of Hatanaka file
-        cmd = 'rm -f ' + fname
-        print(cmd)
-        os.system(cmd)
-        
+        print('try to get o file')
+        wget.download(url1,filename1)
+        cmd = 'uncompress ' + filename1; os.system(cmd)
     except:
-        print('some kind of problem with download',filename1)
-        cmd = 'rm -f ' + filepath1
-        os.system(cmd)
-    return fnameo
- 
+        print('did not find o file')
+        try:
+            wget.download(url2,filename2)
+            cmd = 'uncompress ' + filename2; os.system(cmd)
+            #convert
+            cmd = crnxpath + rinexfiled; os.system(cmd)
+            #remove compressed file
+            cmd = 'rm -f ' + rinexfiled; os.system(cmd)
+            print('found d file and converted to o file')
+        except:
+            print('failed to find either file')
+
+
 def rinex_sopac(station, year, month, day):
     """
     author: kristine larson
@@ -626,7 +624,8 @@ def getsp3file_mgex(year,month,day,pCtr):
     retrieves MGEX sp3 orbit files 
     inputs are year, month, and day  (integers), and 
     pCtr, the processing center  (3 characters)
-    right now it checks for the "new" name, but only for GFZ
+    right now it checks for the "new" name, but in reality, it 
+    assumes you are going to use the GFZ product
     """
     # this returns sp3 orbit product name
     name, fdir = sp3_name(year,month,day,pCtr) 
@@ -683,7 +682,7 @@ def getsp3file_mgex(year,month,day,pCtr):
             except:
                 print('some kind of problem downloading 2nd kind of MGEX file')
 
-    return name
+    return name, fdir
 
 def codclock(year,month,day):
     """
@@ -2214,8 +2213,17 @@ def quick_rinex_snr(year, doy, station, option, orbtype):
     # SECOND MAKE SURE YOU HAVE THE ORBITS YOU NEED
         d = doy2ymd(year,doy); 
         month = d.month; day = d.day
+        if orbtype == 'mgex':
+            # this means you are using multi-GNSS and GFZ
+            f,orbdir=getsp3file_mgex(year,month,day,'gbm')
+            snrexe = os.environ['EXE']  + '/gnssSNR.e' 
         if orbtype == 'sp3':
+            # this uses default IGS orbits, so only GPS
             f,orbdir=getsp3file(year,month,day)
+            snrexe = os.environ['EXE']  + '/gnssSNR.e' 
+        if orbtype == 'gbm':
+            # this uses GFZ multi-GNSS 
+            f,orbdir=getsp3file_mgex(year,month,day,'gbm')
             snrexe = os.environ['EXE']  + '/gnssSNR.e' 
         if orbtype == 'nav':
             f,orbdir=getnavfile(year, month, day) 
@@ -2227,17 +2235,22 @@ def quick_rinex_snr(year, doy, station, option, orbtype):
             print('go get the rinex file')
             # new version
             rinex_unavco_obs(station, year, month, day) 
-    # check to see if you found it
+    # check to see if you found the rinex file
         if (os.path.isfile(rinexfile) == True):
             #convert to SNR file
             snrname = snr_name(station, year,month,day,option)
             orbfile = orbdir + '/' + f
             cmd = snrexe + ' ' + rinexfile + ' ' + snrname + ' ' + orbfile + ' ' + str(option)
             print(cmd); os.system(cmd)
-#       remove the rinexfile
+            print('remove the rinexfile')
             os.system('rm -f ' + rinexfile)
 #       move the snr file to its proper place
-            store_snrfile(snrname,year,station) 
+            if (os.stat(snrname).st_size == 0):
+                print('you created a zero file size which could mean a lot of things')
+                print('bad exe, bad snr option, do not really have the orbit file')
+                os.system('rm -f ' + snrname)
+            else:
+                store_snrfile(snrname,year,station) 
         else:
             print('rinex file does not exist, so there is nothing to convert')
 
@@ -2336,12 +2349,13 @@ def rinex_unavco_obs(station, year, month, day):
     author: kristine larson
     picks up a RINEX file from unavco.  
     normal observation file - not Hatanaka
+    new version i was testing out
     """
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     rinexfile,rinexfiled = rinex_name(station, year, month, day) 
     unavco= 'ftp://data-out.unavco.org' 
     filename = rinexfile + '.Z'
-    url = unavco+ '/pub/rinex/obs/' + str(year) + '/' + cdoy + '/' + filename
+    url = unavco+ '/pub/rinex/obs/' + cyyyy + '/' + cdoy + '/' + filename
     print(url)
     try:
         wget.download(url,filename)
@@ -2349,5 +2363,5 @@ def rinex_unavco_obs(station, year, month, day):
         os.system(cmd) 
     except:
         print('some kind of problem with download',rinexfile)
-    return rinexfile
+
 
