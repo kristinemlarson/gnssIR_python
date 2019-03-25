@@ -18,6 +18,11 @@ A simple refraction error correction has been added.
 
 I will be adding a RH dot correction which is needed for tides.
 
+I have added a python script called rinex2snr.py which allows you to make SNR files more 
+directly.  It needs station name, year, doy span (i.e. starting day and ending day) and
+a few other choices.  More details to come.
+
+
 # Environment variables
 
 EXE = where the fortran translator executables live
