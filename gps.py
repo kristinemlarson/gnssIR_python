@@ -486,6 +486,7 @@ def rinex_unavco(station, year, month, day):
         print('try to get o file')
         wget.download(url1,filename1)
         cmd = 'uncompress ' + filename1; os.system(cmd)
+        print('found it ')
     except:
         print('did not find o file')
         try:
@@ -504,8 +505,10 @@ def rinex_sopac(station, year, month, day):
     """
     author: kristine larson
     inputs: station name, year, month, day
-    picks up a RINEX file from SOPAC - but these appear to only be hatanaka
+    picks up a hatanaka RINEX file from SOPAC - converts to o
     """
+    exedir = os.environ['EXE']
+    crnxpath = exedir + '/RNXCMPdir/bin/CRX2RNX '
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     sopac = 'ftp://garner.ucsd.edu'
     oname,fname = rinex_name(station, year, month, day) 
@@ -515,10 +518,11 @@ def rinex_sopac(station, year, month, day):
     print(url)
     try:
         wget.download(url,file1)
-        cmd = 'uncompress ' + file1
-        print(cmd)
-        os.system(cmd)
-
+        cmd = 'uncompress ' + file1 ; os.system(cmd)
+        cmd = crnxpath + fname; os.system(cmd)
+        #remove compressed file
+        cmd = 'rm -f ' + fname;  os.system(cmd)
+        print('successful download from SOPAC ')
     except:
         print('some kind of problem with download',file1)
         cmd = 'rm -f ' + file1
