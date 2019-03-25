@@ -1,25 +1,20 @@
 # -*- coding: utf-8 -*-
 """
-# can make a lot of snr files
+function is used to translate rinex into snr file format
+These files are then used by gnss_lomb.py
+author: kristine larson
+date: 20 march 2019
 """
 import sys
 import os
 import numpy as np
-import warnings
-warnings.filterwarnings("ignore")
-import cProfile
-
 import gps as g
 import argparse
-
 import datetime
 
 # set an environment variable for where you are keeping your LSP
 # instructions and input files 
-# CHANGE FOR YOUR MACHINE
-# i now define this in my .bashrc file
-#os.environ['REFL_CODE'] = '/home/kristine/research'
-# not sure this needs to be here
+# DEFINE REFL_CODE on your system
 xdir = os.environ['REFL_CODE']
  
 #
@@ -30,6 +25,7 @@ parser.add_argument("year", help="year", type=int)
 parser.add_argument("doy1", help="doy1", type=int)
 parser.add_argument("doy2", help="doy2", type=int)
 parser.add_argument("snrEnd", help="snrEnd", type=str)
+parser.add_argument("orbType", help="orbType", type=str)
 args = parser.parse_args()
 #
 # rename the user inputs as variables
@@ -39,8 +35,8 @@ year = args.year
 doy1= args.doy1
 doy2= args.doy2
 snrt = args.snrEnd
+orbtype = args.orbType
 #
-orbtype = 'nav'
 
 doy_list = list(range(doy1, doy2+1))
 

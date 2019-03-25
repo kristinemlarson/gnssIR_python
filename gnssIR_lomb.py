@@ -43,7 +43,8 @@ import datetime
 # set an environment variable for where you are keeping your LSP
 # instructions and input files 
 # CHANGE FOR YOUR MACHINE
-os.environ['REFL_CODE'] = '/Users/kristine/Documents/Research'
+# you can also set this in your .bashrc
+#os.environ['REFL_CODE'] = '/Users/kristine/Documents/Research'
 xdir = os.environ['REFL_CODE']
  
 # for some applications, allowing tracks that cross midnite is fine (such as snow)
