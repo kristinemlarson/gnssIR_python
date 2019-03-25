@@ -9,21 +9,41 @@ The latter is a bunch of helper scripts I have written - not all are for reflect
 
 I do not (yet) check for data arcs that cross midnite.  This has to be fixed
 for tides. This has much more limited impact on snow where daily averages are typically
-used.  The refraction error correction needs to be added for tides.
-I will also be adding a RH dot correction.
+used.  
+
+I have added some python codes that allows the user to make snr files. It still expects you
+to use the fortran translator, but it is called within python.
+
+A simple refraction error correction has been added.
+
+I will be adding a RH dot correction which is needed for tides.
+
+# Environment variables
+
+EXE = where the fortran translator executables live
+
+REFL_CODE = where the reflection code inputs (snr files and instructions) and outputs (reflector heights) 
+will be stored (see below)
+
+ORBITS = where the GNSS orbits will be (nav for GPS only and sp3 for multi GNSS). These files are only 
+used in the fortran conversion code.
+
+COORDS = where the coordinates are kept for sites with large speeds, i.e. Greenland and Antarctica.
+See knut.txt for sample. This is only used in the fortran conversion code.
 
 # Inputs
 
+
 The expected SNR files must be translated from RINEX before you run this code. 
-This code is called gnssSNR or RinexSNR and was distributed at the GPS Tool Box. 
-(when the US government is open)
+This code is called gnssSNR (all GNSS using sp3 file) or RinexSNR (GPS only using nav file) 
+and was distributed at the GPS Tool Box. These are now available on my gitHub account.
 
 https://www.ngs.noaa.gov/gps-toolbox/GNSS-IR.htm
 
 The paper that describes these (and other) tools is open access here:
 https://link.springer.com/article/10.1007/s10291-018-0744-8
 
-The code assumes you are going to have a working diretory for input and outputfiles.  
+The code assumes you are going to have a working directory for input and outputfiles.  
 An environment variable is set at the top of gnssIR_lomb.py, so you should change that for your work area.
 If I call that REFL, then your snr files should be in REFL/YYYY/snr/aaaa, where YYYY is 4 character
 year and aaaa is station name.  
@@ -32,25 +52,26 @@ year and aaaa is station name.
 
   aaaaDDD0.yy.snrnn
 
+```sh
 where aaaa is a 4 character station name
 DDD is day of year
 yy is two character year
 0 is always zero (it comes from the RINEX spec)
 nn is a specific kind of snr file (99, 77, and 50 are the most commonly used)
-
+```
 
 * Input instructions
 
-This should be stored in a file called REFL/input/aaaa where aaaa is station name. 
+This should be stored in a file called REFL_CODE/input/aaaa 
 See sample file called input_smm3_example. 
 
 * Output
-Your output files will go in REFL/YYYY/results/aaaa 
+Your output files will go in REFL_CODE/YYYY/results/aaaa 
 This is basically a text listing of individual arc reflector heights. 
 
 ```sh
 maxF is the reflector height in meters
-sat is satellite number, where 1-32 is for GPS, 101-199 is for Glonass, 201-299 is for Galileo
+sat is satellite number, where 1-32 is for GPS, 101-199 is for Glonass, 201-299 is for Galileo, 301-399 for Beidou
 Azim is average azimuth over a given track, in degrees.
 Amp is the spectral amplitude in volts/volts
 eminO and emaxO are the observed min and max elevation angles in the track
@@ -72,6 +93,7 @@ rise is an integer value, rise = 1 and set = -1
 
 PkNoise is the spectral amplitude divided by an average noise value calculated
 for a reflector height range you prescribe in the code.
+
 
 EXAMPLE year, doy, maxF,sat,UTCtime, Azim, Amp,  eminO, emaxO,  Nv,freq,rise,Edot, PkNoise
  ```sh
@@ -104,11 +126,5 @@ which would mean only show L2C frequency (which I call 20) and use 15 as the amp
 As an example, I'm providing an snr98 file for smm3 on doy 253 and year 2018. Only one arc
 of satellite 1 is stored here, so as to reduce the size of the file.
 
-* As a tide example, use station at01 from Alaska.  
-  ```sh
-python3 strip_snrfile.py at01 2018 182 98 1 -fr 5 -amp 10
-  ```
-This example only shows L5 data.  The file has Glonass and Galileo data in it, so you can try that too.
-Sample output is in example3.png
 
-There is also the ability to look at a single satellite. Type strip_snrfile.py to see options.
+There is also the ability to look at a single satellite. Type gnssIR_lomb.py to see options.
