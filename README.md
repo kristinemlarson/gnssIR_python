@@ -52,9 +52,11 @@ where at01 is the station name, 2019 is the year, 70 and 80 and the starting and
 orbit type. Basically:
 
 nav - is using the GPS nav message, so your Rinex file should be GPS only
+
 sp3 - is using the IGS sp3 file, so again, yoru Rine file should be GPS only.
+
 gbm - is now my only option for getting a GNSS orbit file.  It is also in sp3 format. It comes from
-the group at GFZ.
+the group at GFZ.  
 
 Unless the rinex data are sitting there in your work directory, the code attempts to 
 pick up your rinex file at UNAVCO. Currently it only uses the default low-rate files.
