@@ -2212,7 +2212,7 @@ def open_plot(plt_screen):
     if (plt_screen == 1):
         plt.figure()
 
-def quick_rinex_snr(year, doy, station, option, orbtype):
+def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate):
     """
     inputs: year and day of year (integers) and station name
     option is for the snr creation
@@ -2257,7 +2257,13 @@ def quick_rinex_snr(year, doy, station, option, orbtype):
         if (os.path.isfile(rinexfile) == False):
             print('go get the rinex file')
             # new version
-            rinex_unavco_obs(station, year, month, day) 
+            if receiverrate == 'low':
+                print('low rate')
+                rinex_unavco(station, year, month, day) 
+            else:
+                print('high rate')
+                rinex_unavco_highrate(station, year, month, day) 
+
     # check to see if you found the rinex file
     # should check that the orbit really exists too
         oexist = os.path.isfile(orbdir + '/' + f) == True
@@ -2389,5 +2395,46 @@ def rinex_unavco_obs(station, year, month, day):
         os.system(cmd) 
     except:
         print('some kind of problem with download',rinexfile)
+
+
+def rinex_unavco_highrate(station, year, month, day):
+    """
+    author: kristine larson
+    picks up a RINEX file from unavco.  it tries to pick up an o file,
+    but if it does not work, it tries the "d" version, which must be
+    decompressed.  the location of this executable is defined in the crnxpath
+    variable. This is from the main unavco directory - not the highrate directory.
+
+    WARNING: only rinex version 2 in this world
+    """
+    exedir = os.environ['EXE']
+    crnxpath = exedir + '/RNXCMPdir/bin/CRX2RNX '
+    doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
+    rinexfile,rinexfiled = rinex_name(station, year, month, day)
+    unavco= 'ftp://data-out.unavco.org'
+    filename1 = rinexfile + '.Z'
+    filename2 = rinexfiled + '.Z'
+    # URL path for the o file and the d file
+    url1 = unavco+ '/pub/highrate/1-Hz/rinex/' + cyyyy + '/' + cdoy + '/' + station + '/' + filename1
+    url2 = unavco+ '/pub/highrate/1-Hz/rinex/' + cyyyy + '/' + cdoy + '/' + station + '/' + filename2
+    print(url1)
+    print(url2)
+    try:
+        print('try to get o file')
+        wget.download(url1,filename1)
+        cmd = 'uncompress ' + filename1; os.system(cmd)
+        print('found it ')
+    except:
+        print('did not find o file')
+        try:
+            wget.download(url2,filename2)
+            cmd = 'uncompress ' + filename2; os.system(cmd)
+            #convert
+            cmd = crnxpath + rinexfiled; os.system(cmd)
+            #remove compressed file
+            cmd = 'rm -f ' + rinexfiled; os.system(cmd)
+            print('found d file and converted to o file')
+        except:
+            print('failed to find either RINEX file at unavco')
 
 
