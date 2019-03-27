@@ -16,6 +16,7 @@ import math
 # do not know what this is
 import re
 import scipy.signal as spectral
+import read_snr_files as snr
 
 # i think these should be in a class ...
 # various numbers you need in the GNSS world
@@ -68,14 +69,16 @@ def define_filename(station,year,doy,snr):
     given station name, year, doy, snr type
     returns snr filename
     author: Kristine Larson
+    19mar25: return compressed filename too
     """
     xdir = str(os.environ['REFL_CODE'])
     cdoy = '{:03d}'.format(doy)
     cyy = '{:02d}'.format(year-2000)
     f= station + str(cdoy) + '0.' + cyy + '.snr' + str(snr)
     fname = xdir + '/' + str(year) + '/snr/' + station + '/' + f 
+    fname2 = xdir + '/' + str(year) + '/snr/' + station + '/' + f  + '.xv'
     print('snr filename is ', fname) 
-    return fname 
+    return fname, fname2
 
 def define_filename_prevday(station,year,doy,snr):
     """
@@ -100,8 +103,9 @@ def define_filename_prevday(station,year,doy,snr):
     cyy = '{:02d}'.format(pyear-2000)
     f= station + str(cdoy) + '0.' + cyy + '.snr' + str(snr)
     fname = xdir + '/' + str(year) + '/snr/' + station + '/' + f 
+    fname2 = xdir + '/' + str(year) + '/snr/' + station + '/' + f + '.xv'
     print('snr filename for the previous day is ', fname) 
-    return fname 
+    return fname, fname2
 
 def read_inputs(station):
     """
@@ -2220,7 +2224,7 @@ def quick_rinex_snr(year, doy, station, option, orbtype):
     # define directory for the conversion executables
     exedir = os.environ['EXE']
     # FIRST, check to see if the SNR file already exists
-    snrname_full = define_filename(station,year,doy,option)
+    snrname_full,snrname_compressed = define_filename(station,year,doy,option)
     if (os.path.isfile(snrname_full) == True):
         print('snrfile already exists:', snrname_full)
     else:
@@ -2232,14 +2236,19 @@ def quick_rinex_snr(year, doy, station, option, orbtype):
             f,orbdir=getsp3file_mgex(year,month,day,'gbm')
             snrexe = exedir  + '/gnssSNR.e' 
         if orbtype == 'sp3':
-            # this uses default IGS orbits, so only GPS
-            f,orbdir=getsp3file(year,month,day)
+            print('uses default IGS orbits, so only GPS')
+            f,orbdir=getsp3file_flex(year,month,day,'igs')
+            snrexe = exedir + '/gnssSNR.e' 
+        if orbtype == 'igr':
+            print('using rapid orbits, so only GPS')
+            f,orbdir=getsp3file_flex(year,month,day,'igr')
             snrexe = exedir + '/gnssSNR.e' 
         if orbtype == 'gbm':
             # this uses GFZ multi-GNSS 
             f,orbdir=getsp3file_mgex(year,month,day,'gbm')
             snrexe = exedir + '/gnssSNR.e' 
         if orbtype == 'nav':
+            print('using nav message')
             f,orbdir=getnavfile(year, month, day) 
             snrexe = exedir  + '/gpsSNR.e' 
     # NOW MAKE SURE YOU HAVE THE RINEX FILE

@@ -20,6 +20,7 @@
 # 19mar02, added multiple days
 # 19mar13, snow (one day only) vs water levels (midnite crossing corrected by using
 # the day before)
+# 
 """
 import sys
 import os
@@ -43,10 +44,14 @@ import datetime
 # set an environment variable for where you are keeping your LSP
 # instructions and input files 
 # CHANGE FOR YOUR MACHINE
-# you can also set this in your .bashrc
-#os.environ['REFL_CODE'] = '/Users/kristine/Documents/Research'
+# you can also set this in your .bashrc, which is what i am doing now
+# os.environ['REFL_CODE'] = '/Users/kristine/Documents/Research'
 xdir = os.environ['REFL_CODE']
  
+# if you want the SNR files to be xv compressed after using them.
+wantCompression = True 
+wantCompression = False
+
 # for some applications, allowing tracks that cross midnite is fine (such as snow)
 # but for tides, these is illegal. 
 allowMidniteCross = False
@@ -114,7 +119,7 @@ dmjd, fracS = g.mjd(year,month,day,0,0,0)
 lat,long,ht,elval,azval,freqs,reqAmp,polyV,desiredP,Hlimits,ediff,pele,NReg = g.read_inputs(station) 
 
 # You can have peaks in two regions, and you may only be interested in one of them.
-# You should refine the region you care about here.
+# You can refine the region you care about here.
 # minimum and maximum LSP limits
 minH = Hlimits[0]; maxH = Hlimits[1]
 
@@ -136,7 +141,7 @@ if InputFromScreen:
         reqAmp[0] = args.ampl
 
 # use the returned lat,long,ht to compute a refraction correction profile
-# 
+# this is only done once per site 
 refr.readWrite_gpt2_1w(xdir, station, lat, long)
 # time varying is set to no for now (it = 1)
 it = 1
@@ -145,18 +150,23 @@ p,T,dT,Tm,e,ah,aw,la,undu = refr.gpt2_1w(station, dmjd,dlat,dlong,ht,it)
 print("Pressure {0:8.2f} Temperature {1:6.1f} \n".format(p,T))
 
 
+# only doing one day at a time for now
+twoDays = False
+
 doy_list = list(range(doy, doy_end+1))
 
 # for each day in the doy list
 for doy in doy_list:
 # find the observation file name and try to read it
-    obsfile = g.define_filename(station,year,doy,snr_type)
-    obsfile2 = g.define_filename_prevday(station,year,doy,snr_type)
+    obsfile,obsfileCmp = g.define_filename(station,year,doy,snr_type)
+    obsfile2,obsfile2Cmp = g.define_filename_prevday(station,year,doy,snr_type)
 #   define two datasets - one from one day snr file and the other with 24 hours that
 #   have three hours from before midnite and first 21 hours on the given day
 #
-    twoDays = False
     allGood,sat,ele,azi,t,edot,s1,s2,s5,s6,s7,s8,snrE = snr.read_snr_multiday(obsfile,obsfile2,twoDays)
+#   compress it here
+    snr.compress_snr_files(wantCompression, obsfile, obsfile2,twoDays) 
+
 #
 #   twoDays = True
 #   21:00-23:59 day before plus 0-21:00 day of
