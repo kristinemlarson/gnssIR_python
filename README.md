@@ -39,9 +39,8 @@ used in the fortran conversion code.
 
 * COORDS = where the coordinates are kept for sites with large 
 position speeds, i.e. Greenland and Antarctica icesheets.
-See knut.txt for sample. This is only used in the fortran 
-conversion code.  If the file does not 
-exist, it does not matter. 
+This is only used in the fortran conversion code - and samples are given 
+with the source code.  If this file does not exist, it does not matter. 
 
 * REFL_CODE = where the reflection code inputs (SNR files and instructions) and outputs (RH) 
 will be stored (see below)
