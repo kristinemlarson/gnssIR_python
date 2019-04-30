@@ -97,11 +97,12 @@ python3 rinex2snr.py at01 2019 75 80 66 gbm
 * 2019 is the year 
 * 70 and 80 are the starting and ending day of years.
 * 66 is the snr option type (see the translator code for more information).  
-* The last input is the orbit type. Basically:
-   nav - is using the GPS nav message. The main plus is that it is available in near real-time.  A nav file only has GPS orbits in it, so you should not use this option if you want to do true multi-GNSS 
+* The last input is the orbit type.
+
+1. nav - is using the GPS nav message. The main plus is that it is available in near real-time.  A nav file only has GPS orbits in it, so you should not use this option if you want to do true multi-GNSS 
 reflectometry.
-   sp3 - is using the IGS sp3 file, so again, your RINEX file should be GPS only. 
-   gbm - is now my only option for getting a multi-GNSS orbit file.  This is also 
+2. sp3 - is using the IGS sp3 file, so again, your RINEX file should be GPS only. 
+3. gbm - is now my only option for getting a multi-GNSS orbit file.  This is also 
 in sp3 format. It comes from the group at GFZ.  
 
 If the orbit files don't already exist on your system, the rinex2snr.py code attempts 
@@ -119,7 +120,7 @@ So currently it tries to get the regular Rinex file but if that fails, it tries 
 Hatanaka format. You need the Hatanaka decompression code (see above) to translate this.  
 You need to put it in the EXE area.
 
-# Installing and running the RH code
+# Installing and running the RH (gnssIR_lomb.py) code
 
 
 * The expected SNR files must be translated from RINEX before you run this code. 
@@ -134,10 +135,8 @@ The environment variable for this - REFL_CODE - is described above.
 
 * put the gpt_1wa.pickle file in the REFL_CODE/input area
 
-* your snr files need to live in REFL_CODE/YYYY/snr/aaaa, where YYYY is 4 character
-year and aaaa is station name.  
-
-* the SNR file must use my naming conventions: 
+* Input: your snr files need to live in REFL_CODE/YYYY/snr/aaaa, where YYYY is 4 character
+year and aaaa is station name.  the SNR file must use my naming conventions: 
 
   aaaaDDD0.yy.snrnn
 
@@ -149,13 +148,12 @@ yy is two character year
 nn is a specific kind of snr file (99, 77, and 50 are the most commonly used)
 ```
 
-* Inputs for the RH  
+* Use inputs for the RH  
 
 This should be stored in a file called REFL_CODE/input/aaaa 
 See sample file called input_smm3_example. 
 
-* Output
-Your output files will go in REFL_CODE/YYYY/results/aaaa 
+* Output: Your output files will go in REFL_CODE/YYYY/results/aaaa 
 This is basically a text listing of individual arc reflector heights. 
 
 ```sh
@@ -200,7 +198,7 @@ EXAMPLE year, doy, maxF,sat,UTCtime, Azim, Amp,  eminO, emaxO,  Nv,freq,rise,Edo
 
 
 
-# Usage
+# Usage- some examples
 
 * Compute reflector heights based entirely on your input instructions
   ```sh
