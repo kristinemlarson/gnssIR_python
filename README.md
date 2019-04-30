@@ -95,18 +95,21 @@ python3 rinex2snr.py at01 2019 75 80 66 gbm
 
 * at01 is the station name 
 * 2019 is the year 
-* 70 and 80 and the starting and ending day of years.
+* 70 and 80 are the starting and ending day of years.
 * 66 is the snr option type (see the translator code for more information).  
 * The last input is the orbit type. Basically:
-* nav - is using the GPS nav message, so your RINEX file should be GPS only
+* nav - is using the GPS nav message. The main plus is that it is available in near real-time. 
+A nav file only has GPS orbits in it, so you should not use this 
+option if you want to do true multi-GNSS 
+reflectometry.
 * sp3 - is using the IGS sp3 file, so again, your RINEX file should be GPS only. 
 * gbm - is now my only option for getting a multi-GNSS orbit file.  This is also 
 in sp3 format. It comes from the group at GFZ.  
 
-If they don't already exist on your system, the rinex2snr.py code attempts 
+If the orbit files don't already exist on your system, the rinex2snr.py code attempts 
 to pick them up for you. They are then stored in the ORBITS directory.
 
-Unless the RINEX data are sitting there in your work directory, the code attempts to 
+Unless the RINEX data are sitting there in your working directory, the code attempts to 
 pick up your RINEX file at UNAVCO. I think there is a high-rate option, but I have 
 not extensively tested it.  Code to download files from SOPAC is also in gps.py
 but is not currently called. Brendan Crowell gave me a rinexdownloader.py script - and you
@@ -116,25 +119,27 @@ The snr files are stored in REFL_CODE/YYYY/results
 One more thing- it is very comon for GPS archives to store files in the Hatanaka (compressed) format.
 So currently it tries to get the regular Rinex file but if that fails, it tries to download
 Hatanaka format. You need the Hatanaka decompression code (see above) to translate this.  
+You need to put it in the EXE area.
 
-# Inputs for reflector code
+# Installing and running the RH code
 
 
-The expected SNR files must be translated from RINEX before you run this code. 
-This code is called gnssSNR (all GNSS using sp3 file) or RinexSNR (GPS only using nav file) 
-and was distributed at the GPS Tool Box. These are now available on my gitHub account.
+* The expected SNR files must be translated from RINEX before you run this code. 
 
-https://www.ngs.noaa.gov/gps-toolbox/GNSS-IR.htm
-
-The paper that describes these (and other) tools is open access here:
+* There are A LOT of publications about GPS/GNSS interferometric reflectometry.
+If you want something with a how-to flavor, try this: 
 https://link.springer.com/article/10.1007/s10291-018-0744-8
 
-The code assumes you are going to have a working directory for input and outputfiles.  
-An environment variable is set at the top of gnssIR_lomb.py, so you should change that for your work area.
-If I call that REFL_CODE, then your snr files should be in REFL_CODE/YYYY/snr/aaaa, where YYYY is 4 character
+* The code assumes you are going to have a working directory for input and outputfiles.  
+The environment variable for this - REFL_CODE - is described above.  
+
+
+* put the gpt_1wa.pickle file in the REFL_CODE/input area
+
+* your snr files need to live in REFL_CODE/YYYY/snr/aaaa, where YYYY is 4 character
 year and aaaa is station name.  
 
-* SNR file. You must use the following name conventions:
+* the SNR file must use my naming conventions: 
 
   aaaaDDD0.yy.snrnn
 
@@ -146,7 +151,7 @@ yy is two character year
 nn is a specific kind of snr file (99, 77, and 50 are the most commonly used)
 ```
 
-* Input instructions
+* Inputs for the RH  
 
 This should be stored in a file called REFL_CODE/input/aaaa 
 See sample file called input_smm3_example. 
@@ -157,7 +162,8 @@ This is basically a text listing of individual arc reflector heights.
 
 ```sh
 maxF is the reflector height in meters
-sat is satellite number, where 1-32 is for GPS, 101-199 is for Glonass, 201-299 is for Galileo, 301-399 for Beidou
+sat is satellite number, where 1-32 is for GPS, 
+101-199 is for Glonass, 201-299 is for Galileo, 301-399 for Beidou
 Azim is average azimuth over a given track, in degrees.
 Amp is the spectral amplitude in volts/volts
 eminO and emaxO are the observed min and max elevation angles in the track
@@ -180,6 +186,8 @@ rise is an integer value, rise = 1 and set = -1
 PkNoise is the spectral amplitude divided by an average noise value calculated
 for a reflector height range you prescribe in the code.
 
+(Note: this has changed since I wrote this description. I will update this when I 
+get a chance) 
 
 EXAMPLE year, doy, maxF,sat,UTCtime, Azim, Amp,  eminO, emaxO,  Nv,freq,rise,Edot, PkNoise
  ```sh
