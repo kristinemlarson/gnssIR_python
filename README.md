@@ -98,12 +98,10 @@ python3 rinex2snr.py at01 2019 75 80 66 gbm
 * 70 and 80 are the starting and ending day of years.
 * 66 is the snr option type (see the translator code for more information).  
 * The last input is the orbit type. Basically:
-* nav - is using the GPS nav message. The main plus is that it is available in near real-time. 
-A nav file only has GPS orbits in it, so you should not use this 
-option if you want to do true multi-GNSS 
+   nav - is using the GPS nav message. The main plus is that it is available in near real-time.  A nav file only has GPS orbits in it, so you should not use this option if you want to do true multi-GNSS 
 reflectometry.
-* sp3 - is using the IGS sp3 file, so again, your RINEX file should be GPS only. 
-* gbm - is now my only option for getting a multi-GNSS orbit file.  This is also 
+   sp3 - is using the IGS sp3 file, so again, your RINEX file should be GPS only. 
+   gbm - is now my only option for getting a multi-GNSS orbit file.  This is also 
 in sp3 format. It comes from the group at GFZ.  
 
 If the orbit files don't already exist on your system, the rinex2snr.py code attempts 
