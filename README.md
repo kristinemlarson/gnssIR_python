@@ -1,72 +1,121 @@
 # gnssIR_lomb.py
-This is a first cut at a python code that will compute reflector heights fairly automatically.
+
+gnssIR_lomb is a python module that will compute reflector heights (RH) fairly automatically.
 Some things to know:
 
-This is for python3. 
+I only support python3. 
 
-The library dependencies are at the top of the two main python scripts: gnssIR_lomb.py and gps.py.
-The latter is a bunch of helper scripts I have written - not all are for reflector height calculation.
+The library dependencies are at the top of the two main 
+python scripts: gnssIR_lomb.py and gps.py.
+The latter is a bunch of helper scripts I have written - not all are for 
+reflector height (RH) calculation.
 
-I do not (yet) check for data arcs that cross midnite.  This has to be fixed
-for tides. This has much more limited impact on snow where daily averages are typically
-used.  
+The RH estimation depends on satellite elevation angle, not time. This can
+cause complications for tides where large RH changes occur and time matters.
+Data arcs should not cross midnite because you can end up using data that are 
+as much as 24 hours apart to compute a single RH.
+This doesn't matter for snow applications.
+When I get a chance, I will be adding a RH dot correction which is needed for tides.
+Again, this effect can be ignored for snow/ice reflections.
 
-I have added some python codes (driver is rinex2snr.py) that allows the user 
-to make snr files. It still expects you
-to use the fortran translator, but it is now called within python.
+I recently added another code (rinex2snr.py) that allows the user 
+to make the input files for the gnssIR_lomb.py code. I call these the SNR files. These are 
+created from RINEX files.  RINEX is the standard format for GPS/GNSS files.
 
 A simple refraction error correction has been added.
 
-I will be adding a RH dot correction which is needed for tides.
 
+WARNING: These codes do not calculate soil moisture.
 
-# Environment variables
+# Installing the code
 
-EXE = where the fortran translator executables live
+You need to define four environment variables:
 
-REFL_CODE = where the reflection code inputs (snr files and instructions) and outputs (reflector heights) 
-will be stored (see below)
+* EXE = where the Fortran translator executables will live
 
-ORBITS = where the GNSS orbits will be (nav for GPS only and sp3 for multi GNSS). These files are only 
+* ORBITS = where the GPS/GNSS orbits will be (nav for GPS only and 
+sp3 for multi GNSS). These files are only 
 used in the fortran conversion code.
 
-COORDS = where the coordinates are kept for sites with large speeds, i.e. Greenland and Antarctica.
-See knut.txt for sample. This is only used in the fortran conversion code.
+* COORDS = where the coordinates are kept for sites with large 
+position speeds, i.e. Greenland and Antarctica icesheets.
+See knut.txt for sample. This is only used in the fortran 
+conversion code.  If the file does not 
+exist, it does not matter. 
 
-# Inputs for Rinex translation code
+* REFL_CODE = where the reflection code inputs (SNR files and instructions) and outputs (RH) 
+will be stored (see below)
 
-The driver is rinex2snr.py It will need to know where the the gpsSNR.e or gnssSNR.e translator
-executables are (for GPSonly or GNSS) so make sure the EXE environment variable is set. Those 
-codes are available on this gitHub in the gpsonlySNR and gnssSNR folders. If I have more
-users of these codes, I will probably change to python Rinex readers.
+You should make sure you have installed all the required python libraries. Most 
+of them are standard 
+(numpy, argparse, scipy, etc).
 
-Sample call of rinex2snr.py would be
+Unless you already have codes to make my SNR files, you will need to 
+install RINEX translators.
+I have two of them. One is for people that only have GPS data - and thus uses the nav file for
+the orbits. The other translates all GNSS signals and uses a sp3 file.  Both 
+codes are hosted at GitHub. If you are going to rely on a GPS/GNSS archive 
+for your RINEX files, you almost certainly
+need to have the ability to convert from compressed to regular 
+RINEX files.  Such a converter is 
+available publicly (see below).
+
+# RINEX translators 
+
+* RINEX translator for multi-GNSS, gnssSNR.e, https://github.com/kristinemlarson/gnssSNR 
+
+* RINEX Translator for GPS, gpsSNR.e, https://github.com/kristinemlarson/gpsonlySNR
+
+* CRX2RNX, Compressed to Uncompressed RINEX, http://terras.gsi.go.jp/ja/crx2rnx.html
+
+* teqc, not required, but highly recommended if you are going down the 
+RINEX rabbit hole.  There is a list of executables at the 
+bottom of this page, http://www.unavco.org/software/data-processing/teqc/teqc.html
+
+
+# Inputs for RINEX translation code
+
+The python driver is called rinex2snr.py.
+It will need to know how to find the fortran executables, so
+make sure the EXE environment variable is set. 
+The fortran codes are available on gitHub - use the links given above. 
+And the makefiles assume you are using gfortran.
+Once you make executable files, you will need to either copy 
+them to the EXE area - or easier,
+just make a symbolic link. If you are in the EXE directory
+
+ln -s physical-location-of-executable gpsSNR.e (for example)
+
+If I have more users and support for these codes, I will elimimate the 
+fortran converters and move to python only.
+
+A sample call of of the python driver rinex2snr.py would be:
 
 python3 rinex2snr.py at01 2019 75 80 66 gbm
 
-where at01 is the station name, 2019 is the year, 70 and 80 and the starting and ending day of years.
-66 is the snr option type (see the translator code for more inforamtion).  The last input is the 
-orbit type. Basically:
+* at01 is the station name 
+* 2019 is the year 
+* 70 and 80 and the starting and ending day of years.
+* 66 is the snr option type (see the translator code for more information).  
+* The last input is the orbit type. Basically:
+* nav - is using the GPS nav message, so your RINEX file should be GPS only
+* sp3 - is using the IGS sp3 file, so again, your RINEX file should be GPS only. 
+* gbm - is now my only option for getting a multi-GNSS orbit file.  This is also 
+in sp3 format. It comes from the group at GFZ.  
 
-nav - is using the GPS nav message, so your Rinex file should be GPS only
+If they don't already exist on your system, the rinex2snr.py code attempts 
+to pick them up for you. They are then stored in the ORBITS directory.
 
-sp3 - is using the IGS sp3 file, so again, your Rinex file should be GPS only.
+Unless the RINEX data are sitting there in your work directory, the code attempts to 
+pick up your RINEX file at UNAVCO. I think there is a high-rate option, but I have 
+not extensively tested it.  Code to download files from SOPAC is also in gps.py
+but is not currently called. Brendan Crowell gave me a rinexdownloader.py script - and you
+are welcome to give it a look see if you want to write your own.
+The snr files are stored in REFL_CODE/YYYY/results
 
-gbm - is now my only option for getting a GNSS orbit file.  It is also in sp3 format. It comes from
-the group at GFZ.  
-
-The code attempts to pick up these orbits for you. They are stored in the ORBITS directory
-
-Unless the rinex data are sitting there in your work directory, the code attempts to 
-pick up your rinex file at UNAVCO. Currently it only uses the default low-rate files.
-Eventually I will add the high-rate directories. Code to download files from SOPAC is also in gps.py
-but is not currently called. The snr files are stored in REFL_CODE/YYYY/results
-
-One more thing- it is very comon for GPS archives to store files in the Hatanaka format.
+One more thing- it is very comon for GPS archives to store files in the Hatanaka (compressed) format.
 So currently it tries to get the regular Rinex file but if that fails, it tries to download
-Hatanaka format. You need the Hatanaka decompression code to translate this.  Look for 
-CRX2RNX in gps.py to see where my code assumes that it lives.  
-
+Hatanaka format. You need the Hatanaka decompression code (see above) to translate this.  
 
 # Inputs for reflector code
 
