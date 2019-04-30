@@ -20,6 +20,7 @@
 # 19mar02, added multiple days
 # 19mar13, snow (one day only) vs water levels (midnite crossing corrected by using
 # the day before)
+# 19apr20, changed location of compressed rinex executable
 # 
 """
 import sys
@@ -97,6 +98,8 @@ else:
 # Setting some defaults
 # use the refraction correction
 RefractionCorrection = True
+# RefractionCorrection = False
+
 
 # You should not use the peak periodogram value unless it is significant. Using a 
 # peak to noise value is one way of defining that significance (not the only way).

@@ -281,7 +281,7 @@ def xyz2llhd(xyz):
     """
     inputs are station vector xyz (x,y,z in meters), tolerance for convergence is hardwired
     outputs are lat, lon in degrees and wgs84 ellipsoidal height in meters
-    kristine larson
+    author : kristine larson
     """
     x=xyz[0]
     y=xyz[1]
@@ -479,7 +479,8 @@ def rinex_unavco(station, year, month, day):
     WARNING: only rinex version 2 in this world
     """
     exedir = os.environ['EXE']
-    crnxpath = exedir + '/RNXCMPdir/bin/CRX2RNX '
+    crnxpath = exedir + '/CRX2RNX '
+#    crnxpath = exedir + '/RNXCMPdir/bin/CRX2RNX '
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     rinexfile,rinexfiled = rinex_name(station, year, month, day)
     unavco= 'ftp://data-out.unavco.org'
@@ -488,15 +489,13 @@ def rinex_unavco(station, year, month, day):
     # URL path for the o file and the d file
     url1 = unavco+ '/pub/rinex/obs/' + cyyyy + '/' + cdoy + '/' + filename1
     url2 = unavco+ '/pub/rinex/obs/' + cyyyy + '/' + cdoy + '/' + filename2
-    print(url1)
-    print(url2)
     try:
-        print('try to get o file')
+        print('try to get observation file')
         wget.download(url1,filename1)
         cmd = 'uncompress ' + filename1; os.system(cmd)
         print('found it ')
     except:
-        print('did not find o file')
+        print('did not find observation file, try hatanaka')
         try:
             wget.download(url2,filename2)
             cmd = 'uncompress ' + filename2; os.system(cmd)
@@ -504,7 +503,7 @@ def rinex_unavco(station, year, month, day):
             cmd = crnxpath + rinexfiled; os.system(cmd)
             #remove compressed file
             cmd = 'rm -f ' + rinexfiled; os.system(cmd)
-            print('found d file and converted to o file')
+            print('found d file and converted to observation file')
         except:
             print('failed to find either RINEX file at unavco')
 
@@ -517,7 +516,8 @@ def rinex_sopac(station, year, month, day):
     hatanaka exe hardwired  for my machine
     """
     exedir = os.environ['EXE']
-    crnxpath = exedir + '/RNXCMPdir/bin/CRX2RNX '
+    crnxpath = exedir + '/CRX2RNX '
+#    crnxpath = exedir + '/RNXCMPdir/bin/CRX2RNX '
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     sopac = 'ftp://garner.ucsd.edu'
     oname,fname = rinex_name(station, year, month, day) 
@@ -545,6 +545,7 @@ def getnavfile(year, month, day):
     returns the name of the file and its directory
 
     """
+    foundit = False
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     sopac = 'ftp://garner.ucsd.edu'
     navname,navdir = nav_name(year, month, day)
@@ -553,6 +554,7 @@ def getnavfile(year, month, day):
     url = sopac + path1 + file1
     if (os.path.isfile(navdir + '/' + navname ) == True):
         print('nav file already exists')
+        foundit = True
     else:
         print('pick up the nav file ')
         try:
@@ -560,12 +562,13 @@ def getnavfile(year, month, day):
             cmd = 'uncompress ' + file1
             os.system(cmd)
             store_orbitfile(navname,year,'nav') 
+            foundit = True
         except:
             print('some kind of problem with nav download',navname)
             cmd = 'rm -f ' + file1
             os.system(cmd)
 
-    return navname,navdir
+    return navname,navdir,foundit
 
 def getsp3file(year,month,day):
     """
@@ -615,8 +618,10 @@ def getsp3file_flex(year,month,day,pCtr):
     gps_week = name[3:7]
     file1 = pCtr + name[3:8] + '.sp3.Z'
     name = pCtr + name[3:8] + '.sp3'
+    foundit = False
     if (os.path.isfile(fdir + '/' + name ) == True):
         print('sp3file already exists')
+        foundit = True
     else:
         filename1 = '/gnss/products/' + str(gps_week) + '/' + file1
         cddis = 'ftp://cddis.nasa.gov'
@@ -627,12 +632,13 @@ def getsp3file_flex(year,month,day,pCtr):
             cmd = 'uncompress ' + file1
             os.system(cmd)
             store_orbitfile(name,year,'sp3') 
+            foundit = True
         except:
             print('some kind of problem-remove empty file')
             cmd = 'rm -f ' + file1
             os.system(cmd)
 #   return the name of the file so that if you want to store it
-    return name, fdir
+    return name, fdir, foundit
 
 def getsp3file_mgex(year,month,day,pCtr):
     """
@@ -654,6 +660,7 @@ def getsp3file_mgex(year,month,day,pCtr):
     file2 = 'GFZ0MGXRAP_' + cyyyy + cdoy + '0000_01D_05M_ORB.SP3.gz'
     print(file2)
     name2 = file2[:-3] 
+    foundit = False
 
     # where the files live at CDDIS
     cddis = 'ftp://cddis.nasa.gov'
@@ -664,9 +671,11 @@ def getsp3file_mgex(year,month,day,pCtr):
     if (os.path.isfile(fdir + '/' + name ) == True):
         print('first kind of MGEX sp3file already exists')
         mgex = 1
+        foundit = True
     if (os.path.isfile(fdir + '/' + name2 ) == True):
         print('second kind of MGEX sp3file already exists')
         mgex = 2
+        foundit = True
 # there has to be a better way ... but for now  this works
 # only try to download if neither exists
     if (mgex == 2):
@@ -681,8 +690,9 @@ def getsp3file_mgex(year,month,day,pCtr):
             name = file1[:-2]
         # store the file in its proper place
             store_orbitfile(name,year,'sp3') 
+            foundit = True
         except:
-            print('some kind of problem trying to get first file')
+            print('some kind of problem trying to get first sp3 file')
             cmd = 'rm -f ' + file1
             os.system(cmd)
             name = file2[:-3]
@@ -695,10 +705,11 @@ def getsp3file_mgex(year,month,day,pCtr):
                 name = file2[:-3]
             # store the file in its proper place
                 store_orbitfile(name,year,'sp3') 
+                foundit = True
             except:
-                print('some kind of problem downloading 2nd kind of MGEX file')
+                print('some kind of problem downloading 2nd kind of MGEX sp3 file')
 
-    return name, fdir
+    return name, fdir, foundit
 
 def codclock(year,month,day):
     """
@@ -1121,7 +1132,7 @@ def read_files(year,month,day,station):
         print('nav exists')
     else:
         print('get nav')
-        navname,navdir = getnavfile(year,month,day)
+        navname,navdir,foundit = getnavfile(year,month,day)
     print('read in the broadcast ephemeris')
     ephemdata = myreadnav(navfilename)
     if os.path.isfile(cname):
@@ -2233,58 +2244,60 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate):
         month = d.month; day = d.day
         if orbtype == 'mgex':
             # this means you are using multi-GNSS and GFZ
-            f,orbdir=getsp3file_mgex(year,month,day,'gbm')
+            f,orbdir,foundit=getsp3file_mgex(year,month,day,'gbm')
             snrexe = exedir  + '/gnssSNR.e' 
         if orbtype == 'sp3':
             print('uses default IGS orbits, so only GPS')
-            f,orbdir=getsp3file_flex(year,month,day,'igs')
+            f,orbdir,foundit=getsp3file_flex(year,month,day,'igs')
             snrexe = exedir + '/gnssSNR.e' 
         if orbtype == 'igr':
             print('using rapid orbits, so only GPS')
-            f,orbdir=getsp3file_flex(year,month,day,'igr')
+            f,orbdir,foundit=getsp3file_flex(year,month,day,'igr')
             snrexe = exedir + '/gnssSNR.e' 
         if orbtype == 'gbm':
             # this uses GFZ multi-GNSS 
-            f,orbdir=getsp3file_mgex(year,month,day,'gbm')
+            f,orbdir,foundit=getsp3file_mgex(year,month,day,'gbm')
             snrexe = exedir + '/gnssSNR.e' 
         if orbtype == 'nav':
             print('using nav message')
-            f,orbdir=getnavfile(year, month, day) 
+            f,orbdir,foundit=getnavfile(year, month, day) 
             snrexe = exedir  + '/gpsSNR.e' 
-    # NOW MAKE SURE YOU HAVE THE RINEX FILE
-        rinexfile,rinexfiled = rinex_name(station, year, month, day)
-        print(rinexfile)
-        if (os.path.isfile(rinexfile) == False):
-            print('go get the rinex file')
+        # if you have the orbit file, you can get the rinex file
+        if foundit:
+            # now you can look for a rinex file
+            rinexfile,rinexfiled = rinex_name(station, year, month, day)
+            print(rinexfile)
+            if (os.path.isfile(rinexfile) == False):
+                print('go get the rinex file')
             # new version
-            if receiverrate == 'low':
-                print('low rate')
-                rinex_unavco(station, year, month, day) 
-            else:
-                print('high rate')
-                rinex_unavco_highrate(station, year, month, day) 
+                if receiverrate == 'low':
+                    print('seeking low rate at unavco')
+                    rinex_unavco(station, year, month, day) 
+                else:
+                    print('seeking high rate at unavco')
+                    rinex_unavco_highrate(station, year, month, day) 
 
     # check to see if you found the rinex file
     # should check that the orbit really exists too
-        oexist = os.path.isfile(orbdir + '/' + f) == True
-        rexist = os.path.isfile(rinexfile) == True
-        if (oexist and rexist):
+            oexist = os.path.isfile(orbdir + '/' + f) == True
+            rexist = os.path.isfile(rinexfile) == True
+            if (oexist and rexist):
             #convert to SNR file
-            snrname = snr_name(station, year,month,day,option)
-            orbfile = orbdir + '/' + f
-            cmd = snrexe + ' ' + rinexfile + ' ' + snrname + ' ' + orbfile + ' ' + str(option)
-            print(cmd); os.system(cmd)
-            print('remove the rinexfile')
-            os.system('rm -f ' + rinexfile)
+                snrname = snr_name(station, year,month,day,option)
+                orbfile = orbdir + '/' + f
+                cmd = snrexe + ' ' + rinexfile + ' ' + snrname + ' ' + orbfile + ' ' + str(option)
+                print(cmd); os.system(cmd)
+                print('remove the rinexfile')
+                os.system('rm -f ' + rinexfile)
 #       move the snr file to its proper place
-            if (os.stat(snrname).st_size == 0):
-                print('you created a zero file size which could mean a lot of things')
-                print('bad exe, bad snr option, do not really have the orbit file')
-                os.system('rm -f ' + snrname)
+                if (os.stat(snrname).st_size == 0):
+                    print('you created a zero file size which could mean a lot of things')
+                    print('bad exe, bad snr option, do not really have the orbit file')
+                    os.system('rm -f ' + snrname)
+                else:
+                    store_snrfile(snrname,year,station) 
             else:
-                store_snrfile(snrname,year,station) 
-        else:
-            print('rinex file or orbit file does not exist, so there is nothing to convert')
+                print('rinex file or orbit file does not exist, so there is nothing to convert')
 
 def store_orbitfile(filename,year,orbtype):
     """
@@ -2408,7 +2421,8 @@ def rinex_unavco_highrate(station, year, month, day):
     WARNING: only rinex version 2 in this world
     """
     exedir = os.environ['EXE']
-    crnxpath = exedir + '/RNXCMPdir/bin/CRX2RNX '
+    crnxpath = exedir + '/CRX2RNX '
+#    crnxpath = exedir + '/RNXCMPdir/bin/CRX2RNX '
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     rinexfile,rinexfiled = rinex_name(station, year, month, day)
     unavco= 'ftp://data-out.unavco.org'
