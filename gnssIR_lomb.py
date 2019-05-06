@@ -58,16 +58,18 @@ wantCompression = False
 allowMidniteCross = False
 
 # eventually we will use something else but this restricts arcs to one hour
-# units of minutes
+# units are in minutes
 delTmax = 60
 #
 # user inputs the observation file information
 parser = argparse.ArgumentParser()
-parser.add_argument("station", help="station name", type=str)
+# required arguments
+parser.add_argument("station", help="station", type=str)
 parser.add_argument("year", help="year", type=int)
 parser.add_argument("doy", help="doy", type=int)
 parser.add_argument("snrEnd", help="snrEnding", type=int)
 parser.add_argument("plt", help="plot", type=int)
+# these are the addons (not required)
 parser.add_argument("-fr", "--onefreq", default=None, type=int, help="try -fr 1 for GPS L1 only, or -fr 101 for Glonass L1")
 parser.add_argument("-amp", "--ampl", default=None, type=float, help="try -amp 10 for minimum spectral amplitude")
 parser.add_argument("-sat", "--sat", default=None, type=int, help="allow individual satellite")
@@ -157,7 +159,6 @@ print("Pressure {0:8.2f} Temperature {1:6.1f} \n".format(p,T))
 twoDays = False
 
 doy_list = list(range(doy, doy_end+1))
-
 # for each day in the doy list
 for doy in doy_list:
 # find the observation file name and try to read it
