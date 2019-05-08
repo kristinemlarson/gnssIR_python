@@ -7,6 +7,8 @@ import os
 import wget
 import numpy as np
 import matplotlib.pyplot as plt
+# This is only used in one place - and is not part of the operational
+# code. You can remove the function if you want
 from ftplib import FTP
 import datetime
 from scipy.interpolate import interp1d

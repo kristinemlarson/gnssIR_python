@@ -59,7 +59,7 @@ allowMidniteCross = False
 
 # eventually we will use something else but this restricts arcs to one hour
 # units are in minutes
-delTmax = 60
+delTmax = 70
 #
 # user inputs the observation file information
 parser = argparse.ArgumentParser()
@@ -75,6 +75,8 @@ parser.add_argument("-amp", "--ampl", default=None, type=float, help="try -amp 1
 parser.add_argument("-sat", "--sat", default=None, type=int, help="allow individual satellite")
 parser.add_argument("-pltname", "--pltname", default='None', type=str, help="plot name")
 parser.add_argument("-doy_end", "--doy_end", default=None, type=int, help="doy end")
+parser.add_argument("-azim1", "--azim1", default=None, type=int, help="lower limit azimuth")
+parser.add_argument("-azim2", "--azim2", default=None, type=int, help="upper limit azimuth")
 args = parser.parse_args()
 #
 # rename the user inputs as variables
@@ -87,6 +89,9 @@ snr_type = args.snrEnd
 plt_screen = args.plt
 pltname = args.pltname
 #
+
+# in case you want to analyze multiple days of data
+
 if args.doy_end == None:
     doy_end = doy
 else:
@@ -131,9 +136,19 @@ minH = Hlimits[0]; maxH = Hlimits[1]
 # elevation angle limit values for the Lomb Scargle
 e1 = elval[0]; e2 = elval[1]
 
-# number of azimuth regions
+# number of azimuth regions from the standard data input file (came out of read_inputs)
 naz = int(len(azval)/2)
 print('number of azimuth pairs:',naz)
+# in case you want to look at a restricted azimuth range from the command line 
+if args.azim1 == None:
+    azim1 = 0
+else:
+    azim1 = args.azim1
+
+if args.azim2 == None:
+    azim2 = 360
+else:
+    azim2 = args.azim2
 
 # this is for when you want to run the code with just a single frequency, i.e. input at the console
 # rather than using the input restrictions
@@ -222,13 +237,26 @@ for doy in doy_list:
 #                   I  will write out the Edot2 value, as Edot is not provided in all snr files
 #
 #  this is the main QC statement
+                        iAzim = int(avgAzim)
                         if (delT < delTmax) & (eminObs < (e1 + ediff)) & (emaxObs > (e2 - ediff)) & (maxAmp > reqAmp[ct]) & (maxAmp/Noise > PkNoise):
                             fout.write(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} \
 {8:6.2f} {9:4.0f} {10:3.0f} {11:2.0f} {12:8.5f} {13:6.2f} {14:7.2f} {15:12.6f} \n".format(year,doy,maxF,satNu, UTCtime,\
                        avgAzim,maxAmp,eminObs,emaxObs,Nv, f,riseSet, Edot2, maxAmp/Noise, delT, MJD))
+                            print('SUCCESS {0:.1f}'.format( iAzim))
                             gj +=1
                             g.update_plot(plt_screen,x,y,px,pz)
                         else:
+                            print('FAILED QC {0:.1f} '.format( iAzim))
+                            if delT > delTmax:
+                                print('       delT {0:.1f} '.format(delT ))
+                            if eminObs  > (e1 + ediff):
+                                print('       emin {0:.1f} '.format(eminObs ))
+                            if emaxObs  < (e2 - ediff):
+                                print('       emax {0:.1f} '.format(emaxObs ))
+                            if maxAmp < reqAmp[ct]:
+                                print('       Ampl {0:.1f} '.format(maxAmp  ))
+                            if maxAmp/Noise < PkNoise:
+                                print('       PkN  {0:.1f} '.format(maxAmp/Noise ))
                             frej.write(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} \
 {8:6.2f} {9:4.0f} {10:3.0f} {11:2.0f} {12:8.5f} {13:6.2f} {14:7.2f} {15:12.6f} \n".format(year,doy,maxF,satNu, UTCtime,\
                        avgAzim,maxAmp,eminObs,emaxObs,Nv, f,riseSet, Edot2,maxAmp/Noise,delT, MJD))
