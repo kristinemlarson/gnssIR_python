@@ -545,6 +545,7 @@ def getnavfile(year, month, day):
     given year, month, day it picks up a GPS nav file from SOPAC
     and stores it
     returns the name of the file and its directory
+    19may7 now checks for compressed and uncompressed nav file
 
     """
     foundit = False
@@ -553,22 +554,30 @@ def getnavfile(year, month, day):
     navname,navdir = nav_name(year, month, day)
     file1 = navname + '.Z'
     path1 = '/pub/rinex/' + cyyyy + '/' + cdoy + '/'
+    file2 = navname  
+    path2 = '/pub/rinex/' + cyyyy + '/' + cdoy + '/'
     url = sopac + path1 + file1
+    url2 = sopac + path2 + file2
     if (os.path.isfile(navdir + '/' + navname ) == True):
         print('nav file already exists')
         foundit = True
     else:
         print('pick up the nav file ')
         try:
-            wget.download(url,file1)
-            cmd = 'uncompress ' + file1
-            os.system(cmd)
+            wget.download(url2,file2)
             store_orbitfile(navname,year,'nav') 
             foundit = True
         except:
-            print('some kind of problem with nav download',navname)
-            cmd = 'rm -f ' + file1
-            os.system(cmd)
+            print('pick up the compressed nav file ')
+            try:
+                wget.download(url,file1)
+                cmd = 'uncompress ' + file1; os.system(cmd)
+                store_orbitfile(navname,year,'nav') 
+                foundit = True
+            except:
+                print('some kind of problem with nav download',navname)
+                cmd = 'rm -f ' + file1
+                os.system(cmd)
 
     return navname,navdir,foundit
 
