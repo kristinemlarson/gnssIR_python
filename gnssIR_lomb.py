@@ -7,10 +7,10 @@
 # Kristine M. Larson
 #
 # This is not currently optimized for tide gauges - the RH dot correction 
-# and refraction correction still needs to be added.
-# 
+# is not implemented.
+
 # Please note that you need to set a REFL_CODE environment variable to
-# define the location of your input files
+# define the location of your input (and output) files
 #
 # I have set this up so that you can run it in the background (no plots and all
 # frequencies from a list of instructions), or just one frequency 
@@ -242,11 +242,11 @@ for doy in doy_list:
                             fout.write(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} \
 {8:6.2f} {9:4.0f} {10:3.0f} {11:2.0f} {12:8.5f} {13:6.2f} {14:7.2f} {15:12.6f} \n".format(year,doy,maxF,satNu, UTCtime,\
                        avgAzim,maxAmp,eminObs,emaxObs,Nv, f,riseSet, Edot2, maxAmp/Noise, delT, MJD))
-                            print('SUCCESS {0:.1f}'.format( iAzim))
+                            print('SUCCESS Azimuth {0:.1f}'.format( iAzim))
                             gj +=1
                             g.update_plot(plt_screen,x,y,px,pz)
                         else:
-                            print('FAILED QC {0:.1f} '.format( iAzim))
+                            print('FAILED QC for Azimuth {0:.1f} '.format( iAzim))
                             if delT > delTmax:
                                 print('       delT {0:.1f} '.format(delT ))
                             if eminObs  > (e1 + ediff):

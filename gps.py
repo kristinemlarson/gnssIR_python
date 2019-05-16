@@ -2045,12 +2045,19 @@ def open_outputfile(station,year,doy):
     author kristine m. Larson
     if the results directory does not exist, it tries to make it. i think
     """
+    if os.path.isdir('logs'):
+        print('log directory exists')
+    else:
+        cmd=  'mkdir logs'; os.system(cmd)
     fout = 0
 #   primary reflector height output goes to this directory
     xdir = str(os.environ['REFL_CODE'])
     cdoy = '{:03d}'.format(doy)
 #   extra file with rejected arcs
-    frej=open('reject.txt','w+')
+    w = 'logs/reject.' + str(year) + '_' + station + '.txt'
+    print('open output file for rejected arcs',w)
+    frej=open(w,'w+')
+#    frej=open('reject.txt','w+')
 #   put a header in the file
     frej.write("%year, doy, maxF,sat,UTCtime, Azim, Amp,  eminO, emaxO,  Nv,freq,rise,Edot, PkNoise \n")
     filedir = xdir + '/' + str(year)  + '/results/' + station 
@@ -2242,6 +2249,7 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate):
     if the later, then gnssSNR
     this assumes you follow my definitions for where things go,
     i.e. REFL_CODE and ORBITS
+    author: kristine m. larson
     """
     # define directory for the conversion executables
     exedir = os.environ['EXE']
@@ -2462,4 +2470,23 @@ def rinex_unavco_highrate(station, year, month, day):
         except:
             print('failed to find either RINEX file at unavco')
 
+def big_Disk_in_DC(station, year, month, day):
+    """
+    author: kristine larson
+    picks up a RINEX file from CORS.  
+    """
+    exedir = os.environ['EXE']
+    crnxpath = exedir + '/CRX2RNX '
+    doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
+    rinexfile,rinexfiled = rinex_name(station, year, month, day)
+    comp_rinexfiled = rinexfiled + '.Z'
+    mainadd = 'ftp://www.ngs.noaa.gov/cors/rinex/'
 
+    url = mainadd + str(year) + '/' + cdoy+ '/' + station + '/' + comp_rinexfiled 
+    print(url)
+    wget.download(url, out=comp_rinexfiled)
+    cmd = 'uncompress ' + comp_rinexfiled; os.system(cmd)
+    # change from d to o file
+    cmd = crnxpath + rinexfiled; os.system(cmd)
+    # rm everything except the o file
+    cmd = 'rm -f ' + rinexfiled ; os.system(cmd)
