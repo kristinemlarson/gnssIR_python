@@ -21,6 +21,7 @@ def read_snr_multiday(obsfile,obsfile2,twoDays):
 #
     allGood1 = 0; allGood2 = 0
     # set these for now.  should be passed 
+    # not being used ??? why are they here
     e1 = 5
     e2 = 15
     try:
@@ -32,7 +33,7 @@ def read_snr_multiday(obsfile,obsfile2,twoDays):
             cmd = 'unxz ' + compressedObs; os.system(cmd)
         sat, ele, azi, t, edot, s1, s2, s5, s6, s7, s8, snrE = read_one_snr(obsfile,1)
         allGood1 = 1
-        print(ele)
+#        print(ele)
 #        g.print_file_stats(ele,sat,s1,s2,s5,s6,s7,s8,e1,e2)
     except:
         print('failed to read the first file')

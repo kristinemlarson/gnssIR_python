@@ -10,6 +10,11 @@ python scripts: gnssIR_lomb.py and gps.py.
 The latter is a bunch of helper scripts I have written - not all are for 
 reflector height (RH) calculation.
 
+Nothing unusual: sys,os, wget, numpy, matplotlib, datetime, scipy, math, re, argparse, warnings
+
+I use a library called pickle to store the refraction model data. It is only read
+once per site.
+
 The RH estimation depends on satellite elevation angle, not time. This can
 cause complications for tides where large RH changes occur and time matters.
 Data arcs should not cross midnite because you can end up using data that are 
@@ -20,7 +25,7 @@ Again, this effect can be ignored for snow/ice reflections.
 
 I recently added another code (rinex2snr.py) that allows the user 
 to make the input files for the gnssIR_lomb.py code. I call these the SNR files. These are 
-created from RINEX files.  RINEX is the standard format for GPS/GNSS files.
+created from RINEX files. RINEX is the standard format for GPS/GNSS files.
 
 A simple refraction error correction has been added.
 
@@ -119,7 +124,7 @@ So currently it tries to get the regular Rinex file but if that fails, it tries 
 Hatanaka format. You need the Hatanaka decompression code (see above) to translate this.  
 You need to put it in the EXE area.
 
-# Installing and running the RH (gnssIR_lomb.py) code
+# Running the RH (gnssIR_lomb.py) code
 
 
 * The expected SNR files must be translated from RINEX before you run this code. 
@@ -147,7 +152,7 @@ yy is two character year
 nn is a specific kind of snr file (99, 77, and 50 are the most commonly used)
 ```
 
-* Use inputs for the RH  
+* User inputs for the lomb scargle periodogram calculation  
 
 This should be stored in a file called REFL_CODE/input/aaaa 
 See sample file called input_smm3_example. 
@@ -165,7 +170,8 @@ eminO and emaxO are the observed min and max elevation angles in the track
 Nv: number of observations used in the Lomb Scargle Periodogram (LSP)
 ```
 
-freq is the frequency used:
+freq is the frequency used. There is no industry standard here - so 
+I am defining them as follows:
 ```sh
 1 GPS L1
 2 GPS L2
@@ -215,5 +221,5 @@ which would mean only show L2C frequency (which I call 20) and use 15 as the amp
 As an example, I'm providing an snr98 file for smm3 on doy 253 and year 2018. Only one arc
 of satellite 1 is stored here, so as to reduce the size of the file.
 
-
-There is also the ability to look at a single satellite. Type gnssIR_lomb.py to see options.
+There is also the ability to look at the results for a single satellite. 
+Type gnssIR_lomb.py to see options.

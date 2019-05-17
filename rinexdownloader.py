@@ -25,25 +25,27 @@ def getbcorbit(year, doy):
     """
 #
     xdir = str(os.environ['ORBITS'])
-    xdir = xdir + '/' year 
-    if not os.path.exists('xdir'): #if year folder doesn't exist, make it
-        os.makedirs('xdir')
-    xdir = xdir + '/nav' 
-    if not os.path.exists('xdir'): #if nav subfolder doesn't exist, make it
-        os.makedirs('xdir')
-        #
-    fname = xdir + 'brdc' + doy + '0.' +  year[-2:] + 'n.Z'
-    fname2 = xdir + /'brdc' + doy + '0.' +  year[-2:] + 'n'
+    ydir = xdir + '/' + year 
+    if not os.path.isdir(ydir): #if year folder doesn't exist, make it
+        os.makedirs(ydir)
+    zdir = ydir + '/nav' 
+    if not os.path.isdir(zdir): #if nav subfolder doesn't exist, make it
+        os.makedirs(zdir)
+    xdir = zdir
+    # compressed name
+    fname = xdir + '/brdc' + doy + '0.' +  year[-2:] + 'n.Z'
+    fname2 = xdir + '/brdc' + doy + '0.' +  year[-2:] + 'n'
     if (os.path.isfile(fname2) == True):
         print ('Navigation file ' + fname2 + ' already exists')
     else:
         url = 'ftp://cddis.nasa.gov/gnss/data/daily/' + year + '/' + doy + '/' + year[-2:] + 'n/brdc' + doy + '0.' +  year[-2:] + 'n.Z'
-        wget.download(url, out='nav/')
+        wget.download(url,fname)
         os.system('gunzip' + ' ' + fname)
 
+#
 #This subroutine will download RINEX files given the station, year and day of year. 
 def getrinex(site, year, doy):
-    crxpath = '/Users/kristine/bin/'
+    crxpath = '/Users/kristine/bin/RNXCMPdir/bin/'
     if not os.path.exists('rinex'): #if rinex folder doesn't exist, make it
         os.makedirs('rinex')
     fnameZ = 'rinex/' + site + doy + '0.' +  year[-2:] + 'd.Z'
@@ -58,7 +60,7 @@ def getrinex(site, year, doy):
             print ('Attempting to download ' + fnamed + ' from UNAVCO')
             wget.download(url, out='rinex/')
             os.system('gunzip' + ' ' + fnameZ)
-            os.system( crxpath + 'crx2rnx' + ' ' + fnamed)
+            os.system( crxpath + 'CRX2RNX' + ' ' + fnamed)
             os.remove(fnamed)
         except Exception:
             print ('File not at UNAVCO, checking CWU')
@@ -76,7 +78,7 @@ def getrinex(site, year, doy):
                     print ('Attempting to download ' + fnamed + ' from CDDIS')
                     wget.download(url, out='rinex/')
                     os.system('gunzip' + ' ' + fnameZ)
-                    os.system('./crx2rnx' + ' ' + fnamed)
+                    os.system(crxpath + 'CRX2RNX' + ' ' + fnamed)
                     os.remove(fnamed)
                 except Exception:
                     print ('File not at CDDIS, checking SOPAC')
@@ -85,13 +87,20 @@ def getrinex(site, year, doy):
                         print ('Attempting to download ' + fnamed + ' from SOPAC')
                         wget.download(url, out='rinex/')
                         os.system('gunzip' + ' ' + fnameZ)
-                        os.system('./crx2rnx' + ' ' + fnamed)
+                        os.system(crxpath + 'CRX2RNX' + ' ' + fnamed)
                         os.remove(fnamed)
                     except Exception:
                         print ('File not found at SOPAC, moving onto next station')
 
 #This subroutine will download highrate (1-Hz) RINEX files
 def getrinexhr(site, year, doy):
+    """
+    code from brendan - various archives to pick up high rate data
+    all inputs are strings, not integrs
+    you need to define the path for the compressed rinex executable on your machine
+    files are stored in a subdirectory called rinex_hr
+    """
+    crxpath = '/Users/kristine/bin/RNXCMPdir/bin/'
     if not os.path.exists('rinex_hr'): #if rinex highrate folder doesn't exist, make it
         os.makedirs('rinex_hr')
     fnameZ = 'rinex_hr/' + site + doy + '0.' +  year[-2:] + 'd.Z'
@@ -109,7 +118,7 @@ def getrinexhr(site, year, doy):
             print ('Attempting to download ' + fnamed + ' from SOPAC')
             wget.download(url, out='rinex_hr/')
             os.system('gunzip' + ' ' + fnameZ)
-            os.system('./crx2rnx' + ' ' + fnamed)
+            os.system(crxpath + 'CRX2RNX' + ' ' + fnamed)
             os.remove(fnamed)
         except Exception:
             print ('File not at SOPAC, checking UNAVCO')
@@ -118,7 +127,7 @@ def getrinexhr(site, year, doy):
                 print ('Attempting to download ' + fnamed + ' from UNAVCO')
                 wget.download(url, out='rinex_hr/')
                 os.system('gunzip' + ' ' + fnameZ)
-                os.system('./crx2rnx' + ' ' + fnamed)
+                os.system(crxpath + 'CRX2RNX' + ' ' + fnamed)
                 os.remove(fnamed)
             except Exception:
                 print ('File not at UNAVCO checking CWU')
@@ -127,7 +136,7 @@ def getrinexhr(site, year, doy):
                     print ('Attempting to download ' + fnamed + ' from CWU')
                     wget.download(url, out='rinex_hr/')
                     os.system('bzip2 -d' + ' ' + fnamebz2)
-                    os.system('./crx2rnx' + ' ' + fnamecwud)
+                    os.system(crxpath + 'CRX2RNX' + ' ' + fnamecwud)
                     os.rename(fnamecwuo, fnameo)
                     os.remove(fnamecwud)
                 except Exception:
@@ -145,16 +154,3 @@ def gettseries(site):
     else:
         url = 'http://geodesy.unr.edu/gps_timeseries/txyz/IGS08/' + siteid + '.IGS08.txyz2'
         wget.download(url, out='tseries/')
-
-
-
-
-#Examples
-##getrinexhr('lwck','2018','002')
-##getrinex('p494','2018','002')
-# get broadcast orbits
-##getbcorbit('2018','002')
-##gettseries('p494')
-##    
-
-

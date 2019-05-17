@@ -105,7 +105,11 @@ else:
 # Setting some defaults
 # use the refraction correction
 RefractionCorrection = True
-# RefractionCorrection = False
+#RefractionCorrection = False
+if RefractionCorrection:
+    irefr = 1
+else:
+    irefr = 0
 
 
 # You should not use the peak periodogram value unless it is significant. Using a 
@@ -239,16 +243,14 @@ for doy in doy_list:
 #  this is the main QC statement
                         iAzim = int(avgAzim)
                         if (delT < delTmax) & (eminObs < (e1 + ediff)) & (emaxObs > (e2 - ediff)) & (maxAmp > reqAmp[ct]) & (maxAmp/Noise > PkNoise):
-                            fout.write(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} \
-{8:6.2f} {9:4.0f} {10:3.0f} {11:2.0f} {12:8.5f} {13:6.2f} {14:7.2f} {15:12.6f} \n".format(year,doy,maxF,satNu, UTCtime,\
-                       avgAzim,maxAmp,eminObs,emaxObs,Nv, f,riseSet, Edot2, maxAmp/Noise, delT, MJD))
+                            fout.write(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} {8:6.2f} {9:4.0f} {10:3.0f} {11:2.0f} {12:8.5f} {13:6.2f} {14:7.2f} {15:12.6f} {16:1.0f} \n".format(year,doy,maxF,satNu, UTCtime, avgAzim,maxAmp,eminObs,emaxObs,Nv, f,riseSet, Edot2, maxAmp/Noise, delT, MJD,irefr))
                             print('SUCCESS Azimuth {0:.1f}'.format( iAzim))
                             gj +=1
                             g.update_plot(plt_screen,x,y,px,pz)
                         else:
                             print('FAILED QC for Azimuth {0:.1f} '.format( iAzim))
                             if delT > delTmax:
-                                print('       delT {0:.1f} '.format(delT ))
+                                print('       delT {0:.1f} minutes '.format(delT ))
                             if eminObs  > (e1 + ediff):
                                 print('       emin {0:.1f} '.format(eminObs ))
                             if emaxObs  < (e2 - ediff):

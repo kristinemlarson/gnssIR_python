@@ -2059,16 +2059,16 @@ def open_outputfile(station,year,doy):
     frej=open(w,'w+')
 #    frej=open('reject.txt','w+')
 #   put a header in the file
-    frej.write("%year, doy, maxF,sat,UTCtime, Azim, Amp,  eminO, emaxO,  Nv,freq,rise,Edot, PkNoise \n")
+    frej.write("%year, doy, maxF,sat,UTCtime, Azim, Amp,  eminO, emaxO,  Nv,freq,rise,Edot, PkNoise,  DelT,   MJD \n")
     filedir = xdir + '/' + str(year)  + '/results/' + station 
     filepath1 =  filedir + '/' + cdoy  + '.txt'
     print('output will go to:', filepath1)
     try:
         fout=open(filepath1,'w+')
 #       put a header in the output file
-        fout.write("%year, doy, maxF,sat,UTCtime, Azim, Amp,  eminO, emaxO,  Nv,freq,rise,EdotF, PkNoise  DelT     MJD \n")
-        fout.write("% (1)  (2)   (3) (4)  (5)     (6)   (7)    (8)    (9)   (10) (11) (12) (13)  (14)     (15)     (16)\n")
-        fout.write("%            m         hrs    deg   v/v    deg    deg                  hrs            min      \n")
+        fout.write("%year, doy, maxF,sat,UTCtime, Azim, Amp,  eminO, emaxO,  Nv,freq,rise,EdotF, PkNoise  DelT     MJD   refr-appl\n")
+        fout.write("% (1)  (2)   (3) (4)  (5)     (6)   (7)    (8)    (9)   (10) (11) (12) (13)  (14)     (15)     (16)   (17)\n")
+        fout.write("%            m         hrs    deg   v/v    deg    deg                  hrs            min             1 is yes  \n")
     except:
         print('problem on first attempt - so try making results directory')
         cm = 'mkdir ' + xdir + '/' + str(year) + '/results/'
@@ -2490,3 +2490,101 @@ def big_Disk_in_DC(station, year, month, day):
     cmd = crnxpath + rinexfiled; os.system(cmd)
     # rm everything except the o file
     cmd = 'rm -f ' + rinexfiled ; os.system(cmd)
+
+def ydoy2useful(year, doy):
+    """
+    inputs: year and day of year (doy)
+    returns: useful stuff
+    """
+
+    d = datetime.datetime(year, 1, 1) + datetime.timedelta(days=(doy-1))
+#    print('ymd',d)
+#   not sure you need to do this int step
+    month = int(d.month)
+    day = int(d.day)
+    cdoy = '{:03d}'.format(doy)
+    cyyyy = '{:04d}'.format(year)
+    cyy = '{:02d}'.format(year-2000)
+    cdd = '{:02d}'.format(day)
+    cmonth = char_month_converter(month)
+    YMD = cyy + cmonth + cdd
+    return year, month, day, cyyyy,cdoy, YMD
+
+def rewrite_UNR_highrate(fname,station,year,doy):
+    """
+    takes a filename, reads it, rewrites as all numbers for other uses.
+    no header, but year, month, day, day of year, seconds vertical, east, north
+    the latter three are in meters
+    stores in $REFL_CODE/yyyy/pos/station
+    """
+    xdir = str(os.environ['REFL_CODE'])
+# make sure the various output directories  are there
+    dir1 = xdir + '/' + str(year)
+    if not os.path.isdir(dir1):
+        cmd = 'mkdir ' + dir1; os.system(cmd)
+
+    dir1 = xdir + '/' + str(year) + '/' + 'pos'
+    if not os.path.isdir(dir1):
+        cmd = 'mkdir ' + dir1; os.system(cmd)
+
+    dir1 = xdir + '/' + str(year) + '/' + 'pos' + '/' + station
+
+#   make filename for the output
+    yy,mm,dd, cyyyy, cdoy, YMD = ydoy2useful(year,doy)
+    outputfile = dir1 + '/' + cdoy + '_hr.txt'
+    print(outputfile)
+
+
+
+    if not os.path.isdir(dir1):
+        cmd = 'mkdir ' + dir1; os.system(cmd)
+    try:
+        x=np.genfromtxt(fname, skip_header=1, usecols = (3, 4, 5, 6, 7, 8, 9, 10))
+        N = len(x)
+        print('open outputfile',outputfile)
+        f=open(outputfile,'w+')
+        for i in range(0,N):
+            f.write(" {0:4.0f} {1:2.0f} {2:2.0f} {3:3.0f} {4:7.0f} {5:9.4f} {6:9.4f} {7:9.4f} \n".format(x[i,0], x[i,1],x[i,2],x[i,3], x[i,4],x[i,5],x[i,6],x[i,7]))
+        print('delete the original Blewitt file')
+        cmd = 'rm -f ' + fname; os.system(cmd)
+        f.close()
+    except:
+        print('problem with accessing the file')
+
+def month_converter(month):
+    """
+    brendan gave this to me - give it a 3 char month, returns integer
+    """
+    months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+    return months.index(month) + 1
+
+def char_month_converter(month):
+    """
+    integer month to 3 character month
+    """
+    months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+    return months[(month-1)]
+
+def UNR_highrate(station,year,doy):
+    """
+    input station name and it picks up the 5 minute time series from UNR website
+    returns name of the file and an iostat
+
+    """
+    yy,mm,dd, cyyyy, cdoy, YMD = ydoy2useful(year,doy)
+    stationUP = station.upper()
+    dirdir = 'ftp://gneiss.nbmg.unr.edu/rapids_5min/kenv/' + cyyyy + '/' + cdoy + '/'
+    filename = YMD + station.upper() + '_fix.kenv'
+    url = dirdir + filename
+    if (os.path.isfile(filename) == True):
+        print('file already exists')
+        goodDownload = True
+    else:
+        try:
+            wget.download(url,filename)
+            goodDownload = True
+        except:
+            print(url)
+            print('could not get the highrate file from UNR')
+            goodDownload = False
+    return filename, goodDownload
