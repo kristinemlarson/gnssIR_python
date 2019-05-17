@@ -2241,7 +2241,7 @@ def open_plot(plt_screen):
     if (plt_screen == 1):
         plt.figure()
 
-def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate):
+def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
     """
     inputs: year and day of year (integers) and station name
     option is for the snr creation
@@ -2250,6 +2250,7 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate):
     this assumes you follow my definitions for where things go,
     i.e. REFL_CODE and ORBITS
     author: kristine m. larson
+    19may20, added decimation
     """
     # define directory for the conversion executables
     exedir = os.environ['EXE']
@@ -2300,6 +2301,15 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate):
     # should check that the orbit really exists too
             oexist = os.path.isfile(orbdir + '/' + f) == True
             rexist = os.path.isfile(rinexfile) == True
+            if (rexist and dec_rate > 0):
+                try:
+                    print('decimate using teqc ', dec_rate, ' seconds')
+                    cmd = exedir + '/teqc -O.dec ' + str(dec_rate) + ' ' + rinexfile + '> ' + rinexfile + '.tmp'
+                    os.system(cmd);
+                    cmd = 'mv -f ' + rinexfile + '.tmp ' + rinexfile 
+                    os.system(cmd);
+                except:
+                    print('decimation failed')
             if (oexist and rexist):
             #convert to SNR file
                 snrname = snr_name(station, year,month,day,option)

@@ -32,6 +32,7 @@ parser.add_argument("doy2", help="end day of year", type=int)
 parser.add_argument("snrEnd", help="snr ending", type=str)
 parser.add_argument("orbType", help="orbit type, nav or sp3", type=str)
 parser.add_argument("-rate", default=None, type=int, help="sampling rate(not req)")
+parser.add_argument("-dec", default=0, type=int, help="decimate (seconds) requires teqc be installed")
 args = parser.parse_args()
 #
 # rename the user inputs as variables
@@ -46,11 +47,12 @@ if args.rate == None:
     rate = 'low'
 else:
     rate = 'high'
-
+# decimation rate
+dec_rate = args.dec
 #
 
 doy_list = list(range(doy1, doy2+1))
 
 # for each day in the doy list
 for doy in doy_list:
-    g.quick_rinex_snr(year, doy, station, snrt, orbtype,rate)
+    g.quick_rinex_snr(year, doy, station, snrt, orbtype,rate, dec_rate)
