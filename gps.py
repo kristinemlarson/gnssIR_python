@@ -13,7 +13,6 @@ from ftplib import FTP
 import datetime
 from scipy.interpolate import interp1d
 import pickle
-# don't think it is being used
 import math
 # do not know what this is
 import re
@@ -2598,3 +2597,124 @@ def UNR_highrate(station,year,doy):
             print('could not get the highrate file from UNR')
             goodDownload = False
     return filename, goodDownload
+
+def mjd_to_date(jd):
+    """
+# KL converted from this reference
+# https://gist.github.com/jiffyclub/1294443
+    Converts Modified Julian Day to y,m,d
+    
+    Algorithm from 'Practical Astronomy with your Calculator or Spreadsheet', 
+        4th ed., Duffet-Smith and Zwart, 2011.
+    
+    Parameters
+    ----------
+    jd : float
+        Julian Day
+        
+    Returns
+    -------
+    year : int
+        Year as integer. Years preceding 1 A.D. should be 0 or negative.
+        The year before 1 A.D. is 0, 10 B.C. is year -9.
+        
+    month : int
+        Month as integer, Jan = 1, Feb. = 2, etc.
+    
+    day : float
+        Day, may contain fractional part.
+        
+    
+    """
+   # first step is to change MJD to jd, since original code expected it 
+    jd = jd + 2400000.5
+    # start of the original code
+    jd = jd + 0.5
+    
+    F, I = math.modf(jd)
+    I = int(I)
+    
+    A = math.trunc((I - 1867216.25)/36524.25)
+    
+    if I > 2299160:
+        B = I + 1 + A - math.trunc(A / 4.)
+    else:
+        B = I
+        
+    C = B + 1524
+    
+    D = math.trunc((C - 122.1) / 365.25)
+    
+    E = math.trunc(365.25 * D)
+    
+    G = math.trunc((C - E) / 30.6001)
+    
+    day = C - E + F - math.trunc(30.6001 * G)
+    
+    if G < 13.5:
+        month = G - 1
+    else:
+        month = G - 13
+        
+    if month > 2.5:
+        year = D - 4716
+    else:
+        year = D - 4715
+        
+    day = int(day)
+    return year, month, day
+
+def getseries(site):
+    """
+    originally from brendan crowell.
+    picks up two UNR time series - stores in subdirectory called tseries 
+    input is station name (four character, lower case)
+    """
+    # i changed this to download ENV instead of XYZ (or both?)
+    #if tseries folder doesn't exist, make it
+    if not os.path.exists('tseries'): 
+        os.makedirs('tseries')
+    # change station to uppercase
+    siteid = site.upper()
+    # why still ITRF 2008?
+    fname = 'tseries/' + siteid + '.IGS08.tenv3'
+    # NA12 env time series
+    fname2 = 'tseries/' + siteid + '.NA12.tenv3'
+    if (os.path.isfile(fname) == True):
+        print ('Timeseries file ' + fname + ' already exists')
+    else:
+        url = 'http://geodesy.unr.edu/gps_timeseries/tenv3/IGS08/' + siteid + '.IGS08.tenv3'
+        wget.download(url, out='tseries/')
+#
+    if (os.path.isfile(fname2) == True):
+        print ('Timeseries file ' + fname2 + ' already exists')
+    else:
+        url = 'http://geodesy.unr.edu/gps_timeseries/tenv3/NA12/' + siteid + '.NA12.tenv3'
+        wget.download(url, out='tseries/')
+
+def rewrite_tseries(station):
+    """
+    given a station name, look at a blewitt file and write a new file that is less insane to understand
+    """
+    siteid = station.upper()
+    # NA12 env time series
+    fname = 'tseries/' + siteid + '.NA12.tenv3'
+    outputfile = 'tseries/' + station+ '_na12.env'
+    print(fname,outputfile)
+    try:
+        x=np.genfromtxt(fname, skip_header=1, usecols = (3, 7, 8, 9, 10, 11, 12,13))
+        N = len(x)
+        print(N,'open outputfile',outputfile)
+        f=open(outputfile,'w+')
+        for i in range(0,N):
+            mjd = x[i,0]
+            yy,mm,dd = mjd_to_date(mjd) 
+            doy, cdoy, cyyyy, cyy = ymd2doy(yy,mm,dd)
+            east = x[i,1] + x[i,2]
+            north= x[i,3] + x[i,4]
+            # adding in the antenna
+            vert = x[i,5] + x[i,6] +  x[i,7]
+            f.write(" {0:4.0f} {1:2.0f} {2:2.0f} {3:3.0f} {4:13.4f} {5:13.4f} {6:13.4f} \n".format(yy,mm,dd,doy,east,north,vert))
+        f.close()
+    except:
+        print('some problem')
