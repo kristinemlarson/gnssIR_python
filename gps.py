@@ -555,28 +555,19 @@ def getnavfile(year, month, day):
     path1 = '/pub/rinex/' + cyyyy + '/' + cdoy + '/'
     file2 = navname  
     path2 = '/pub/rinex/' + cyyyy + '/' + cdoy + '/'
-    url = sopac + path1 + file1
+    url1 = sopac + path1 + file1
     url2 = sopac + path2 + file2
     if (os.path.isfile(navdir + '/' + navname ) == True):
         print('nav file already exists')
         foundit = True
     else:
-        print('pick up the nav file ')
         try:
-            wget.download(url2,file2)
+            wget.download(url1,file1)
+            cmd = 'uncompress ' + file1; os.system(cmd)
             store_orbitfile(navname,year,'nav') 
             foundit = True
         except:
-            print('pick up the compressed nav file ')
-            try:
-                wget.download(url,file1)
-                cmd = 'uncompress ' + file1; os.system(cmd)
-                store_orbitfile(navname,year,'nav') 
-                foundit = True
-            except:
-                print('some kind of problem with nav download',navname)
-                cmd = 'rm -f ' + file1
-                os.system(cmd)
+            print('give up')
 
     return navname,navdir,foundit
 
@@ -2400,7 +2391,13 @@ def nav_name(year, month, day):
     inputs are year month and day
     returns nav file name and directory
     """
-    doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
+    if (day == 0):
+#        print('using doy instead of month and day')
+        cdoy = '{:03d}'.format(month)
+        cyyyy = str(year)
+        cyy = '{:02d}'.format(year-2000)
+    else:
+        doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     navfilename = 'auto'  + cdoy + '0.' + cyy  +  'n'
     navfiledir = str(os.environ['ORBITS']) + '/' + cyyyy + '/nav'
     return navfilename,navfiledir
@@ -2718,3 +2715,43 @@ def rewrite_tseries(station):
         f.close()
     except:
         print('some problem')
+
+
+def getnavfile_doy(year, doy):
+    """
+    author: kristine larson
+    given year, doy it picks up a GPS nav file from SOPAC
+    and stores it
+    returns the name of the file and its directory
+    19may7 now checks for compressed and uncompressed nav file
+
+    """
+    foundit = False
+    sopac = 'ftp://garner.ucsd.edu'
+    # send it day of year instead of month and day
+    navname,navdir = nav_name(year, doy, 0)
+#    print(navname, navdir)
+    cdoy = '{:03d}'.format(doy)
+    cyyyy = '{:04d}'.format(year)
+
+    file1 = navname + '.Z'
+    path1 = '/pub/rinex/' + cyyyy + '/' + cdoy + '/'
+    file2 = navname
+    path2 = '/pub/rinex/' + cyyyy + '/' + cdoy + '/'
+    url1 = sopac + path1 + file1
+    url2 = sopac + path2 + file2
+    if (os.path.isfile(navdir + '/' + navname ) == True):
+        print('>>>>>>>>>  nav file already exists <<<<<<<<<')
+        foundit = True
+    else:
+        print('try to pick up the compressed nav file ')
+        try:
+            wget.download(url1,file1)
+            cmd = 'uncompress ' + file1
+            os.system(cmd)
+            store_orbitfile(navname,year,'nav')
+            foundit = True
+        except:
+            print('no success, life is short')
+
+    return navname,navdir,foundit
