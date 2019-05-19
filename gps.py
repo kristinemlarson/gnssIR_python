@@ -542,23 +542,26 @@ def getnavfile(year, month, day):
     """
     author: kristine larson
     given year, month, day it picks up a GPS nav file from SOPAC
-    and stores it
-    returns the name of the file and its directory
+    and stores it in the ORBITS directory
+    returns the name of the file,  its directory, and a boolean
     19may7 now checks for compressed and uncompressed nav file
+    19may20 now allows day of year input if day is set to zero
 
     """
     foundit = False
-    doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     sopac = 'ftp://garner.ucsd.edu'
+    if (day == 0):
+        doy = month
+        year, month, day, cyyyy,cdoy, YMD = ydoy2useful(year,doy)
+    else:
+        doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     navname,navdir = nav_name(year, month, day)
+    # only look for the compressed version
     file1 = navname + '.Z'
     path1 = '/pub/rinex/' + cyyyy + '/' + cdoy + '/'
-    file2 = navname  
-    path2 = '/pub/rinex/' + cyyyy + '/' + cdoy + '/'
     url1 = sopac + path1 + file1
-    url2 = sopac + path2 + file2
     if (os.path.isfile(navdir + '/' + navname ) == True):
-        print('nav file already exists')
+        print('nav file already exists online')
         foundit = True
     else:
         try:
@@ -567,7 +570,7 @@ def getnavfile(year, month, day):
             store_orbitfile(navname,year,'nav') 
             foundit = True
         except:
-            print('give up')
+            print('give up downloading nav file for now')
 
     return navname,navdir,foundit
 
