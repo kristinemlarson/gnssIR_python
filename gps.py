@@ -2717,44 +2717,6 @@ def rewrite_tseries(station):
             f.write(" {0:4.0f} {1:2.0f} {2:2.0f} {3:3.0f} {4:13.4f} {5:13.4f} {6:13.4f} \n".format(yy,mm,dd,doy,east,north,vert))
         f.close()
     except:
-        print('some problem')
+        print('some problem writing the output')
 
 
-def getnavfile_doy(year, doy):
-    """
-    author: kristine larson
-    given year, doy it picks up a GPS nav file from SOPAC
-    and stores it
-    returns the name of the file and its directory
-    19may7 now checks for compressed and uncompressed nav file
-
-    """
-    foundit = False
-    sopac = 'ftp://garner.ucsd.edu'
-    # send it day of year instead of month and day
-    navname,navdir = nav_name(year, doy, 0)
-#    print(navname, navdir)
-    cdoy = '{:03d}'.format(doy)
-    cyyyy = '{:04d}'.format(year)
-
-    file1 = navname + '.Z'
-    path1 = '/pub/rinex/' + cyyyy + '/' + cdoy + '/'
-    file2 = navname
-    path2 = '/pub/rinex/' + cyyyy + '/' + cdoy + '/'
-    url1 = sopac + path1 + file1
-    url2 = sopac + path2 + file2
-    if (os.path.isfile(navdir + '/' + navname ) == True):
-        print('>>>>>>>>>  nav file already exists <<<<<<<<<')
-        foundit = True
-    else:
-        print('try to pick up the compressed nav file ')
-        try:
-            wget.download(url1,file1)
-            cmd = 'uncompress ' + file1
-            os.system(cmd)
-            store_orbitfile(navname,year,'nav')
-            foundit = True
-        except:
-            print('no success, life is short')
-
-    return navname,navdir,foundit
