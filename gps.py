@@ -1,23 +1,18 @@
 #!usr/bin/env python
 # -*- coding: utf-8 -*-
 # kristine larson, june 2017
-# will try to use this as a library.  however, i am not very competent
-import sys
-import os
-import wget
-import numpy as np
-import matplotlib.pyplot as plt
-# This is only used in one place - and is not part of the operational
-# code. You can remove the function if you want
-from ftplib import FTP
 import datetime
-from scipy.interpolate import interp1d
-import pickle
 import math
-# do not know what this is
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+import pickle
 import re
 import scipy.signal as spectral
+from scipy.interpolate import interp1d
+import sys
 import read_snr_files as snr
+import wget
 
 # i think these should be in a class ...
 # various numbers you need in the GNSS world
@@ -715,33 +710,6 @@ def getsp3file_mgex(year,month,day,pCtr):
 
     return name, fdir, foundit
 
-def codclock(year,month,day):
-    """
-    author: kristine lasron
-    pick up 5 second clocks from the bernese group...
-    """
-    n,nn=igsname(year,month,day)
-    gps_week = n[3:7]     
-    print(nn)
-    file1 = nn + '.Z'
-    filepath1 = file1
-    filename1 = '/gnss/products/' + str(gps_week) + '/'+file1
-    try:
-        ftp = FTP('cddis.gsfc.nasa.gov')
-        ftp.login()
-    # not sure why they do this
-        f1 = open(filepath1,'wb')
-        print('Retrieving: '+file1)
-        ftp.retrbinary("RETR " + filename1,f1.write)
-        f1.close()
-        cmd = 'gunzip -f ' + filepath1
-        print(cmd)
-        os.system(cmd)
-    except:
-        print('some kind of problem-remove empty file')
-        cmd = 'rm -f ' + filepath1
-        os.system(cmd)
-    
 
 def kgpsweek(year, month, day, hour, minute, second):
     """
@@ -2047,7 +2015,7 @@ def open_outputfile(station,year,doy):
     xdir = str(os.environ['REFL_CODE'])
     cdoy = '{:03d}'.format(doy)
 #   extra file with rejected arcs
-    w = 'logs/reject.' + str(year) + '_' + station + '.txt'
+    w = 'logs/reject.' + str(year) + '_' + cdoy  + station + '.txt'
     print('open output file for rejected arcs',w)
     frej=open(w,'w+')
 #    frej=open('reject.txt','w+')
@@ -2694,7 +2662,7 @@ def getseries(site):
 
 def rewrite_tseries(station):
     """
-    given a station name, look at a blewitt file and write a new file that is less insane to understand
+    given a station name, look at a daily blewitt position (ENV) file and write a new file that is less insane to understand
     """
     siteid = station.upper()
     # NA12 env time series
@@ -2719,4 +2687,21 @@ def rewrite_tseries(station):
     except:
         print('some problem writing the output')
 
-
+def codclock(year,month,day):
+    """
+    author: kristine lasron
+    pick up 5 second clocks from the bernese group...
+    """
+    n,nn=igsname(year,month,day)
+    gps_week = n[3:7]
+    file1 = nn + '.Z'
+    print(nn, gps_week, file1)
+    h = 'ftp://cddis.gsfc.nasa.gov/gnss/products/' 
+    url = h + str(gps_week) + '/' + file1
+    print(url)
+    try:
+        wget.download(url, out=file1)
+        cmd = 'gunzip -f ' + file1
+        os.system(cmd)
+    except:
+        print('some kind of problem downloading clock files')

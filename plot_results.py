@@ -30,6 +30,8 @@ txtfile = args.txtfile
 howBig = medfilter;
 k=0
 n=6
+# you can change this - trying out 100 for now
+ReqTracks = 100
 # putting the results in a np.array, year, doy, RH, Nvalues, month, day
 tv = np.empty(shape=[0, n])
 obstimes = []
@@ -53,30 +55,30 @@ for yr in year_list:
             doy = int(np.mean(a[1]))
             # change from doy to month and day in datetime
             d = datetime.date(yr,1,1) + datetime.timedelta(doy-1)
-            obstimes.append(datetime.datetime(year=yr, month=d.month, day=d.day, hour=12, minute=0, second=0))
             medv = np.median(rh)
-            medRH =np.append(medRH, medv)
             # try this
             cc = (rh < (medv+howBig))  & (rh > (medv-howBig))
             good =rh[cc]; goodT =y[cc]
-            rh = good
-#            good =  good[  rh > (medv-howBig)]
-#            goodT = goodT[ rh > (medv-howBig)]
-            plt.plot(goodT, good,'.')
+            # only save if there are some minimal number of values
+            if (len(good) > ReqTracks):
+                rh = good
+                obstimes.append(datetime.datetime(year=yr, month=d.month, day=d.day, hour=12, minute=0, second=0))
+                medRH =np.append(medRH, medv)
+                plt.plot(goodT, good,'.')
             # store the meanRH after the outliers are removed using simple median filter
-            meanRHtoday = np.mean(good)
-            meanRH =np.append(meanRH, meanRHtoday)
+                meanRHtoday = np.mean(good)
+                meanRH =np.append(meanRH, meanRHtoday)
             # add month and day just cause some people like that instead of doy
-            newl = [yr, doy, meanRHtoday, len(rh), d.month, d.day]
-            tv = np.append(tv, [newl],axis=0)
-            k += 1
+                newl = [yr, doy, meanRHtoday, len(rh), d.month, d.day]
+                tv = np.append(tv, [newl],axis=0)
+                k += 1
+            else:
+                print('not enough retrievals on ', yr, d.month, d.day)
     except:
         print(' no results this year or something went funny ')
-        
-#plt.xlabel('year')
-plt.gca().invert_yaxis()
 plt.ylabel('Reflector Height (m)')
 plt.title('GNSS station: ' + station)
+plt.gca().invert_yaxis()
 plt.grid()
 #
 plt.subplot(212)
