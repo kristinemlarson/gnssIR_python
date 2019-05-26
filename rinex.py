@@ -6,12 +6,11 @@ Kristine m. Larson
 2018 August 20
 Updated: April 3, 2019
 """
+import argparse
 import sys
 import os
+
 import gps as g
-import argparse
-
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument("station", help="station name ", type=str)

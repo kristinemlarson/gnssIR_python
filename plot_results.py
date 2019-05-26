@@ -1,19 +1,19 @@
-import os
-import numpy as np
-import matplotlib.pyplot as plt
-import sys
-import argparse
-import datetime
-# some very simple code to pick up all the RH results and make a plot.
+# very simple code to pick up all the RH results and make a plot.
 # only getting rid of the biggest outliers using a median filter
 # Kristine Larson May 2019
+import argparse
+import datetime
+import os
+import sys
+
+import numpy as np
+import matplotlib.pyplot as plt
 #
-# wisconsin data
-# ftp://amrc.ssec.wisc.edu/pub/aws/iridium/Lorne/2019/04/Lorne_04_2019.dat
 
 # where the results are stored
+xdir = os.environ['REFL_CODE'] 
+
 # default end year is 2019
-xdir = str(os.environ['REFL_CODE'])
 # required inputs 
 parser = argparse.ArgumentParser()
 parser.add_argument("station", help="station name", type=str)
@@ -26,7 +26,12 @@ station = args.station
 year1= args.year1
 medfilter= args.medfilter
 txtfile = args.txtfile
-# outliers, in meters
+txtdir = xdir + '/Files'
+if not os.path.exists(txtdir):
+    print('make an output directory')
+    os.makedirs(txtdir)
+
+# outliers limit, defined in meters
 howBig = medfilter;
 k=0
 n=6
@@ -89,6 +94,7 @@ plt.title('Daily Mean Reflector Height')
 plt.grid()
 plt.gca().invert_yaxis()
 plt.show()
+
 if txtfile == 'None':
     print('no txt output')
 else:
@@ -98,7 +104,9 @@ else:
     # apply time tags to a new variable
     ntv = tv[ii,:]
     N,M = np.shape(ntv)
-    fout = open(txtfile, 'w+')
+    outfile = txtdir + '/' + txtfile
+    print('output file goes to this ', outfile)
+    fout = open(outfile, 'w+')
     fout.write("# year doy   RH(m) numval month day \n")
     for i in np.arange(0,N,1):
         fout.write(" {0:4.0f}   {1:3.0f} {2:7.3f} {3:3.0f} {4:2.0f} {5:2.0f} \n".format(ntv[i,0], ntv[i,1], ntv[i,2],ntv[i,3],ntv[i,4],ntv[i,5]))
