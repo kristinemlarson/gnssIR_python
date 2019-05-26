@@ -5,22 +5,22 @@ These files are then used by gnss_lomb.py
 author: kristine larson
 date: 20 march 2019
 """
-import sys
-import os
-import numpy as np
-import gps as g
 import argparse
 import datetime
+import os
+import sys
+
+import numpy as np
+
+import gps as g
 
 # set an environment variable for where you are keeping your LSP
 # instructions and input files 
 # DEFINE REFL_CODE on your system 
-#xdir = os.environ['REFL_CODE']
-# I am currently doing it in my  .bashrc file
 
 #WARNING - THIS CODE ASSUMES IF YOU USE HATANAKA RINEX
-# FILES, YOU NEED THE APPROPRIATE EXECUTABLE
-# SEE rinex_unavco.py for details
+# FILES, YOU NEED THE APPROPRIATE EXECUTABLE in $EXEC
+#WARNING - If you want to decimate, you need to install teqc in $EXEC 
  
 #
 # user inputs the observation file information
