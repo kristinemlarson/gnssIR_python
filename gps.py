@@ -1,18 +1,21 @@
 #!usr/bin/env python
 # -*- coding: utf-8 -*-
 # kristine larson, june 2017
+# toolbox for GPS/GNSS data analysis
 import datetime
 import math
-import matplotlib.pyplot as plt
-import numpy as np
 import os
 import pickle
 import re
 import scipy.signal as spectral
 from scipy.interpolate import interp1d
 import sys
-import read_snr_files as snr
+
+import matplotlib.pyplot as plt
+import numpy as np
 import wget
+
+import read_snr_files as snr
 
 # i think these should be in a class ...
 # various numbers you need in the GNSS world
