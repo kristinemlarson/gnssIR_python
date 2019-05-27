@@ -70,7 +70,7 @@ def define_filename(station,year,doy,snr):
     author: Kristine Larson
     19mar25: return compressed filename too
     """
-    xdir = str(os.environ['REFL_CODE'])
+    xdir = os.environ['REFL_CODE']
     cdoy = '{:03d}'.format(doy)
     cyy = '{:02d}'.format(year-2000)
     f= station + str(cdoy) + '0.' + cyy + '.snr' + str(snr)
@@ -85,7 +85,7 @@ def define_filename_prevday(station,year,doy,snr):
     returns snr filename for the PREVIOUS day
     author: Kristine Larson
     """
-    xdir = str(os.environ['REFL_CODE'])
+    xdir = os.environ['REFL_CODE']
     year = int(year)
     doy = int(doy)
     if (doy == 1):
@@ -2015,7 +2015,7 @@ def open_outputfile(station,year,doy):
         cmd=  'mkdir logs'; os.system(cmd)
     fout = 0
 #   primary reflector height output goes to this directory
-    xdir = str(os.environ['REFL_CODE'])
+    xdir = os.environ['REFL_CODE']
     cdoy = '{:03d}'.format(doy)
 #   extra file with rejected arcs
     w = 'logs/reject.' + str(year) + '_' + cdoy  + station + '.txt'
@@ -2298,11 +2298,11 @@ def store_orbitfile(filename,year,orbtype):
     inputs are the filename, the year, and the kind of orbit
     (sp3 or nav)
     """
-    xdir = str(os.environ['ORBITS']) + '/' + str(year)
+    xdir = os.environ['ORBITS'] + '/' + str(year)
     # check that directories exist
     if not os.path.isdir(xdir): #if year folder doesn't exist, make it
         os.makedirs(xdir)
-    xdir = str(os.environ['ORBITS']) + '/' + str(year) + '/' + orbtype
+    xdir = os.environ['ORBITS'] + '/' + str(year) + '/' + orbtype
     if not os.path.isdir(xdir): #if year folder doesn't exist, make it
         os.makedirs(xdir)
     if (os.path.isfile(filename) == True):
@@ -2319,7 +2319,7 @@ def store_snrfile(filename,year,station):
     simple code to move an snr file to the right place 
     inputs are the filename, the year, and the station name
     """
-    xdir = str(os.environ['REFL_CODE']) + '/' + str(year)
+    xdir = os.environ['REFL_CODE'] + '/' + str(year)
     # check that directories exist
     if not os.path.isdir(xdir): #if year folder doesn't exist, make it
         os.makedirs(xdir)
