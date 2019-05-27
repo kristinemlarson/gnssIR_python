@@ -9,6 +9,7 @@ import pickle
 import re
 import scipy.signal as spectral
 from scipy.interpolate import interp1d
+import subprocess
 import sys
 
 import matplotlib.pyplot as plt
@@ -112,7 +113,7 @@ def read_inputs(station):
     author: Kristine M Larson
     """
 #   directory name is currently defined using REFL_CODE
-    xdir = str(os.environ['REFL_CODE'])
+    xdir = os.environ['REFL_CODE']
     fname = xdir + '/input/' + station
     print('default inputs: ', fname)
 #   default location values - not used now
@@ -2270,8 +2271,12 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
                     print('decimate using teqc ', dec_rate, ' seconds')
                     cmd = exedir + '/teqc -O.dec ' + str(dec_rate) + ' ' + rinexfile + '> ' + rinexfile + '.tmp'
                     os.system(cmd);
+                    # try using subprocess instead of os.system
+                    # status = subprocess.call(['mv',rinexfile,xdir])
                     cmd = 'mv -f ' + rinexfile + '.tmp ' + rinexfile 
-                    os.system(cmd);
+                    rinexfiletmp = rinexfile + '.tmp'
+                    status = subprocess.call(['mv','-f', rinexfiletmp, rinexfile])
+                    # os.system(cmd);
                 except:
                     print('decimation failed')
             if (oexist and rexist):
@@ -2280,8 +2285,10 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
                 orbfile = orbdir + '/' + f
                 cmd = snrexe + ' ' + rinexfile + ' ' + snrname + ' ' + orbfile + ' ' + str(option)
                 print(cmd); os.system(cmd)
-                print('remove the rinexfile')
-                os.system('rm -f ' + rinexfile)
+                print('remove the rinexfile using subprocess')
+                # change to use subprocess
+                status = subprocess.call(['rm','-f', rinexfile ])
+#                os.system('rm -f ' + rinexfile)
 #       move the snr file to its proper place
                 if (os.stat(snrname).st_size == 0):
                     print('you created a zero file size which could mean a lot of things')
@@ -2373,7 +2380,7 @@ def nav_name(year, month, day):
     else:
         doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     navfilename = 'auto'  + cdoy + '0.' + cyy  +  'n'
-    navfiledir = str(os.environ['ORBITS']) + '/' + cyyyy + '/nav'
+    navfiledir = os.environ['ORBITS'] + '/' + cyyyy + '/nav'
     return navfilename,navfiledir
 
 def sp3_name(year,month,day,pCtr):
@@ -2385,7 +2392,7 @@ def sp3_name(year,month,day,pCtr):
     name,clkn=igsname(year,month,day)
     gps_week = name[3:7]
     sp3name = pCtr + name[3:8] + '.sp3'
-    sp3dir = str(os.environ['ORBITS']) + '/' + str(year) + '/sp3'
+    sp3dir = os.environ['ORBITS'] + '/' + str(year) + '/sp3'
     return sp3name, sp3dir
 
 def rinex_unavco_obs(station, year, month, day):
@@ -2497,27 +2504,30 @@ def rewrite_UNR_highrate(fname,station,year,doy):
     the latter three are in meters
     stores in $REFL_CODE/yyyy/pos/station
     """
-    xdir = str(os.environ['REFL_CODE'])
+    xdir = os.environ['REFL_CODE'] 
 # make sure the various output directories  are there
     dir1 = xdir + '/' + str(year)
     if not os.path.isdir(dir1):
-        cmd = 'mkdir ' + dir1; os.system(cmd)
+        print('use subprocess instead of os.system')
+        status = subprocess.call(['mkdir', dir1])
+#        cmd = 'mkdir ' + dir1; os.system(cmd)
 
     dir1 = xdir + '/' + str(year) + '/' + 'pos'
     if not os.path.isdir(dir1):
-        cmd = 'mkdir ' + dir1; os.system(cmd)
+        print('use subprocess instead of os.system')
+        status = subprocess.call(['mkdir', dir1])
+        #cmd = 'mkdir ' + dir1; os.system(cmd)
 
     dir1 = xdir + '/' + str(year) + '/' + 'pos' + '/' + station
 
 #   make filename for the output
     yy,mm,dd, cyyyy, cdoy, YMD = ydoy2useful(year,doy)
     outputfile = dir1 + '/' + cdoy + '_hr.txt'
-    print(outputfile)
-
-
-
+    print('file will go to: ' , outputfile)
     if not os.path.isdir(dir1):
-        cmd = 'mkdir ' + dir1; os.system(cmd)
+        print('use subprocess instead of os.system')
+        status = subprocess.call(['mkdir', dir1])
+        #cmd = 'mkdir ' + dir1; os.system(cmd)
     try:
         x=np.genfromtxt(fname, skip_header=1, usecols = (3, 4, 5, 6, 7, 8, 9, 10))
         N = len(x)
