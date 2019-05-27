@@ -5,8 +5,12 @@ if station is auto, assume the person wants the nav file
 Kristine m. Larson
 2018 August 20
 Updated: April 3, 2019
+May 22, 2019 - observation downloads go to $REFL_CODE/Files
+should change so that day of year allowed
+changed os.system commands to subprocess
 """
 import argparse
+import subprocess
 import sys
 import os
 
@@ -30,6 +34,17 @@ if args.rate == None:
 else:
     rate = 'high'
 
+# where Rinex observation files will be stored
+xdir = os.environ['REFL_CODE'] + '/Files/'
+if not os.path.exists(xdir):
+    print('make an output directory')
+    os.makedirs(xdir)
+
+rinexfile,rinexfiled = g.rinex_name(station, year, month, day)
+#rexist = os.path.isfile(rinexfile) == True
+#status = subprocess.call(['ls','-l',xdir])
+#status = subprocess.call(['ls','-l',xdir])
+
 
 
 # compute filename to find out if file exists
@@ -49,6 +64,7 @@ try:
 except:
     print('rinex file does not exist - will try to pick up ')
     if station == 'auto':
+        # this will be stored in the appropriate area
         g.getnavfile(year, month, day)
     else:
         if rate == 'low':
@@ -56,5 +72,6 @@ except:
         else:
             g.rinex_unavco_highrate(station, year, month, day)
 
-
-
+if os.path.exists(rinexfile):
+    print('retrieved the rinex file - moving to Files directory')
+    status = subprocess.call(['mv',rinexfile,xdir])
