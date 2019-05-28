@@ -2273,7 +2273,7 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
                     os.system(cmd);
                     # try using subprocess instead of os.system
                     # status = subprocess.call(['mv',rinexfile,xdir])
-                    cmd = 'mv -f ' + rinexfile + '.tmp ' + rinexfile 
+#                    cmd = 'mv -f ' + rinexfile + '.tmp ' + rinexfile 
                     rinexfiletmp = rinexfile + '.tmp'
                     status = subprocess.call(['mv','-f', rinexfiletmp, rinexfile])
                     # os.system(cmd);
@@ -2293,7 +2293,8 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
                 if (os.stat(snrname).st_size == 0):
                     print('you created a zero file size which could mean a lot of things')
                     print('bad exe, bad snr option, do not really have the orbit file')
-                    os.system('rm -f ' + snrname)
+                    status = subprocess.call(['rm','-f', snrname ])
+                    # os.system('rm -f ' + snrname)
                 else:
                     store_snrfile(snrname,year,station) 
             else:
@@ -2313,9 +2314,10 @@ def store_orbitfile(filename,year,orbtype):
     if not os.path.isdir(xdir): #if year folder doesn't exist, make it
         os.makedirs(xdir)
     if (os.path.isfile(filename) == True):
-        cmd = 'mv ' + filename + ' ' + xdir 
+       # cmd = 'mv ' + filename + ' ' + xdir 
         print('moving ', filename, ' to ', xdir)
-        os.system(cmd)
+        status = subprocess.call(['mv','-f', filename, xdir])
+        # os.system(cmd)
     else:
         print('file did not exist, so it was not stored')
     return xdir
@@ -2337,9 +2339,11 @@ def store_snrfile(filename,year,station):
     if not os.path.isdir(xdir): #if year folder doesn't exist, make it
         os.makedirs(xdir)
     if (os.path.isfile(filename) == True):
-        cmd = 'mv ' + filename + ' ' + xdir 
-        print(cmd)
-        os.system(cmd)
+        # cmd = 'mv ' + filename + ' ' + xdir 
+        print('using subprocess')
+        status = subprocess.call(['mv','-f', filename, xdir])
+        # print(cmd)
+        # os.system(cmd)
     else:
         print('file does not exist, so nothing was moved')
 
@@ -2472,11 +2476,14 @@ def big_Disk_in_DC(station, year, month, day):
     url = mainadd + str(year) + '/' + cdoy+ '/' + station + '/' + comp_rinexfiled 
     print(url)
     wget.download(url, out=comp_rinexfiled)
-    cmd = 'uncompress ' + comp_rinexfiled; os.system(cmd)
+#    cmd = 'uncompress ' + comp_rinexfiled; os.system(cmd)
+    status = subprocess.call(['uncompress', comp_rinexfiled])
     # change from d to o file
-    cmd = crnxpath + rinexfiled; os.system(cmd)
+    #print('using subprocess now for compressed rinex')
+    cmd = crnxpath + rinexfiled;  os.system(cmd)
+    # status = subprocess.call([crnxpath, rinexfiled])
     # rm everything except the o file
-    cmd = 'rm -f ' + rinexfiled ; os.system(cmd)
+    #cmd = 'rm -f ' + rinexfiled ; os.system(cmd)
 
 def ydoy2useful(year, doy):
     """
