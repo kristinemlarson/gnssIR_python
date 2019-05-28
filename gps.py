@@ -513,8 +513,7 @@ def rinex_sopac(station, year, month, day):
     hatanaka exe hardwired  for my machine
     """
     exedir = os.environ['EXE']
-    crnxpath = exedir + '/CRX2RNX '
-#    crnxpath = exedir + '/RNXCMPdir/bin/CRX2RNX '
+    crnxpath = exedir + '/CRX2RNX'
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     sopac = 'ftp://garner.ucsd.edu'
     oname,fname = rinex_name(station, year, month, day) 
@@ -524,15 +523,14 @@ def rinex_sopac(station, year, month, day):
     print(url)
     try:
         wget.download(url,file1)
-        cmd = 'uncompress ' + file1 ; os.system(cmd)
-        cmd = crnxpath + fname; os.system(cmd)
-        #remove compressed file
-        cmd = 'rm -f ' + fname;  os.system(cmd)
+        # uncompress, hatanaka translation, rm old file
+        subprocess.call(['uncompress', file1])
+        subprocess.call([crnxpath, fname])
+        subprocess.call(['rm', '-f',fname])
         print('successful download from SOPAC ')
     except:
         print('some kind of problem with download',file1)
-        cmd = 'rm -f ' + file1
-        os.system(cmd)
+        subprocess.call(['rm', '-f',file1])
 
 def getnavfile(year, month, day):
     """
@@ -562,7 +560,7 @@ def getnavfile(year, month, day):
     else:
         try:
             wget.download(url1,file1)
-            cmd = 'uncompress ' + file1; os.system(cmd)
+            subprocess.call(['uncompress',file1])
             store_orbitfile(navname,year,'nav') 
             foundit = True
         except:
@@ -579,8 +577,7 @@ def getsp3file(year,month,day):
     returns the name of the file and its directory
     """
     name, fdir = sp3_name(year,month,day,'igs') 
-    print(name)
-    print(fdir)
+    print(name,fdir)
     cddis = 'ftp://cddis.nasa.gov'
     if (os.path.isfile(fdir + '/' + name ) == True):
         print('sp3file already exists')
@@ -592,13 +589,11 @@ def getsp3file(year,month,day):
         print(url)
         try:
             wget.download(url,file1)
-            cmd = 'uncompress ' + file1
-            os.system(cmd)
+            subprocess.call(['uncompress',file1])
             store_orbitfile(name,year,'sp3') 
         except:
             print('some kind of problem-remove empty file')
-            cmd = 'rm -f ' + file1
-            os.system(cmd)
+            subprocess.call(['rm',file1])
 
 #   return the name of the file so that if you want to store it
     return name, fdir
@@ -629,14 +624,12 @@ def getsp3file_flex(year,month,day,pCtr):
         print(url)
         try:
             wget.download(url,file1)
-            cmd = 'uncompress ' + file1
-            os.system(cmd)
+            subprocess.call(['uncompress',file1])
             store_orbitfile(name,year,'sp3') 
             foundit = True
         except:
-            print('some kind of problem-remove empty file')
-            cmd = 'rm -f ' + file1
-            os.system(cmd)
+            print('some kind of problem-remove empty file, if it exists')
+            subprocess.call(['rm','-f',file1])
 #   return the name of the file so that if you want to store it
     return name, fdir, foundit
 
@@ -653,9 +646,8 @@ def getsp3file_mgex(year,month,day,pCtr):
     name, fdir = sp3_name(year,month,day,pCtr) 
     gps_week = name[3:7]
     file1 = name + '.Z'
-    print(file1)
 
-    # get the sp3 filename for the new format
+    # get the sp3 filename for the new format, and GFZ
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     file2 = 'GFZ0MGXRAP_' + cyyyy + cdoy + '0000_01D_05M_ORB.SP3.gz'
     print(file2)
@@ -685,16 +677,16 @@ def getsp3file_mgex(year,month,day,pCtr):
     if (mgex == 0):
         try:
             wget.download(url,file1)
-            cmd = 'uncompress ' + file1
-            os.system(cmd)
+            subprocess.call(['uncompress', file1])
+            # cmd = 'uncompress ' + file1; os.system(cmd)
             name = file1[:-2]
         # store the file in its proper place
             store_orbitfile(name,year,'sp3') 
             foundit = True
         except:
             print('some kind of problem trying to get first sp3 file')
-            cmd = 'rm -f ' + file1
-            os.system(cmd)
+            subprocess.call(['rm', '-f',file1])
+            # cmd = 'rm -f ' + file1; os.system(cmd)
             name = file2[:-3]
         # try the second file
             try:
