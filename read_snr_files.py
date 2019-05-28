@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import sys
 import os
+import subprocess 
+import sys
+
 import numpy as np
 
-# library for reading snr files - hopefully
-# currently just a copy from gps.py
+# library for reading snr files - 
+# still learning python
+# 2019 kristine m. larson
 
 def read_snr_multiday(obsfile,obsfile2,twoDays):
     """
@@ -30,7 +33,7 @@ def read_snr_multiday(obsfile,obsfile2,twoDays):
         compressedObs = obsfile + '.xz'
         if (os.path.isfile(compressedObs) == True):
             print('compressed file exists, so uncompress it')
-            cmd = 'unxz ' + compressedObs; os.system(cmd)
+            subprocess.call(['unxz', compressedObs])
         sat, ele, azi, t, edot, s1, s2, s5, s6, s7, s8, snrE = read_one_snr(obsfile,1)
         allGood1 = 1
 #        print(ele)
@@ -187,9 +190,7 @@ def compress_snr_files(wantCompression, obsfile, obsfile2,TwoDays):
     if wantCompression:
         if (os.path.isfile(obsfile) == True):
             print('compressing first day')
-            cmd = 'xz ' + obsfile;
-            os.system(cmd)
+            subprocess.call(['xz', obsfile])
         if (os.path.isfile(obsfile2) == True and twoDays == True):
             print('compressing second day')
-            cmd = 'xz ' + obsfile2;
-            os.system(cmd)
+            subprocess.call(['xz', obsfile2])

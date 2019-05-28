@@ -678,7 +678,6 @@ def getsp3file_mgex(year,month,day,pCtr):
         try:
             wget.download(url,file1)
             subprocess.call(['uncompress', file1])
-            # cmd = 'uncompress ' + file1; os.system(cmd)
             name = file1[:-2]
         # store the file in its proper place
             store_orbitfile(name,year,'sp3') 
@@ -686,13 +685,11 @@ def getsp3file_mgex(year,month,day,pCtr):
         except:
             print('some kind of problem trying to get first sp3 file')
             subprocess.call(['rm', '-f',file1])
-            # cmd = 'rm -f ' + file1; os.system(cmd)
             name = file2[:-3]
         # try the second file
             try:
                 wget.download(url2,file2)
-                cmd = 'gunzip ' + file2
-                os.system(cmd)
+                subprocess.call(['gunzip', file2])
                 # name to return
                 name = file2[:-3]
             # store the file in its proper place
@@ -709,6 +706,7 @@ def kgpsweek(year, month, day, hour, minute, second):
     inputs are year (4 char), month, day, hour, minute, second
     outputs: gps week and second of the week
     author: kristine larson
+    modified from a matlab code
     """
 
     year = np.int(year)
@@ -757,7 +755,7 @@ def igsname(year,month,day):
     x=int(sec/86400)
     dd = str(wk) + str(x) 
     name = 'igs' + str(wk) + str(x) + '.sp3'
-    # i think at some point htey changed to lower case?
+    # i think at some point they changed to lower case?
    # clockname = 'COD' + dd + '.CLK_05S.txt'
     clockname = 'cod' + dd + '.clk_05s'
 
@@ -2002,7 +2000,8 @@ def open_outputfile(station,year,doy):
     if os.path.isdir('logs'):
         print('log directory exists')
     else:
-        cmd=  'mkdir logs'; os.system(cmd)
+        print('making log directory ')
+        subprocess.call(['mkdir', 'logs'])
     fout = 0
 #   primary reflector height output goes to this directory
     xdir = os.environ['REFL_CODE']
@@ -2025,10 +2024,12 @@ def open_outputfile(station,year,doy):
         fout.write("%            m         hrs    deg   v/v    deg    deg                  hrs            min             1 is yes  \n")
     except:
         print('problem on first attempt - so try making results directory')
-        cm = 'mkdir ' + xdir + '/' + str(year) + '/results/'
-        os.system(cm)
-        cm = 'mkdir ' + xdir + '/' + str(year) + '/results/' + station
-        os.system(cm)
+        f1 = xdir + '/' + str(year) + '/results/'
+        subprocess.call(['mkdir',f1])
+        # os.system(cm)
+        f2 = xdir + '/' + str(year) + '/results/' + station
+        subprocess.call(['mkdir',f2])
+        # os.system(cm)
         try:
             fout=open(filepath1,'w+')
             print('successful open')
@@ -2258,32 +2259,30 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
             if (rexist and dec_rate > 0):
                 try:
                     print('decimate using teqc ', dec_rate, ' seconds')
-                    cmd = exedir + '/teqc -O.dec ' + str(dec_rate) + ' ' + rinexfile + '> ' + rinexfile + '.tmp'
-                    os.system(cmd);
+                    print('testing subprocess while decimating')
+                    exc = exedir + '/teqc' 
+                    rinexout = rinexfile + '.tmp'; cdec = str(dec_rate)
+                    fout = open(rinexout,'w')
+                    subprocess.call([exc, '-O.dec', cdec, rinexfile],stdout=fout)
+                    # not sure this is needed
+                    fout.close()
                     # try using subprocess instead of os.system
-                    # status = subprocess.call(['mv',rinexfile,xdir])
-#                    cmd = 'mv -f ' + rinexfile + '.tmp ' + rinexfile 
-                    rinexfiletmp = rinexfile + '.tmp'
-                    status = subprocess.call(['mv','-f', rinexfiletmp, rinexfile])
-                    # os.system(cmd);
+                    status = subprocess.call(['mv','-f', rinexout, rinexfile])
                 except:
                     print('decimation failed')
             if (oexist and rexist):
             #convert to SNR file
                 snrname = snr_name(station, year,month,day,option)
                 orbfile = orbdir + '/' + f
-                cmd = snrexe + ' ' + rinexfile + ' ' + snrname + ' ' + orbfile + ' ' + str(option)
-                print(cmd); os.system(cmd)
+                print('make SNR file using subprocess')
+                subprocess.call([snrexe, rinexfile, snrname, orbfile, str(option)])
                 print('remove the rinexfile using subprocess')
-                # change to use subprocess
                 status = subprocess.call(['rm','-f', rinexfile ])
-#                os.system('rm -f ' + rinexfile)
 #       move the snr file to its proper place
                 if (os.stat(snrname).st_size == 0):
                     print('you created a zero file size which could mean a lot of things')
                     print('bad exe, bad snr option, do not really have the orbit file')
                     status = subprocess.call(['rm','-f', snrname ])
-                    # os.system('rm -f ' + snrname)
                 else:
                     store_snrfile(snrname,year,station) 
             else:
@@ -2303,10 +2302,8 @@ def store_orbitfile(filename,year,orbtype):
     if not os.path.isdir(xdir): #if year folder doesn't exist, make it
         os.makedirs(xdir)
     if (os.path.isfile(filename) == True):
-       # cmd = 'mv ' + filename + ' ' + xdir 
         print('moving ', filename, ' to ', xdir)
         status = subprocess.call(['mv','-f', filename, xdir])
-        # os.system(cmd)
     else:
         print('file did not exist, so it was not stored')
     return xdir
@@ -2328,11 +2325,8 @@ def store_snrfile(filename,year,station):
     if not os.path.isdir(xdir): #if year folder doesn't exist, make it
         os.makedirs(xdir)
     if (os.path.isfile(filename) == True):
-        # cmd = 'mv ' + filename + ' ' + xdir 
         print('using subprocess')
         status = subprocess.call(['mv','-f', filename, xdir])
-        # print(cmd)
-        # os.system(cmd)
     else:
         print('file does not exist, so nothing was moved')
 
@@ -2403,8 +2397,7 @@ def rinex_unavco_obs(station, year, month, day):
     print(url)
     try:
         wget.download(url,filename)
-        cmd = 'uncompress ' + filename
-        os.system(cmd) 
+        subprocess.call(['uncompress',filename])
     except:
         print('some kind of problem with download',rinexfile)
 
@@ -2420,8 +2413,7 @@ def rinex_unavco_highrate(station, year, month, day):
     WARNING: only rinex version 2 in this world
     """
     exedir = os.environ['EXE']
-    crnxpath = exedir + '/CRX2RNX '
-#    crnxpath = exedir + '/RNXCMPdir/bin/CRX2RNX '
+    crnxpath = exedir + '/CRX2RNX'
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     rinexfile,rinexfiled = rinex_name(station, year, month, day)
     unavco= 'ftp://data-out.unavco.org'
@@ -2435,17 +2427,16 @@ def rinex_unavco_highrate(station, year, month, day):
     try:
         print('try to get o file')
         wget.download(url1,filename1)
-        cmd = 'uncompress ' + filename1; os.system(cmd)
-        print('found it ')
+        subprocess.call(['uncompress',filename1])
     except:
-        print('did not find o file')
+        print('did not find o file - will look for a d file')
         try:
             wget.download(url2,filename2)
-            cmd = 'uncompress ' + filename2; os.system(cmd)
-            #convert
-            cmd = crnxpath + rinexfiled; os.system(cmd)
-            #remove compressed file
-            cmd = 'rm -f ' + rinexfiled; os.system(cmd)
+            subprocess.call(['uncompress',filename2])
+            #convert from hatanaka
+            subprocess.call([crnxpath, rinexfiled])
+            #remove the hatanaka file
+            subprocess.call(['rm','-f',rinexfiled])
             print('found d file and converted to o file')
         except:
             print('failed to find either RINEX file at unavco')
@@ -2461,19 +2452,15 @@ def big_Disk_in_DC(station, year, month, day):
     rinexfile,rinexfiled = rinex_name(station, year, month, day)
     comp_rinexfiled = rinexfiled + '.Z'
     mainadd = 'ftp://www.ngs.noaa.gov/cors/rinex/'
-
     url = mainadd + str(year) + '/' + cdoy+ '/' + station + '/' + comp_rinexfiled 
-    print(url)
-    wget.download(url, out=comp_rinexfiled)
-#    cmd = 'uncompress ' + comp_rinexfiled; os.system(cmd)
-    status = subprocess.call(['uncompress', comp_rinexfiled])
-    # change from d to o file
-    #print('using subprocess now for compressed rinex')
-    status = subprocess.call([crnxpath, rinexfiled])
-#    cmd = crnxpath + rinexfiled;  os.system(cmd)
-    # status = subprocess.call([crnxpath, rinexfiled])
-    # rm everything except the o file
-    cmd = 'rm -f ' + rinexfiled ; os.system(cmd)
+    try:
+        wget.download(url, out=comp_rinexfiled)
+        status = subprocess.call(['uncompress', comp_rinexfiled])
+        status = subprocess.call([crnxpath, rinexfiled])
+    # rm the hatanaka file
+        status = subprocess.call(['rm','-f',rinexfiled])
+    except:
+        print('some problem in download - maybe the site does not exist on this archive')
 
 def ydoy2useful(year, doy):
     """
@@ -2507,24 +2494,20 @@ def rewrite_UNR_highrate(fname,station,year,doy):
     if not os.path.isdir(dir1):
         print('use subprocess instead of os.system')
         status = subprocess.call(['mkdir', dir1])
-#        cmd = 'mkdir ' + dir1; os.system(cmd)
 
     dir1 = xdir + '/' + str(year) + '/' + 'pos'
     if not os.path.isdir(dir1):
         print('use subprocess instead of os.system')
         status = subprocess.call(['mkdir', dir1])
-        #cmd = 'mkdir ' + dir1; os.system(cmd)
 
     dir1 = xdir + '/' + str(year) + '/' + 'pos' + '/' + station
-
 #   make filename for the output
     yy,mm,dd, cyyyy, cdoy, YMD = ydoy2useful(year,doy)
     outputfile = dir1 + '/' + cdoy + '_hr.txt'
     print('file will go to: ' , outputfile)
     if not os.path.isdir(dir1):
-        print('use subprocess instead of os.system')
+        print('use subprocess to make directory')
         status = subprocess.call(['mkdir', dir1])
-        #cmd = 'mkdir ' + dir1; os.system(cmd)
     try:
         x=np.genfromtxt(fname, skip_header=1, usecols = (3, 4, 5, 6, 7, 8, 9, 10))
         N = len(x)
@@ -2533,7 +2516,7 @@ def rewrite_UNR_highrate(fname,station,year,doy):
         for i in range(0,N):
             f.write(" {0:4.0f} {1:2.0f} {2:2.0f} {3:3.0f} {4:7.0f} {5:9.4f} {6:9.4f} {7:9.4f} \n".format(x[i,0], x[i,1],x[i,2],x[i,3], x[i,4],x[i,5],x[i,6],x[i,7]))
         print('delete the original Blewitt file')
-        cmd = 'rm -f ' + fname; os.system(cmd)
+        subprocess.call(['rm','-f', fname])
         f.close()
     except:
         print('problem with accessing the file')
@@ -2711,7 +2694,6 @@ def codclock(year,month,day):
     print(url)
     try:
         wget.download(url, out=file1)
-        cmd = 'gunzip -f ' + file1
-        os.system(cmd)
+        subprocess.call(['gunzip','-f',file1])
     except:
         print('some kind of problem downloading clock files')

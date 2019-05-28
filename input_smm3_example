@@ -11,13 +11,13 @@
 # 101 and 102 are glonass 
 # 201 ... for galileo
 # 302 etc ... beidou
+# # these values are quite large- appropriate for ice.  you can go smaller.
+# # depends on the site and the surface
 1 18 20 18  
 # seven values given here, which are:
-# 1. default polynomial value 
+# 1. polynomial value for the DC fit. 3-4 is usually good enough
 # 2. precision of the periodogram(m) 
-# 3. window of periodogram, minimum minH(m) 
-# 4. window of periodogram, maximum maxH(m) 
+# 3-4. window of periodogram, minimum minH(m) 
 # 5. ediff - how much the min/max elevation angles should vary from window (degrees)
-# 6. noise value of periodogram (min value, meters)
-# 6. noise value of periodogram (max value, meters)
+# 6-7. noise values of periodogram (min value, meters)
 3 0.01 5 35 1  13 19

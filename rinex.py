@@ -34,17 +34,14 @@ if args.rate == None:
 else:
     rate = 'high'
 
-# where Rinex observation files will be stored
+# where Rinex observation files will be stored - to keep them out
+# of the code directory
 xdir = os.environ['REFL_CODE'] + '/Files/'
 if not os.path.exists(xdir):
     print('make an output directory')
     os.makedirs(xdir)
 
 rinexfile,rinexfiled = g.rinex_name(station, year, month, day)
-#rexist = os.path.isfile(rinexfile) == True
-#status = subprocess.call(['ls','-l',xdir])
-#status = subprocess.call(['ls','-l',xdir])
-
 
 
 # compute filename to find out if file exists
