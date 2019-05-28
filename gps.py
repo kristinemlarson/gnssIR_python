@@ -479,8 +479,7 @@ def rinex_unavco(station, year, month, day):
     WARNING: only rinex version 2 in this world
     """
     exedir = os.environ['EXE']
-    crnxpath = exedir + '/CRX2RNX '
-#    crnxpath = exedir + '/RNXCMPdir/bin/CRX2RNX '
+    crnxpath = exedir + '/CRX2RNX'
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     rinexfile,rinexfiled = rinex_name(station, year, month, day)
     unavco= 'ftp://data-out.unavco.org'
@@ -492,17 +491,15 @@ def rinex_unavco(station, year, month, day):
     try:
         print('try to get observation file')
         wget.download(url1,filename1)
-        cmd = 'uncompress ' + filename1; os.system(cmd)
-        print('found it ')
+        status = subprocess.call(['uncompress', filename1])
+        print('found the rinex file')
     except:
-        print('did not find observation file, try hatanaka')
+        print('did not find observation file, try hatanaka version')
         try:
             wget.download(url2,filename2)
-            cmd = 'uncompress ' + filename2; os.system(cmd)
-            #convert
-            cmd = crnxpath + rinexfiled; os.system(cmd)
-            #remove compressed file
-            cmd = 'rm -f ' + rinexfiled; os.system(cmd)
+            status = subprocess.call(['uncompress', filename2])
+            status = subprocess.call([crnxpath, rinexfiled])
+            status = subprocess.call(['rm', '-f', rinexfiled])
             print('found d file and converted to observation file')
         except:
             print('failed to find either RINEX file at unavco')
@@ -2467,7 +2464,7 @@ def big_Disk_in_DC(station, year, month, day):
     picks up a RINEX file from CORS.  
     """
     exedir = os.environ['EXE']
-    crnxpath = exedir + '/CRX2RNX '
+    crnxpath = exedir + '/CRX2RNX'
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     rinexfile,rinexfiled = rinex_name(station, year, month, day)
     comp_rinexfiled = rinexfiled + '.Z'
@@ -2480,10 +2477,11 @@ def big_Disk_in_DC(station, year, month, day):
     status = subprocess.call(['uncompress', comp_rinexfiled])
     # change from d to o file
     #print('using subprocess now for compressed rinex')
-    cmd = crnxpath + rinexfiled;  os.system(cmd)
+    status = subprocess.call([crnxpath, rinexfiled])
+#    cmd = crnxpath + rinexfiled;  os.system(cmd)
     # status = subprocess.call([crnxpath, rinexfiled])
     # rm everything except the o file
-    #cmd = 'rm -f ' + rinexfiled ; os.system(cmd)
+    cmd = 'rm -f ' + rinexfiled ; os.system(cmd)
 
 def ydoy2useful(year, doy):
     """
