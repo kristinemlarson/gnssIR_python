@@ -144,15 +144,23 @@ e1 = elval[0]; e2 = elval[1]
 naz = int(len(azval)/2)
 print('number of azimuth pairs:',naz)
 # in case you want to look at a restricted azimuth range from the command line 
+setA = 0
 if args.azim1 == None:
     azim1 = 0
 else:
+    setA = 1
     azim1 = args.azim1
 
 if args.azim2 == None:
     azim2 = 360
 else:
     azim2 = args.azim2
+    setA = setA + 1
+
+if (setA == 2):
+    naz = 1
+    azval[0] = azim1
+    azval[1] = azim2
 
 # this is for when you want to run the code with just a single frequency, i.e. input at the console
 # rather than using the input restrictions
