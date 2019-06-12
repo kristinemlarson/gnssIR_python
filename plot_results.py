@@ -13,19 +13,22 @@ import matplotlib.pyplot as plt
 # where the results are stored
 xdir = os.environ['REFL_CODE'] 
 
-# default end year is 2019
-# required inputs 
+# must input start and end year
 parser = argparse.ArgumentParser()
 parser.add_argument("station", help="station name", type=str)
 parser.add_argument("year1", help="first year", type=int)
+parser.add_argument("year2", help="end year", type=int)
 parser.add_argument("medfilter", help="median filter", type=float)
 # optional inputs: filename to output daily RH results 
 parser.add_argument("-txtfile", "--txtfile", default='None', type=str, help="txtfile for output")
+parser.add_argument("-noscreen", "--noscreen", default='None', type=str, help="toggle to not plot to screen")
 args = parser.parse_args()
 station = args.station
 year1= args.year1
+year2= args.year2
 medfilter= args.medfilter
 txtfile = args.txtfile
+noscreen = args.noscreen
 txtdir = xdir + '/Files'
 if not os.path.exists(txtdir):
     print('make an output directory')
@@ -43,9 +46,9 @@ obstimes = []
 medRH = []
 meanRH = []
 plt.figure()
-plt.subplot(211)
-
-year_list = np.arange(year1,2020,1)
+#plt.subplot(211)
+yearEnd = year2 + 1
+year_list = np.arange(year1,yearEnd,1)
 print('Years to examine: ',year_list)
 for yr in year_list:
     direc = xdir + '/' + str(yr) + '/results/' + station + '/'
@@ -85,15 +88,26 @@ plt.ylabel('Reflector Height (m)')
 plt.title('GNSS station: ' + station)
 plt.gca().invert_yaxis()
 plt.grid()
+if (noscreen == 'None'):
+    plt.show()
 #
-plt.subplot(212)
-plt.plot(obstimes,meanRH,'.')
-plt.xlabel('date')
+#plt.subplot(211)
+#plt.figure()
+fig,ax=plt.subplots()
+ax.plot(obstimes,meanRH,'.')
+fig.autofmt_xdate()
+#plt.xlabel('date')
 plt.ylabel('Reflector Height (m)')
-plt.title('Daily Mean Reflector Height')
+plt.title(station.upper() + ': Daily Mean Reflector Height')
 plt.grid()
 plt.gca().invert_yaxis()
-plt.show()
+# save the second plot to a png file
+pltname = txtdir + '/' + station + '_RH.png'
+plt.savefig(pltname)
+print('pngt file goes to this ', pltname)
+
+if (noscreen == 'None'):
+    plt.show()
 
 if txtfile == 'None':
     print('no txt output')
