@@ -608,8 +608,7 @@ def getsp3file_flex(year,month,day,pCtr):
     """
     # returns name and the directory
     name, fdir = sp3_name(year,month,day,pCtr) 
-    print(name)
-    print(fdir)
+    print(name, fdir)
     gps_week = name[3:7]
     file1 = pCtr + name[3:8] + '.sp3.Z'
     name = pCtr + name[3:8] + '.sp3'
@@ -2224,6 +2223,10 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
         if orbtype == 'sp3':
             print('uses default IGS orbits, so only GPS')
             f,orbdir,foundit=getsp3file_flex(year,month,day,'igs')
+            snrexe = exedir + '/gnssSNR.e' 
+        if orbtype == 'gfz':
+            print('using gfz sp3 file, GPS and GLONASS')
+            f,orbdir,foundit=getsp3file_flex(year,month,day,'gfz')
             snrexe = exedir + '/gnssSNR.e' 
         if orbtype == 'igr':
             print('using rapid orbits, so only GPS')
