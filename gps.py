@@ -2700,3 +2700,25 @@ def codclock(year,month,day):
         subprocess.call(['gunzip','-f',file1])
     except:
         print('some kind of problem downloading clock files')
+
+def llh2xyz(lat,lon,height):
+    """
+    inputs lat,lon (in degrees) and ellipsoidal height (in meters)
+    returns Cartesian values in meters.
+
+    Ref: Decker, B. L., World Geodetic System 1984,
+    Defense Mapping Agency Aerospace Center.
+    modified from matlab version kindly provided by CCAR
+    """
+    A_EARTH = 6378137;
+    f= 1/298.257223563;
+    NAV_E2 = (2-f)*f; # also e^2
+    deg2rad = math.pi/180.0
+
+    slat = math.sin(lat*deg2rad);
+    clat = math.cos(lat*deg2rad);
+    r_n = A_EARTH/(math.sqrt(1 - NAV_E2*slat*slat))
+    x= (r_n + height)*clat*math.cos(lon*deg2rad)
+    y= (r_n + height)*clat*math.sin(lon*deg2rad)
+    z= (r_n*(1 - NAV_E2) + height)*slat
+    return x, y, z
