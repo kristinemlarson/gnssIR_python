@@ -104,7 +104,7 @@ plt.gca().invert_yaxis()
 # save the second plot to a png file
 pltname = txtdir + '/' + station + '_RH.png'
 plt.savefig(pltname)
-print('pngt file goes to this ', pltname)
+print('png file goes to this ', pltname)
 
 if (noscreen == 'None'):
     plt.show()
@@ -121,7 +121,8 @@ else:
     outfile = txtdir + '/' + txtfile
     print('output file goes to this ', outfile)
     fout = open(outfile, 'w+')
-    fout.write("# year doy   RH(m) numval month day \n")
+    # change comment value from # to %
+    fout.write("% year doy   RH(m) numval month day \n")
     for i in np.arange(0,N,1):
         fout.write(" {0:4.0f}   {1:3.0f} {2:7.3f} {3:3.0f} {4:2.0f} {5:2.0f} \n".format(ntv[i,0], ntv[i,1], ntv[i,2],ntv[i,3],ntv[i,4],ntv[i,5]))
     fout.close()
