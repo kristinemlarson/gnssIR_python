@@ -21,6 +21,9 @@
 # 19mar13, snow (one day only) vs water levels (midnite crossing corrected by using
 # the day before)
 # 19apr20, changed location of compressed rinex executable
+# 19jun28, change result file naming convetion to include snr file type
+# toggle for overwriting LSP results (default will be ot overwrite, but
+# for cdron jobs, nice not to)
 # 
 """
 import sys
@@ -77,6 +80,8 @@ parser.add_argument("-pltname", "--pltname", default='None', type=str, help="plo
 parser.add_argument("-doy_end", "--doy_end", default=None, type=int, help="doy end")
 parser.add_argument("-azim1", "--azim1", default=None, type=int, help="lower limit azimuth")
 parser.add_argument("-azim2", "--azim2", default=None, type=int, help="upper limit azimuth")
+parser.add_argument("-overwrite", "--overwrite", default=None, type=int, help="use any integer to not do this")
+parser.add_argument("-extension", "--extension", default=None, type=str, help="extension for result file ")
 args = parser.parse_args()
 #
 # rename the user inputs as variables
@@ -110,6 +115,20 @@ if RefractionCorrection:
     irefr = 1
 else:
     irefr = 0
+
+# allow people to have an extension to the output file name so they can run different analysis strategies
+if args.extension == None:
+    extension = ''
+else:
+    extension = args.extension
+
+# default will be to overwrite
+if args.overwrite == None:
+    overwriteResults = True
+    print('results will be overwritten')
+else:
+    overwriteResults = False
+    print('results will not be overwritten')
 
 
 # You should not use the peak periodogram value unless it is significant. Using a 
@@ -188,15 +207,21 @@ twoDays = False
 doy_list = list(range(doy, doy_end+1))
 # for each day in the doy list
 for doy in doy_list:
+    fname, resultExist = g.LSPresult_name(station,year,doy,extension) 
 # find the observation file name and try to read it
-    obsfile,obsfileCmp = g.define_filename(station,year,doy,snr_type)
-    obsfile2,obsfile2Cmp = g.define_filename_prevday(station,year,doy,snr_type)
+    if (overwriteResults == False) & (resultExist == True):
+        allGood = 0
+        print('>>>>> The result file exists for this day and you have selected to do not overwrite option')
+    else:
+        print('go ahead and read the files')
+        obsfile,obsfileCmp = g.define_filename(station,year,doy,snr_type)
+        obsfile2,obsfile2Cmp = g.define_filename_prevday(station,year,doy,snr_type)
 #   define two datasets - one from one day snr file and the other with 24 hours that
 #   have three hours from before midnite and first 21 hours on the given day
 #
-    allGood,sat,ele,azi,t,edot,s1,s2,s5,s6,s7,s8,snrE = snr.read_snr_multiday(obsfile,obsfile2,twoDays)
+        allGood,sat,ele,azi,t,edot,s1,s2,s5,s6,s7,s8,snrE = snr.read_snr_multiday(obsfile,obsfile2,twoDays)
 #   compress it here
-    snr.compress_snr_files(wantCompression, obsfile, obsfile2,twoDays) 
+        snr.compress_snr_files(wantCompression, obsfile, obsfile2,twoDays) 
 
 #
 #   twoDays = True
@@ -212,7 +237,7 @@ for doy in doy_list:
 #           g.print_file_stats(ele,sat,s1,s2,s5,s6,s7,s8,e1,e2) 
         ct = 0
 # good arcs saved to a plain text file, rejected arcs to local file. Open those file names
-        fout,frej = g.open_outputfile(station,year,doy) 
+        fout,frej = g.open_outputfile(station,year,doy,extension) 
 # If you want to make a plot
         g.open_plot(plt_screen)
 

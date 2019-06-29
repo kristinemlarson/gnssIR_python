@@ -1988,13 +1988,14 @@ def glonass_channels(f,prn):
     if (f == 102):
         l = lightSpeed/(L2 + ch*dL2)
     return l
-def open_outputfile(station,year,doy):
+def open_outputfile(station,year,doy,extension):
     """
     inputs: station name, year, doy, and station name
     opens output file in REFL_CODE/year/results/station directory
     return fileID
     author kristine m. Larson
     if the results directory does not exist, it tries to make it. i think
+    june 2019, added snrending to output name
     """
     if os.path.isdir('logs'):
         print('log directory exists')
@@ -2013,7 +2014,9 @@ def open_outputfile(station,year,doy):
 #   put a header in the file
     frej.write("%year, doy, maxF,sat,UTCtime, Azim, Amp,  eminO, emaxO,  Nv,freq,rise,Edot, PkNoise,  DelT,   MJD \n")
     filedir = xdir + '/' + str(year)  + '/results/' + station 
-    filepath1 =  filedir + '/' + cdoy  + '.txt'
+#    filepath1 =  filedir + '/' + cdoy  + '.txt'
+#   changed to a function
+    filepath1,fexit = LSPresult_name(station,year,doy,extension)
     print('output will go to:', filepath1)
     try:
         fout=open(filepath1,'w+')
@@ -2722,3 +2725,30 @@ def llh2xyz(lat,lon,height):
     y= (r_n + height)*clat*math.sin(lon*deg2rad)
     z= (r_n*(1 - NAV_E2) + height)*slat
     return x, y, z
+
+def LSPresult_name(station,year,doy,extension):
+    """
+    given station name, year, doy, and snrEnding
+    returns the location of the LSP result
+    also returns boolean if it already exists (so that
+    information can be used)
+    extension is now used
+    """
+    # for testing
+    xdir = os.environ['REFL_CODE']
+    cyear = str(year)
+    cdoy = '{:03d}'.format(doy)
+    filedir = xdir + '/' + cyear  + '/results/' + station
+    if extension == '':
+        filepath1 =  filedir + '/' + cdoy  +  extension + '.txt'
+    else:
+        filepath1 =  filedir + '/' + cdoy  + '_' + extension + '.txt'
+
+    print('output for this date will go to:', filepath1)
+    if (os.path.isfile(filepath1) == True):
+        print('A result file already exists')
+        fileexists = True
+    else:
+        print('A result file does not exist')
+        fileexists = False
+    return filepath1, fileexists
