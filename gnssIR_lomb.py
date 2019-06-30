@@ -216,7 +216,7 @@ for doy in doy_list:
 # find the observation file name and try to read it
     if (overwriteResults == False) & (resultExist == True):
         allGood = 0
-        print('>>>>> The result file exists for this day and you have selected to do not overwrite option')
+        print('>>>>> The result file exists for this day and you have selected the do not overwrite option')
     else:
         print('go ahead and read the files')
         obsfile,obsfileCmp = g.define_filename(station,year,doy,snr_type)
