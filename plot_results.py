@@ -2,6 +2,8 @@
 # only getting rid of the biggest outliers using a median filter
 # Kristine Larson May 2019
 # June 30, 2019 added extension to results directory
+# require you to have a minimum number of points to use for a daily average
+# was previously using a default value
 import argparse
 import datetime
 import os
@@ -20,6 +22,7 @@ parser.add_argument("station", help="station name", type=str)
 parser.add_argument("year1", help="first year", type=int)
 parser.add_argument("year2", help="end year", type=int)
 parser.add_argument("medfilter", help="median filter", type=float)
+parser.add_argument("ReqTracks", help="required number of tracks", type=int)
 # optional inputs: filename to output daily RH results 
 parser.add_argument("-txtfile", "--txtfile", default='None', type=str, help="txtfile for output")
 parser.add_argument("-noscreen", "--noscreen", default='None', type=str, help="toggle to not plot to screen")
@@ -30,6 +33,7 @@ year1= args.year1
 year2= args.year2
 medfilter= args.medfilter
 txtfile = args.txtfile
+ReqTracks = args.ReqTracks
 noscreen = args.noscreen
 if args.extension == 'None':
     extension = ''
@@ -48,8 +52,9 @@ if not os.path.exists(txtdir):
 howBig = medfilter;
 k=0
 n=6
-# you can change this - trying out 100 for now
-ReqTracks = 100
+# now require it as an input
+# you can change this - trying out 80 for now
+#ReqTracks = 80
 # putting the results in a np.array, year, doy, RH, Nvalues, month, day
 tv = np.empty(shape=[0, n])
 obstimes = []
@@ -66,37 +71,39 @@ for yr in year_list:
     else:
         direc = xdir + '/' + str(yr) + '/results/' + station + '/' + extension + '/'
     print('looking at ', yr, direc)
-    try:
-        all_files = os.listdir(direc)
-        for f in all_files:
-            fname = direc + f
+    all_files = os.listdir(direc)
+    for f in all_files:
+        fname = direc + f
+        L = len(f)
+        # file names have 7 characters in them ... 
+        if (L == 7):
+        # check that it is a file and not a directory and that it has something/anything in it
             a = np.loadtxt(fname,skiprows=3,comments='%').T
-            y = a[0] +a[1]/365.25
-            rh = a[2] 
-            doy = int(np.mean(a[1]))
-            # change from doy to month and day in datetime
-            d = datetime.date(yr,1,1) + datetime.timedelta(doy-1)
-            medv = np.median(rh)
-            # try this
-            cc = (rh < (medv+howBig))  & (rh > (medv-howBig))
-            good =rh[cc]; goodT =y[cc]
-            # only save if there are some minimal number of values
-            if (len(good) > ReqTracks):
-                rh = good
-                obstimes.append(datetime.datetime(year=yr, month=d.month, day=d.day, hour=12, minute=0, second=0))
-                medRH =np.append(medRH, medv)
-                plt.plot(goodT, good,'.')
+            numlines = len(a) 
+            if (len(a) > 0):
+                y = a[0] +a[1]/365.25
+                rh = a[2] 
+                doy = int(np.mean(a[1]))
+        # change from doy to month and day in datetime
+                d = datetime.date(yr,1,1) + datetime.timedelta(doy-1)
+                medv = np.median(rh)
+                cc = (rh < (medv+howBig))  & (rh > (medv-howBig))
+                good =rh[cc]; goodT =y[cc]
+        # only save if there are some minimal number of values
+                if (len(good) > ReqTracks):
+                    rh = good
+                    obstimes.append(datetime.datetime(year=yr, month=d.month, day=d.day, hour=12, minute=0, second=0))
+                    medRH =np.append(medRH, medv)
+                    plt.plot(goodT, good,'.')
             # store the meanRH after the outliers are removed using simple median filter
-                meanRHtoday = np.mean(good)
-                meanRH =np.append(meanRH, meanRHtoday)
+                    meanRHtoday = np.mean(good)
+                    meanRH =np.append(meanRH, meanRHtoday)
             # add month and day just cause some people like that instead of doy
-                newl = [yr, doy, meanRHtoday, len(rh), d.month, d.day]
-                tv = np.append(tv, [newl],axis=0)
-                k += 1
-            else:
-                print('not enough retrievals on ', yr, d.month, d.day)
-    except:
-        print(' no results this year or something went funny ')
+                    newl = [yr, doy, meanRHtoday, len(rh), d.month, d.day]
+                    tv = np.append(tv, [newl],axis=0)
+                    k += 1
+                else:
+                    print('not enough retrievals on ', yr, d.month, d.day, len(good))
 plt.ylabel('Reflector Height (m)')
 plt.title('GNSS station: ' + station)
 plt.gca().invert_yaxis()
