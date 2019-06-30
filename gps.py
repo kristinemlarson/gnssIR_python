@@ -2728,7 +2728,7 @@ def llh2xyz(lat,lon,height):
 
 def LSPresult_name(station,year,doy,extension):
     """
-    given station name, year, doy, and snrEnding
+    given station name, year, doy, and extension
     returns the location of the LSP result
     also returns boolean if it already exists (so that
     information can be used)
@@ -2738,17 +2738,56 @@ def LSPresult_name(station,year,doy,extension):
     xdir = os.environ['REFL_CODE']
     cyear = str(year)
     cdoy = '{:03d}'.format(doy)
+    # this is default location where the results will go
     filedir = xdir + '/' + cyear  + '/results/' + station
-    if extension == '':
-        filepath1 =  filedir + '/' + cdoy  +  extension + '.txt'
-    else:
-        filepath1 =  filedir + '/' + cdoy  + '_' + extension + '.txt'
+    # this is now also done in the result_directories function,
+    # but I guess no harm is done
+    if not os.path.isdir(filedir):
+        print('making new results bdirectory ')
+        subprocess.call(['mkdir', filedir])
+    filedirx = filedir + '/' + extension
+    # this is what you do if there is an extension
+    if not os.path.isdir(filedirx):
+        print('making new results subdirectory ')
+        subprocess.call(['mkdir', filedirx])
+
+    filepath1 =  filedirx + '/' + cdoy  + '.txt'
 
     print('output for this date will go to:', filepath1)
-    if (os.path.isfile(filepath1) == True):
+    if os.path.isfile(filepath1):
         print('A result file already exists')
         fileexists = True
     else:
         print('A result file does not exist')
         fileexists = False
     return filepath1, fileexists
+
+def result_directories(station,year,extension):
+    """
+    inputs station, year, and extension
+    makes output directories for results
+    jun30, 2019
+    kristine larson
+    """
+    xdir = os.environ['REFL_CODE']
+    cyear = str(year)
+
+    f1 = xdir + '/' + cyear
+    if not os.path.isdir(f1):
+        subprocess.call(['mkdir',f1])
+
+    f1 = f1 + '/results'
+    if not os.path.isdir(f1):
+        subprocess.call(['mkdir',f1])
+
+
+    f1 = f1 + '/' + station
+    if not os.path.isdir(f1):
+        subprocess.call(['mkdir',f1])
+
+    if (extension != ''):
+        f1 = f1 + '/' + extension
+        if not os.path.isdir(f1):
+            subprocess.call(['mkdir',f1])
+    else:
+        print('no extension')

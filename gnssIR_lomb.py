@@ -80,7 +80,7 @@ parser.add_argument("-pltname", "--pltname", default='None', type=str, help="plo
 parser.add_argument("-doy_end", "--doy_end", default=None, type=int, help="doy end")
 parser.add_argument("-azim1", "--azim1", default=None, type=int, help="lower limit azimuth")
 parser.add_argument("-azim2", "--azim2", default=None, type=int, help="upper limit azimuth")
-parser.add_argument("-overwrite", "--overwrite", default=None, type=int, help="use any integer to not do this")
+parser.add_argument("-nooverwrite", "--nooverwrite", default=None, type=int, help="use any integer to not overwrite")
 parser.add_argument("-extension", "--extension", default=None, type=str, help="extension for result file ")
 args = parser.parse_args()
 #
@@ -122,8 +122,11 @@ if args.extension == None:
 else:
     extension = args.extension
 
+# make directories for the LSP results 
+g.result_directories(station,year,extension)
+
 # default will be to overwrite
-if args.overwrite == None:
+if args.nooverwrite == None:
     overwriteResults = True
     print('results will be overwritten')
 else:
@@ -208,6 +211,8 @@ doy_list = list(range(doy, doy_end+1))
 # for each day in the doy list
 for doy in doy_list:
     fname, resultExist = g.LSPresult_name(station,year,doy,extension) 
+    if (resultExist):
+        print('Results already exist on disk')
 # find the observation file name and try to read it
     if (overwriteResults == False) & (resultExist == True):
         allGood = 0

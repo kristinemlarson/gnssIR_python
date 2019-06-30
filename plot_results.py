@@ -1,6 +1,7 @@
 # very simple code to pick up all the RH results and make a plot.
 # only getting rid of the biggest outliers using a median filter
 # Kristine Larson May 2019
+# June 30, 2019 added extension to results directory
 import argparse
 import datetime
 import os
@@ -22,6 +23,7 @@ parser.add_argument("medfilter", help="median filter", type=float)
 # optional inputs: filename to output daily RH results 
 parser.add_argument("-txtfile", "--txtfile", default='None', type=str, help="txtfile for output")
 parser.add_argument("-noscreen", "--noscreen", default='None', type=str, help="toggle to not plot to screen")
+parser.add_argument("-extension", "--extension", default='None', type=str, help="extension for solution names")
 args = parser.parse_args()
 station = args.station
 year1= args.year1
@@ -29,9 +31,17 @@ year2= args.year2
 medfilter= args.medfilter
 txtfile = args.txtfile
 noscreen = args.noscreen
-txtdir = xdir + '/Files'
+if args.extension == 'None':
+    extension = ''
+else:
+    extension = args.extension
+
+
+# where the summary files will be written to
+txtdir = xdir + '/Files' 
+
 if not os.path.exists(txtdir):
-    print('make an output directory')
+    print('make an output directory', txtdir)
     os.makedirs(txtdir)
 
 # outliers limit, defined in meters
@@ -51,8 +61,11 @@ yearEnd = year2 + 1
 year_list = np.arange(year1,yearEnd,1)
 print('Years to examine: ',year_list)
 for yr in year_list:
-    direc = xdir + '/' + str(yr) + '/results/' + station + '/'
-    print('looking at ', yr)
+    if extension == '':
+        direc = xdir + '/' + str(yr) + '/results/' + station + '/'
+    else:
+        direc = xdir + '/' + str(yr) + '/results/' + station + '/' + extension + '/'
+    print('looking at ', yr, direc)
     try:
         all_files = os.listdir(direc)
         for f in all_files:
