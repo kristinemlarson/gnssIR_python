@@ -2791,3 +2791,19 @@ def result_directories(station,year,extension):
             subprocess.call(['mkdir',f1])
     else:
         print('no extension')
+
+def write_QC_fails(delT,delTmax,eminObs,emaxObs,e1,e2,ediff,maxAmp, Noise,PkNoise,reqamp):
+    """
+    prints out various QC fails to the screen
+
+    """
+    if delT > delTmax:
+        print('       delT {0:.1f} minutes '.format(delT ))
+    if eminObs  > (e1 + ediff):
+        print('       emin {0:.1f} '.format(eminObs ))
+    if emaxObs  < (e2 - ediff):
+        print('       emax {0:.1f} '.format(emaxObs ))
+    if maxAmp < reqamp:
+        print('       Ampl {0:.1f} '.format(maxAmp  ))
+    if maxAmp/Noise < PkNoise:
+        print('       PkN  {0:.1f} '.format(maxAmp/Noise ))
