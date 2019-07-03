@@ -76,8 +76,8 @@ parser.add_argument("-azim1", "--azim1", default=None, type=int, help="lower lim
 parser.add_argument("-azim2", "--azim2", default=None, type=int, help="upper limit azimuth")
 parser.add_argument("-e1", "--e1", default=None, type=int, help="lower limit elevation angle")
 parser.add_argument("-e2", "--e2", default=None, type=int, help="upper limit elevation angle")
-parser.add_argument("-h1", "--h1", default=None, type=int, help="lower limit elevation angle")
-parser.add_argument("-h2", "--h2", default=None, type=int, help="upper limit elevation angle")
+parser.add_argument("-h1", "--h1", default=None, type=float, help="lower limit elevation angle")
+parser.add_argument("-h2", "--h2", default=None, type=float, help="upper limit elevation angle")
 args = parser.parse_args()
 #
 # rename the user inputs as variables
@@ -196,34 +196,24 @@ if InputFromScreen:
 
 
 # only doing one day at a time for now
-twoDays = False
 
 doy_list = [doy]
 # for each day in the doy list
 for doy in doy_list:
     fname, resultExist = g.LSPresult_name(station,year,doy,extension) 
-    if (resultExist):
-        print('Results already exist on disk')
 # find the observation file name and try to read it
-    if (overwriteResults == False) & (resultExist == True):
-        allGood = 0
-        print('>>>>> The result file exists for this day and you have selected the do not overwrite option')
+    print('go ahead and read the files')
+    obsfile,obsfileCmp = g.define_filename(station,year,doy,snr_type)
+    if os.path.isfile(obsfile):
+        print('>>>> WOOHOOO - THE FILE EXISTS',obsfile)
     else:
-        print('go ahead and read the files')
-        obsfile,obsfileCmp = g.define_filename(station,year,doy,snr_type)
-        obsfile2,obsfile2Cmp = g.define_filename_prevday(station,year,doy,snr_type)
-#   define two datasets - one from one day snr file and the other with 24 hours that
-#   have three hours from before midnite and first 21 hours on the given day
+        print('because I am a nice person I will try to pick it up for you - GPS only')
+        rate = 'low'; dec_rate = 0
+        g.quick_rinex_snr(year, doy, station, snr_type, 'nav',rate, dec_rate)
 #
-        allGood,sat,ele,azi,t,edot,s1,s2,s5,s6,s7,s8,snrE = snr.read_snr_multiday(obsfile,obsfile2,twoDays)
-#   compress it here
-        snr.compress_snr_files(wantCompression, obsfile, obsfile2,twoDays) 
-
+    twoDays = False
+    allGood,sat,ele,azi,t,edot,s1,s2,s5,s6,s7,s8,snrE = snr.read_snr_multiday(obsfile,obsfile,twoDays)
 #
-#   twoDays = True
-#   21:00-23:59 day before plus 0-21:00 day of
-# comment out for now - need to correct the elevation angles eventually
-#   allGoodP,Psat,Pele,Pazi,Pt,Pedot,Ps1,Ps2,Ps5,Ps6,Ps7,Ps8,PsnrE = snr.read_snr_multiday(obsfile,obsfile2,twoDays)
     if (allGood == 1):
         print('successfully read the first SNR file')
         if RefractionCorrection:
