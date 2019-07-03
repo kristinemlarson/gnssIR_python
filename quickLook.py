@@ -72,12 +72,10 @@ parser.add_argument("snrEnd", help="snrEnding", type=int)
 # these are the addons (not required)
 parser.add_argument("-fr", "--onefreq", default=None, type=int, help="try -fr 1 for GPS L1 only, or -fr 101 for Glonass L1")
 parser.add_argument("-amp", "--ampl", default=None, type=float, help="try -amp 10 for minimum spectral amplitude")
-parser.add_argument("-azim1", "--azim1", default=None, type=int, help="lower limit azimuth")
-parser.add_argument("-azim2", "--azim2", default=None, type=int, help="upper limit azimuth")
 parser.add_argument("-e1", "--e1", default=None, type=int, help="lower limit elevation angle")
 parser.add_argument("-e2", "--e2", default=None, type=int, help="upper limit elevation angle")
-parser.add_argument("-h1", "--h1", default=None, type=float, help="lower limit elevation angle")
-parser.add_argument("-h2", "--h2", default=None, type=float, help="upper limit elevation angle")
+parser.add_argument("-h1", "--h1", default=None, type=float, help="lower limit reflector height (m)")
+parser.add_argument("-h2", "--h2", default=None, type=float, help="upper limit reflector height (m)")
 args = parser.parse_args()
 #
 # rename the user inputs as variables
@@ -87,9 +85,8 @@ year = args.year
 doy= args.doy
 snr_type = args.snrEnd
 plt_screen = 1 # always have a plot come to screen
-#
+# four reflection quadrants - use these geographical names
 titles = ['Northeast', 'Southeast', 'Southwest', 'Northwest']
-print(titles[0])
 
 # in case you want to analyze multiple days of data
 
@@ -104,13 +101,15 @@ else:
 RefractionCorrection = False
 irefr = 0
 
+# this option is not used in quickLook
 extension = ''
 
 # make directories for the LSP results 
-g.result_directories(station,year,extension)
-
+#g.result_directories(station,year,extension)
+# we are not writing out results, so I do no think this is needed
+# not used
 # default will be to overwrite
-overwriteResults = True
+# overwriteResults = True
 
 
 # You should not use the peak periodogram value unless it is significant. Using a 
@@ -130,13 +129,15 @@ d = g.doy2ymd(year,doy); month = d.month; day = d.day
 dmjd, fracS = g.mjd(year,month,day,0,0,0)
 
 
-# set some reasonable values for LSP. some of these can be overriden
-polyV = 4
+# set some reasonable default values for LSP (Reflector Height calculation). 
+# some of these can be overriden
+# at the command line
+polyV = 4 # polynomial order for the direct signal
 desiredP = 0.01 # 1 cm precision
 ediff = 2
 freqs = [1, 20] # default is to do L1 and L2C
 pele = [5, 30] # elevation angle limits for removing the polynomial 
-Hlimits = [0.5, 10] # LSP limits
+Hlimits = [0.5, 10] # RH limits in meters
 elval = [5,25] # elevation angle limits
 NReg = [0.5, 6]
 # look at four quadrants to get started
@@ -147,10 +148,14 @@ twoDays = False
 # if user inputs these, then it overrides the default
 if (args.e1 != None):
     elval[0] = args.e1
+    if elval[0] < 5:
+        print('have to change the polynomial limits because you went below 5 degrees')
+        pele[0] = elval[0] 
 if (args.e2 != None):
     elval[1] = args.e2
 # elevation angle limit values for the Lomb Scargle
 e1 = elval[0]; e2 = elval[1]
+print('using ', e1, ' and ', e2)
 
 
 if (args.h1 != None):
@@ -165,23 +170,7 @@ minH = Hlimits[0]; maxH = Hlimits[1]
 naz = int(len(azval)/2)
 print('number of azimuth pairs:',naz)
 # in case you want to look at a restricted azimuth range from the command line 
-setA = 0
-if args.azim1 == None:
-    azim1 = 0
-else:
-    setA = 1
-    azim1 = args.azim1
-
-if args.azim2 == None:
-    azim2 = 360
-else:
-    azim2 = args.azim2
-    setA = setA + 1
-
-if (setA == 2):
-    naz = 1
-    azval[0] = azim1
-    azval[1] = azim2
+# this can probably be removed
 
 # this is for when you want to run the code with just a single frequency, i.e. input at the console
 # rather than using the input restrictions
@@ -197,33 +186,26 @@ if InputFromScreen:
 
 # only doing one day at a time for now
 
-doy_list = [doy]
-# for each day in the doy list
-for doy in doy_list:
-    fname, resultExist = g.LSPresult_name(station,year,doy,extension) 
-# find the observation file name and try to read it
-    print('go ahead and read the files')
+# to avoid having to do all the indenting over again
+if (True):
     obsfile,obsfileCmp = g.define_filename(station,year,doy,snr_type)
     if os.path.isfile(obsfile):
-        print('>>>> WOOHOOO - THE FILE EXISTS',obsfile)
+        print('>>>> WOOHOOO - THE FILE EXISTS ',obsfile)
     else:
+        print('>>>> Sigh, - the file does not exist ',obsfile)
         print('because I am a nice person I will try to pick it up for you - GPS only')
         rate = 'low'; dec_rate = 0
         g.quick_rinex_snr(year, doy, station, snr_type, 'nav',rate, dec_rate)
 #
     twoDays = False
     allGood,sat,ele,azi,t,edot,s1,s2,s5,s6,s7,s8,snrE = snr.read_snr_multiday(obsfile,obsfile,twoDays)
+    print('min elevation', np.min(ele))
 #
     if (allGood == 1):
         print('successfully read the first SNR file')
-        if RefractionCorrection:
-            print('<<<<<< apply refraction correction >>>>>>') 
-            corrE = refr.corr_el_angles(ele, p,T)
-            ele = corrE
-#           g.print_file_stats(ele,sat,s1,s2,s5,s6,s7,s8,e1,e2) 
         ct = 0
 # good arcs saved to a plain text file, rejected arcs to local file. Open those file names
-        fout,frej = g.open_outputfile(station,year,doy,extension) 
+#        fout,frej = g.open_outputfile(station,year,doy,extension) 
 # If you want to make a plot
 
 #  main loop
@@ -233,17 +215,16 @@ for doy in doy_list:
         for f in freqs:
             rj = 0
             gj = 0
-            print('**** looking at frequency ', f, ' ReqAmp', reqAmp[ct], ' doy ', doy)
+#            print('**** looking at frequency ', f, ' ReqAmp', reqAmp[ct], ' doy ', doy)
 #   get the list of satellites for this frequency
 # try moving azimut haround
             for a in range(naz):
                 g.open_plot(plt_screen)
                 az1 = azval[(a*2)] ; az2 = azval[(a*2 + 1)]
-                print('>>>> azimuths', az1, az2)
                 satlist = g.find_satlist(f,snrE)
 # for a given satellite
                 for satNu in satlist:
-                    print('>> Sat number ', satNu)
+#                    print('>> Sat number ', satNu)
 # and azimuth range
 # window the data
                     x,y,Nv,cf,UTCtime,avgAzim,avgEdot,Edot2,delT= g.window_data(s1,s2,s5,s6,s7,s8,sat,ele,azi,t,edot,f,az1,az2,e1,e2,satNu,polyV,pele) 
@@ -261,16 +242,12 @@ for doy in doy_list:
 #  this is the main QC statement
                         iAzim = int(avgAzim)
                         if (delT < delTmax) & (eminObs < (e1 + ediff)) & (emaxObs > (e2 - ediff)) & (maxAmp > reqAmp[ct]) & (maxAmp/Noise > PkNoise):
-                            fout.write(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} {8:6.2f} {9:4.0f} {10:3.0f} {11:2.0f} {12:8.5f} {13:6.2f} {14:7.2f} {15:12.6f} {16:1.0f} \n".format(year,doy,maxF,satNu, UTCtime, avgAzim,maxAmp,eminObs,emaxObs,Nv, f,riseSet, Edot2, maxAmp/Noise, delT, MJD,irefr))
-                            print('SUCCESS Azimuth {0:.1f}'.format( iAzim))
+#                            print('Reflector Ht(m) {0:.2f}'.format(maxF))
+                            print('SUCCESS Azimuth {0:3.0f} RH {1:.2f} m, Sat {2:2.0f} Freq {3:.0f} '.format( iAzim,maxF,satNu,f))
                             gj +=1
                             g.update_plot(plt_screen,x,y,px,pz)
                         else:
-                            print('FAILED QC for Azimuth {0:.1f} '.format( iAzim))
-                            g.write_QC_fails(delT,delTmax,eminObs,emaxObs,e1,e2,ediff,maxAmp, Noise,PkNoise,reqAmp[ct])
-                            frej.write(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} \
-{8:6.2f} {9:4.0f} {10:3.0f} {11:2.0f} {12:8.5f} {13:6.2f} {14:7.2f} {15:12.6f} \n".format(year,doy,maxF,satNu, UTCtime,\
-                       avgAzim,maxAmp,eminObs,emaxObs,Nv, f,riseSet, Edot2,maxAmp/Noise,delT, MJD))
+                #            print('FAILED QC for Azimuth {0:.1f} '.format( iAzim))
                             rj +=1
                 plt.subplot(211)
                 plt.xlabel('elev Angles (deg)')
@@ -283,5 +260,5 @@ for doy in doy_list:
             total_arcs = gj + total_arcs
             plt.show()
 # close the output files
-        fout.close() ; frej.close()
+#        fout.close() ; frej.close()
 # plot to the screen

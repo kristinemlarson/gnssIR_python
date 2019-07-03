@@ -25,8 +25,8 @@ def read_snr_multiday(obsfile,obsfile2,twoDays):
     allGood1 = 0; allGood2 = 0
     # set these for now.  should be passed 
     # not being used ??? why are they here
-    e1 = 5
-    e2 = 15
+    #e1 = 5
+    #e2 = 15
     try:
 #       this will be 24 hours - all in one calendar day 
         print('>>>>>>>>>>>>>>>>>>>>> try to read file 1:')
