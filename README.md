@@ -221,7 +221,7 @@ As an example, I'm providing an snr98 file for smm3 on doy 253 and year 2018. On
 of satellite 1 is stored here, so as to reduce the size of the file.
 
 There is also the ability to look at the results for a single satellite. 
-Run gnssIR_lomb.py help to see options.
+Run gnssIR_lomb.py -h to see options.
 
 # Usage of quickLook Code
 The gnssIR_lomb.py code requires you have set up some instructions for analyzing your data, i.e.
@@ -231,7 +231,7 @@ If you don't want to bother with all of that - and just want a quick look to see
 your time to look at a site, you can try quickLook.py.  You just give it the station name, year, doy of year,
 and translate format (99 is usually a good start). It will go pick up the RINEX data and translate it for you.
 There are stored defaults for analyzing the spectral characteristics of the data.  If you want to override those
-run quickLook.py help
+run quickLook.py -h 
 
 
 
