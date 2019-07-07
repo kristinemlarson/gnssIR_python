@@ -2807,3 +2807,27 @@ def write_QC_fails(delT,delTmax,eminObs,emaxObs,e1,e2,ediff,maxAmp, Noise,PkNois
         print('       Ampl {0:.1f} '.format(maxAmp  ))
     if maxAmp/Noise < PkNoise:
         print('       PkN  {0:.1f} '.format(maxAmp/Noise ))
+        
+def define_quick_filename(station,year,doy,snr):
+    """
+    given station name, year, doy, snr type
+    returns snr filename but without default directory structure
+    author: Kristine Larson
+    19mar25: return compressed filename too
+    """
+    cdoy = '{:03d}'.format(doy)
+    cyy = '{:02d}'.format(year-2000)
+    f= station + str(cdoy) + '0.' + cyy + '.snr' + str(snr)
+    return f
+
+def update_quick_plot(station, f):
+    """
+    input plt_screen integer value from gnssIR_lomb.
+    (value of one means update the SNR and LSP plot)
+    and values of the SNR data (x,y) and LSP (px,pz)
+    """
+    plt.subplot(212)
+    plt.xlabel('reflector height (m)'); plt.title('SNR periodogram')
+    plt.subplot(211)
+    plt.xlabel('elev Angles (deg)')
+    plt.title(station + ' SNR Data and Frequency L' + str(f))

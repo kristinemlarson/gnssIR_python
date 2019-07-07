@@ -261,11 +261,11 @@ for doy in doy_list:
                 satlist = [onesat]
 # for a given satellite
             for satNu in satlist:
-                print('>> Sat number ', satNu)
+#                print('>> Sat number ', satNu)
 # and azimuth range
                 for a in range(naz):
                     az1 = azval[(a*2)] ; az2 = azval[(a*2 + 1)]
-                    print('>>>> azimuths', az1, az2)
+#                    print('>>>> azimuths', az1, az2)
 # window the data
                     x,y,Nv,cf,UTCtime,avgAzim,avgEdot,Edot2,delT= g.window_data(s1,s2,s5,s6,s7,s8,sat,ele,azi,t,edot,f,az1,az2,e1,e2,satNu,polyV,pele) 
 #           this is a kluge for snr files that have non edot values in column 5
@@ -283,11 +283,11 @@ for doy in doy_list:
                         iAzim = int(avgAzim)
                         if (delT < delTmax) & (eminObs < (e1 + ediff)) & (emaxObs > (e2 - ediff)) & (maxAmp > reqAmp[ct]) & (maxAmp/Noise > PkNoise):
                             fout.write(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} {8:6.2f} {9:4.0f} {10:3.0f} {11:2.0f} {12:8.5f} {13:6.2f} {14:7.2f} {15:12.6f} {16:1.0f} \n".format(year,doy,maxF,satNu, UTCtime, avgAzim,maxAmp,eminObs,emaxObs,Nv, f,riseSet, Edot2, maxAmp/Noise, delT, MJD,irefr))
-                            print('SUCCESS Azimuth {0:.1f}'.format( iAzim))
+                            print('SUCCESS Azimuth {0:.1f} {1:2.0f} RH {2:5.1f} meters'.format( iAzim,satNu,maxF))
                             gj +=1
                             g.update_plot(plt_screen,x,y,px,pz)
                         else:
-                            print('FAILED QC for Azimuth {0:.1f} '.format( iAzim))
+                            print('FAILED QC for Azimuth {0:.1f} Satellite {1:2.0f} '.format( iAzim,satNu))
                             g.write_QC_fails(delT,delTmax,eminObs,emaxObs,e1,e2,ediff,maxAmp, Noise,PkNoise,reqAmp[ct])
                             frej.write(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} \
 {8:6.2f} {9:4.0f} {10:3.0f} {11:2.0f} {12:8.5f} {13:6.2f} {14:7.2f} {15:12.6f} \n".format(year,doy,maxF,satNu, UTCtime,\

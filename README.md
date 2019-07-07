@@ -233,6 +233,10 @@ and translate format (99 is usually a good start). It will go pick up the RINEX 
 There are stored defaults for analyzing the spectral characteristics of the data.  If you want to override those
 run quickLook.py -h 
 
+Examples:
 
+*  python quickLook.py gls1 2011 271 99  (uses defaults, which are usually ok for cryosphere 
+ice/snow reflections)
+* python quickLook.py rec1 2008 271 99 - example where the system fails to find this file at UNAVCO
 
 
