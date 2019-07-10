@@ -45,6 +45,9 @@ import read_snr_files as snr
 import refraction as refr
 import datetime
 
+print('leaving for historical interest - but you should switch to wrapper_quickLook.py')
+sys.exit()
+
 # set an environment variable for where you are keeping your LSP
 # instructions and input files 
 # CHANGE FOR YOUR MACHINE
@@ -52,7 +55,9 @@ import datetime
 # os.environ['REFL_CODE'] = '/Users/kristine/Documents/Research'
 xdir = os.environ['REFL_CODE']
  
-
+# these are in the order of the matplotlib
+titles = ['Northeast', 'Southeast','Southwest', 'Northwest']
+titles_four_in_one = ['Northwest', 'Northeast','Southwest', 'Southeast']
 four_in_one = True
 #four_in_one = False
 # eventually we will use something else but this restricts arcs to one hour
@@ -83,8 +88,6 @@ doy= args.doy
 snr_type = args.snrEnd
 plt_screen = 1 # always have a plot come to screen
 # four reflection quadrants - use these geographical names
-titles = ['Northeast', 'Southeast', 'Southwest', 'Northwest']
-
 # in case you want to analyze multiple days of data
 
 
@@ -239,8 +242,12 @@ if (allGood == 1):
                         rj +=1
         if not (four_in_one):
             g.update_quick_plot(station + ':' + titles[a],f)
+            plt.xlabel('reflector ht (m)')
+            plt.ylabel('LSP amplitude')
         else:
-            plt.title(titles[a])
+            plt.title(titles_four_in_one[a])
+            if (a == 2) | (a == 3):
+                plt.xlabel('reflector ht (m)')
     plt.show()
     if four_in_one:
         pltname = 'temp.png'

@@ -2489,7 +2489,8 @@ def ydoy2useful(year, doy):
 
 def rewrite_UNR_highrate(fname,station,year,doy):
     """
-    takes a filename, reads it, rewrites as all numbers for other uses.
+    takes a filename from was already retrieved? from 
+    UNReno, reads it, rewrites as all numbers for other uses.
     no header, but year, month, day, day of year, seconds vertical, east, north
     the latter three are in meters
     stores in $REFL_CODE/yyyy/pos/station

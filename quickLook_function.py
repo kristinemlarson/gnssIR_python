@@ -18,7 +18,10 @@ import read_snr_files as snr
 def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,azval,reqAmp):
     """
     """
+    # titles in 4 quadrants - in matlabplot speak
+    titles = ['Northwest', 'Northeast','Southeast', 'Southwest']
     # various defaults - ones the user doesn't change in this quick Look code
+
     delTmax = 70
     pele = [5, 30] # elevation angle limits for removing the polynomial
     polyV = 4 # polynomial order for the direct signal
@@ -67,6 +70,9 @@ def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,azval,reqA
                             ijk = 220 + a + 1
                             plt.subplot(ijk)
                             plt.plot(px,pz)
+                            plt.title(titles[a])
+                            if a > 1:
+                                plt.xlabel('refl. ht (m)')
     #    plt.savefig(pltname)
         plt.show()
     else: 

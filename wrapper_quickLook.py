@@ -104,10 +104,10 @@ desiredP = 0.01 # 1 cm precision
 ediff = 2
 freqs = [1] # default is to do L1 
 pele = [5, 30] # elevation angle limits for removing the polynomial 
-Hlimits = [0.5, 10] # RH limits in meters
-elval = [5,25] # elevation angle limits
-NReg = [0.5, 6]
-# look at four quadrants to get started
+Hlimits = [0.5, 6] # RH limits in meters - this is typical for a snow setup
+elval = [5,25] # elevation angle limits for estimating LSP
+NReg = [0.5, 6] # noise region - again, this is for typical snow setup
+# look at the four geographic quadrants to get started - these are azimuth angles
 azval = [0, 90, 90,180, 180, 270, 270, 360]
 reqAmp = [10] # this is arbitrary 
 twoDays = False
