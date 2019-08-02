@@ -521,16 +521,28 @@ def rinex_sopac(station, year, month, day):
     path1 = '/pub/rinex/' + cyyyy + '/' + cdoy + '/' 
     url = sopac + path1 + file1 
     print(url)
+
+    file2 = oname   + '.Z'
+    path2 = '/pub/rinex/' + cyyyy + '/' + cdoy + '/' 
+    url2 = sopac + path2 + file2 
+    print(url2)
     try:
-        wget.download(url,file1)
-        # uncompress, hatanaka translation, rm old file
-        subprocess.call(['uncompress', file1])
-        subprocess.call([crnxpath, fname])
-        subprocess.call(['rm', '-f',fname])
-        print('successful download from SOPAC ')
+        wget.download(url2,file2)
+        subprocess.call(['uncompress', file2])
     except:
-        print('some kind of problem with download',file1)
-        subprocess.call(['rm', '-f',file1])
+        print('problem ', file2, oname)
+    if os.path.isfile(oname):
+        print('successful download')
+    else:
+        try:
+            wget.download(url,file1)
+            subprocess.call(['uncompress', file1])
+            subprocess.call([crnxpath, fname])
+            subprocess.call(['rm', '-f',fname])
+            print('successful Hatanaka download from SOPAC ')
+        except:
+            print('some kind of problem with Hatanaka download',file1)
+            subprocess.call(['rm', '-f',file1])
 
 def getnavfile(year, month, day):
     """
@@ -1756,8 +1768,11 @@ def window_data(s1,s2,s5,s6,s7,s8, sat,ele,azi,seconds,edot,f,az1,az2,e1,e2,satN
 # average tan(elev)
             cunit =np.mean(np.tan(np.pi*x/180))
 #           return tan(e)/edot, in units of radians/hour now. used for RHdot correction
+    if avgEdot == 0:
+        outFact1 = 0
+    else:
+        outFact1 = cunit/(avgEdot*3600) 
     outFact2 = cunit/(avgEdot_fit*3600) 
-    outFact1 = cunit/(avgEdot*3600) 
     return x,y,Nvv,cf,meanTime,avgAzim,outFact1, outFact2, delT
 
 def arc_scaleF(f,satNu):
@@ -1831,82 +1846,6 @@ def freq_out(x,ofac,hifac):
 # simpler way
     pd = np.linspace(pstart, pstop, nout)
     return pd
-
-def read_snr_file(obsfile):
-    """
-    input: observation filename
-    output: contents of the file, withe various other metrics
-    """
-
-#SNR existance array : s0, s1,s2,s3,s4,s5,s6,s7,s8.  fields 0,3,4 are always false
-    snrE = np.array([False, True, True,False,False,True,True,True,True],dtype = bool)
-    f = np.genfromtxt(obsfile,comments='%')
-    print('reading from a snr file ',obsfile)
-    r,c = f.shape
-    print('Number of rows:', r, ' Number of columns:',c)
-#   store into new variable f
-    sat = f[:,0]
-    ele = f[:,1]
-    azi = f[:,2]
-    t =  f[:,3]
-#   this is sometimes all zeros
-    edot =  f[:,4]
-#   looking for bad edot (since different rinex translators behave differently)
-    median_edot = np.median(np.absolute(edot))
-    s1 = f[:,6]
-    s2 = f[:,7]
-#   typically there is a zero in this row, but older files may have something
-#   something that should not be used 
-    s6 = f[:,5]
-
-
-    s1 = np.power(10,(s1/20))  
-    s2 = np.power(10,(s2/20))  
-#
-    s6 = s6/20
-    s6 = np.power(10,s6)  
-#
-#   sometimes these records exist, sometimes not
-#   depends on when the file was made, which version was used
-
-    s5 = []
-    s7 = []
-    s8 = []
-    if c > 8:
-        s5 = f[:,8]
-        if (sum(s5) > 0):
-            s5 = s5/20; s5 = np.power(10,s5)  
-
-    if c > 9:
-        s7 = f[:,9]
-        if (sum(s7) > 0):
-            s7 = np.power(10,(s7/20))  
-        else:
-            s7 = []
-
-    if c > 10:
-        s8 = f[:,10]
-        if (sum(s8) > 0):
-            s8 = np.power(10,(s8/20))  
-        else:
-            s8 = []
-
-
-    if (np.sum(s5) == 0):
-        snrE[5] = False
-#        print('no s5 data')
-    if (np.sum(s6) == 0):
-#        print('no s6 data')
-        snrE[6] = False
-    if (np.sum(s7) == 0):
-#        print('no s7 data')
-        snrE[7] = False
-    if (np.sum(s8) == 0):
-        snrE[8] = False
-#        print('no s8 data')
-
-#   now returned existence logical, snrE
-    return sat, ele, azi, t, edot, s1, s2, s5, s6, s7, s8, median_edot, snrE
 
 def find_satlist(f,snrExist):
     """
@@ -2247,8 +2186,10 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
         if foundit:
             # now you can look for a rinex file
             rinexfile,rinexfiled = rinex_name(station, year, month, day)
-            print(rinexfile)
-            if (os.path.isfile(rinexfile) == False):
+            print('rinexfile should be ', rinexfile)
+            if (os.path.isfile(rinexfile) == True):
+                print('rinex file exists')
+            else:
                 print('go get the rinex file')
             # new version
                 if receiverrate == 'low':
@@ -2257,6 +2198,13 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
                 else:
                     print('seeking high rate at unavco')
                     rinex_unavco_highrate(station, year, month, day) 
+                if os.path.isfile(rinexfile):
+                    print('you have the rinex file')
+                else:
+                    print('try to get it from SOPAC.')
+                    rinex_sopac(station, year, month, day)
+                    print('only regular RINEX the last 30 days, Hatanaka the rest')
+
 
     # check to see if you found the rinex file
     # should check that the orbit really exists too
@@ -2331,7 +2279,6 @@ def store_snrfile(filename,year,station):
     if not os.path.isdir(xdir): #if year folder doesn't exist, make it
         os.makedirs(xdir)
     if (os.path.isfile(filename) == True):
-        print('using subprocess')
         status = subprocess.call(['mv','-f', filename, xdir])
     else:
         print('file does not exist, so nothing was moved')

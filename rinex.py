@@ -71,4 +71,5 @@ except:
 
 if os.path.exists(rinexfile):
     print('retrieved the rinex file - moving to Files directory')
+    print(xdir + rinexfile)
     status = subprocess.call(['mv',rinexfile,xdir])
