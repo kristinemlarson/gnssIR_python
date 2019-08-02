@@ -243,14 +243,14 @@ for doy in doy_list:
         ct = 0
 # good arcs saved to a plain text file, rejected arcs to local file. Open those file names
         fout,frej = g.open_outputfile(station,year,doy,extension) 
-# If you want to make a plot
-        g.open_plot(plt_screen)
 
 #  main loop
 # for a given list of frequencies
 
         total_arcs = 0
         for f in freqs:
+       # If you want to make a plot for each frequency?
+            g.open_plot(plt_screen)
             rj = 0
             gj = 0
             print('**** looking at frequency ', f, ' ReqAmp', reqAmp[ct], ' doy ', doy)
