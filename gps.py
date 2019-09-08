@@ -544,6 +544,57 @@ def rinex_sopac(station, year, month, day):
             print('some kind of problem with Hatanaka download',file1)
             subprocess.call(['rm', '-f',file1])
 
+def rinex_sonel(station, year, month, day):
+    """
+    author: kristine larson
+    inputs: station name, year, month, day
+    picks up a hatanaka RINEX file from SOPAC - converts to o
+    hatanaka exe hardwired  for my machine
+    """
+    exedir = os.environ['EXE']
+    crnxpath = exedir + '/CRX2RNX'
+    doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
+    sonel = 'ftp://ftp.sonel.org'
+    oname,fname = rinex_name(station, year, month, day) 
+    file1 = fname + '.Z'
+    path1 = '/gps/data/' + cyyyy + '/' + cdoy + '/' 
+    url = sonel + path1 + file1 
+    print(url)
+
+    # I don't think they have normal RINEX, so only hatanaka
+    try:
+        wget.download(url,file1)
+        subprocess.call(['uncompress', file1])
+        subprocess.call([crnxpath, fname])
+        subprocess.call(['rm', '-f',fname])
+        print('successful Hatanaka download from SONEL ')
+    except:
+            print('some kind of problem with Hatanaka download from SONEL',file1)
+            subprocess.call(['rm', '-f',file1])
+
+def rinex_cddis(station, year, month, day):
+    """
+    author: kristine larson
+    inputs: station name, year, month, day
+    picks up a hatanaka RINEX file from CDDIS - converts to o
+    """
+    exedir = os.environ['EXE']
+    crnxpath = exedir + '/CRX2RNX'
+    doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
+    cddis = 'ftp://ftp.cddis.eosdis.nasa.gov'
+    oname,fname = rinex_name(station, year, month, day)
+    file1 = oname + '.Z'
+    url = cddis + '/pub/gnss/data/daily/' + cyyyy + '/' + cdoy + '/' + cyy + 'o/' + file1
+    print(url)
+
+    try:
+        wget.download(url,file1)
+        subprocess.call(['uncompress', file1])
+        print('successful download from CDDIS')
+    except:
+            print('some kind of problem with download',file1)
+            subprocess.call(['rm', '-f',file1])
+
 def getnavfile(year, month, day):
     """
     author: kristine larson
@@ -562,21 +613,38 @@ def getnavfile(year, month, day):
     else:
         doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     navname,navdir = nav_name(year, month, day)
+    # painful painful - this should work for all of it
+    navstatus = navfile_retrieve(navname, cyyyy,cyy,cdoy) 
+    if navstatus:
+        subprocess.call(['mv',navname, navdir])
+    else:
+        print('huh?')
+
     # only look for the compressed version
     file1 = navname + '.Z'
     path1 = '/pub/rinex/' + cyyyy + '/' + cdoy + '/'
     url1 = sopac + path1 + file1
+    url2 = sopac + path1 + navname
     if (os.path.isfile(navdir + '/' + navname ) == True):
         print('nav file already exists online')
         foundit = True
     else:
+        print('look for compressed nav file at sopac')
         try:
             wget.download(url1,file1)
             subprocess.call(['uncompress',file1])
             store_orbitfile(navname,year,'nav') 
             foundit = True
+            print('success')
         except:
-            print('give up downloading nav file for now')
+            print('look for uncompressed nav file at sopac')
+            try:
+                wget.download(url2,navname)
+                store_orbitfile(navname,year,'nav') 
+                foundit = True
+                print('success')
+            except:
+                print('give up downloading nav file for now')
 
     return navname,navdir,foundit
 
@@ -2204,6 +2272,11 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
                     print('try to get it from SOPAC.')
                     rinex_sopac(station, year, month, day)
                     print('only regular RINEX the last 30 days, Hatanaka the rest')
+                if not os.path.isfile(rinexfile):
+                    print('try SONEL')
+                    rinex_sonel(station, year, month, day)
+                else:
+                    print('nothing')
 
 
     # check to see if you found the rinex file
@@ -2609,7 +2682,8 @@ def getseries(site):
 
 def rewrite_tseries(station):
     """
-    given a station name, look at a daily blewitt position (ENV) file and write a new file that is less insane to understand
+    given a station name, look at a daily blewitt position (ENV) 
+    file and write a new file that is less insane to understand
     """
     siteid = station.upper()
     # NA12 env time series
@@ -2624,6 +2698,35 @@ def rewrite_tseries(station):
         for i in range(0,N):
             mjd = x[i,0]
             yy,mm,dd = mjd_to_date(mjd) 
+            doy, cdoy, cyyyy, cyy = ymd2doy(yy,mm,dd)
+            east = x[i,1] + x[i,2]
+            north= x[i,3] + x[i,4]
+            # adding in the antenna
+            vert = x[i,5] + x[i,6] +  x[i,7]
+            f.write(" {0:4.0f} {1:2.0f} {2:2.0f} {3:3.0f} {4:13.4f} {5:13.4f} {6:13.4f} \n".format(yy,mm,dd,doy,east,north,vert))
+        f.close()
+    except:
+        print('some problem writing the output')
+
+def rewrite_tseries_igs(station):
+    """
+    given a station name, look at a daily blewitt position (ENV)
+    file and write a new file that is less insane to understand
+    """
+    siteid = station.upper()
+    # NA12 env time series
+    fname = 'tseries/' + siteid + '.IGS08.tenv3'
+    outputfile = 'tseries/' + station + '_igs08.env'
+    print(fname,outputfile)
+    try:
+        x=np.genfromtxt(fname, skip_header=1, usecols = (3, 7, 8, 9, 10, 11, 12,13))
+        N = len(x)
+        print(N)
+        print(N,'open outputfile',outputfile)
+        f=open(outputfile,'w+')
+        for i in range(0,N):
+            mjd = x[i,0]
+            yy,mm,dd = mjd_to_date(mjd)
             doy, cdoy, cyyyy, cyy = ymd2doy(yy,mm,dd)
             east = x[i,1] + x[i,2]
             north= x[i,3] + x[i,4]
@@ -2779,3 +2882,55 @@ def update_quick_plot(station, f):
     plt.subplot(211)
     plt.xlabel('elev Angles (deg)')
     plt.title(station + ' SNR Data and Frequency L' + str(f))
+
+    return True
+
+def navfile_retrieve(navfile,cyyyy,cyy,cdoy):
+    """
+    """
+
+    FileExists = True
+    unavco= 'ftp://data-out.unavco.org'
+    sopac = 'ftp://garner.ucsd.edu'
+    cddis = 'ftp://ftp.cddis.eosdis.nasa.gov'
+
+    navfile_sopac1 =  navfile   + '.Z' # regular nav file
+    navfile_compressed = navfile + '.Z'
+    url_sopac1 = sopac + '/pub/rinex/' + cyyyy + '/' + cdoy + '/' + navfile_sopac1
+
+    navfile_sopac2 =  navfile
+    url_sopac2 = sopac + '/pub/rinex/' + cyyyy + '/' + cdoy + '/' + navfile_sopac2
+
+    navfile_unavco = 'sc02' + navfile[4:] + '.Z'
+    url_unavco = unavco + '/pub/rinex/nav/' + cyyyy + '/' + cdoy + '/' + navfile_unavco
+
+    navfile_cddis = 'onsa' + navfile[4:] + '.Z'
+    url_cddis = cddis + '/gps/data/daily/' + cyyyy + '/' + cdoy + '/' +cyy + 'n/' + navfile_cddis
+
+    try:
+        print('compressed nav file from SOPAC')
+        wget.download(url_sopac1,navfile_sopac1)
+        subprocess.call(['uncompress',navfile_sopac1])
+    except:
+        print('regular nav file from SOPAC')
+        try:
+            wget.download(url_sopac2,navfile)
+        except:
+            print('try unavco')
+            try:
+                print(url_unavco)
+                wget.download(url_unavco,navfile_compressed)
+                subprocess.call(['uncompress',navfile_compressed])
+            except:
+                print('try cddis')
+                try:
+                    print(url_cddis)
+                    wget.download(url_cddis,navfile_compressed)
+                    subprocess.call(['uncompress',navfile_compressed])
+                except:
+                    print('no success anywhere ')
+
+    if not os.path.isfile(navfile):
+        FileExists = False
+
+    return FileExists

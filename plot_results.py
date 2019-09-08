@@ -80,32 +80,35 @@ for yr in year_list:
         # file names have 7 characters in them ... 
             if (L == 7):
         # check that it is a file and not a directory and that it has something/anything in it
-                a = np.loadtxt(fname,skiprows=3,comments='%').T
-                numlines = len(a) 
-                if (len(a) > 0):
-                    y = a[0] +a[1]/365.25
-                    rh = a[2] 
-                    doy = int(np.mean(a[1]))
+                try:
+                    a = np.loadtxt(fname,skiprows=3,comments='%').T
+                    numlines = len(a) 
+                    if (len(a) > 0):
+                        y = a[0] +a[1]/365.25
+                        rh = a[2] 
+                        doy = int(np.mean(a[1]))
         # change from doy to month and day in datetime
-                    d = datetime.date(yr,1,1) + datetime.timedelta(doy-1)
-                    medv = np.median(rh)
-                    cc = (rh < (medv+howBig))  & (rh > (medv-howBig))
-                    good =rh[cc]; goodT =y[cc]
+                        d = datetime.date(yr,1,1) + datetime.timedelta(doy-1)
+                        medv = np.median(rh)
+                        cc = (rh < (medv+howBig))  & (rh > (medv-howBig))
+                        good =rh[cc]; goodT =y[cc]
         # only save if there are some minimal number of values
-                    if (len(good) > ReqTracks):
-                        rh = good
-                        obstimes.append(datetime.datetime(year=yr, month=d.month, day=d.day, hour=12, minute=0, second=0))
-                        medRH =np.append(medRH, medv)
-                        plt.plot(goodT, good,'.')
+                        if (len(good) > ReqTracks):
+                            rh = good
+                            obstimes.append(datetime.datetime(year=yr, month=d.month, day=d.day, hour=12, minute=0, second=0))
+                            medRH =np.append(medRH, medv)
+                            plt.plot(goodT, good,'.')
             # store the meanRH after the outliers are removed using simple median filter
-                        meanRHtoday = np.mean(good)
-                        meanRH =np.append(meanRH, meanRHtoday)
+                            meanRHtoday = np.mean(good)
+                            meanRH =np.append(meanRH, meanRHtoday)
             # add month and day just cause some people like that instead of doy
-                        newl = [yr, doy, meanRHtoday, len(rh), d.month, d.day]
-                        tv = np.append(tv, [newl],axis=0)
-                        k += 1
-                    else:
-                        print('not enough retrievals on ', yr, d.month, d.day, len(good))
+                            newl = [yr, doy, meanRHtoday, len(rh), d.month, d.day]
+                            tv = np.append(tv, [newl],axis=0)
+                            k += 1
+                        else:
+                            print('not enough retrievals on ', yr, d.month, d.day, len(good))
+                except:
+                     print('problem reading ', fname, ' so skipping it')
     else:
         print('that directory does not exist - so skipping')
 plt.ylabel('Reflector Height (m)')
