@@ -2038,21 +2038,22 @@ def removeDC(dat,satNu, sat,ele, pele, azi,az1,az2,edot,seconds):
 
     return x,y,sat,azi,seconds,edot
 
-def quick_plot(plt_screen, gj,station,pltname):
+def quick_plot(plt_screen, gj,station,pltname,f):
     """
     inputs plt_screen variable (1 means go ahead) and integer variable gj
     which if > 0 there is something to plot
     also station name for the title
     pltname is png filename, if requested
+    author: kristine m. larson
     """
     if (plt_screen == 1  and gj > 0):
         plt.subplot(212)
-        plt.xlabel('reflector height(m)')
-        plt.ylabel('Spectral Amplitude')
+        plt.xlabel('Reflector height(m)')
+        plt.ylabel('SNR Spectral Amplitude')
         plt.subplot(211)
-        plt.title(station)
-        plt.ylabel('volts/volts')
-        plt.xlabel('elev. angle(degrees)')
+        plt.title('Station:' + station + '/freq:' + str(f))
+        plt.ylabel('SNR (volts/volts)')
+        plt.xlabel('elevation angle(degrees)')
         if pltname != 'None':
             plt.savefig(pltname)
         else:
@@ -2187,6 +2188,7 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
     if the later, then gnssSNR
     this assumes you follow my definitions for where things go,
     i.e. REFL_CODE and ORBITS
+    it currently checks Unavco, SOPAC, and SONEL
     author: kristine m. larson
     19may20, added decimation
     """

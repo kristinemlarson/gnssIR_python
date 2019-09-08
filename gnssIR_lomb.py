@@ -299,4 +299,4 @@ for doy in doy_list:
 # close the output files
         fout.close() ; frej.close()
 # plot to the screen
-        g.quick_plot(plt_screen, total_arcs,station,pltname)
+        g.quick_plot(plt_screen, total_arcs,station,pltname,f)

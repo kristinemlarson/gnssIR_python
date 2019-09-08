@@ -68,7 +68,7 @@ def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pel
                 if os.path.isfile(obsfile):
                     print('the SNR file now exists')  
                 else:
-                    print('the RINEX file did not exist at UNAVCO, so no SNR file.')
+                    print('the RINEX file did not exist, so no SNR file.')
     allGood,sat,ele,azi,t,edot,s1,s2,s5,s6,s7,s8,snrE = q.read_snr_simple(obsfile)
     if allGood == 1:
         minEdataset = np.min(ele)
@@ -105,8 +105,6 @@ def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pel
                         else:
                             axes[bx[a],by[a]].plot(px,pz)
                             axes[bx[a],by[a]].set_title(titles[a])
-#                        if (a == 1) | (a == 3):
-#                            axes[bx[a],by[a]].set_xlabel('refl. ht (m)')
 
             # i do not know how to add a grid using these version of matplotlib
             tt = 'GNSS-IR results: ' + station.upper() + ' Freq:' + str(f) + ' ' + str(year) + '/' + str(doy)
@@ -119,3 +117,5 @@ def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pel
             plt.show()
     else: 
         print('some kind of problem with SNR file, so I am exiting the code politely.')
+#                        if (a == 1) | (a == 3):
+#                            axes[bx[a],by[a]].set_xlabel('refl. ht (m)')

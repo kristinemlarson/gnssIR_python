@@ -1,12 +1,15 @@
-# gnssIR_lomb.py
+# gnssIR_lomb.py, rinex2snr.py, and wrapper_quickLook.py
 
-gnssIR_lomb is a python module that will compute reflector heights (RH) fairly automatically.
+gnssIR_lomb.py computes reflector heights (RH) fairly automatically.
+rinex2snr.py translates the RINEX files into SNR files, which are fed into gnssIR_lomb.py
+wrapper_quickLook.py will try to give you a quick assessment of a file wihtout dealing
+with the details associated with gnssIR_lomb.py.
+
 Some things to know:
 
 I only support python3. 
 
-The library dependencies are provided in the pyproject.toml file (I am using poetry package manager).
-I have various functions in gps.py and read_snr_files.py
+The library dependencies are provided in the pyproject.toml file (I am using a package manager called poetry).
 
 
 The RH estimation depends on satellite elevation angle, not time. This can
@@ -24,70 +27,65 @@ created from RINEX files. RINEX is the standard format for GPS/GNSS files.
 A simple refraction error correction has been added.
 
 July 2, 2019
-I have added another code (quickLook.py) that will give you a "quick and dirty" evaluation
+I have added another code (wrapper_quickLook.py) that will give you a "quick and dirty" evaluation
 of a single site. It has the nice advantage that it will make a SNR file for you if your
-RINEX file is in your working directory or if it is stored at the UNAVCO archive.
+RINEX file is in your working directory or if it is stored at one of three archive (unavco,sopac, and sonel).
 
 
 WARNING: These codes do not calculate soil moisture.
 
 # Installing the code
 
-You need to define four environment variables:
+You need to define three environment variables:
 
-* EXE = where the Fortran translator executables will live
+* EXE = where the Fortran translator executables will live. Also the code that
+translates certain RINEX files is needed and will be stored in this directory.  
+I do not control these codes - but they are very important
+modules in the GPS/GNSS communities.
 
-* ORBITS = where the GPS/GNSS orbits will be (nav for GPS only and 
-sp3 for multi GNSS). These files are only 
-used in the fortran conversion code.
+* ORBITS = where the GPS/GNSS orbits will be stored (nav directory for GPS only and 
+sp3 subdirectory for multi GNSS). These files are only 
+used in the fortran conversion code from RINEX to SNR.
+
+* REFL_CODE = where the reflection code inputs (SNR files and instructions) and outputs (RH) 
+will be stored (see below)
+
+Optional environment variable 
 
 * COORDS = where the coordinates are kept for sites with large 
 position speeds, i.e. Greenland and Antarctica icesheets.
 This is only used in the fortran conversion code - and samples are given 
 with the source code.  If this file does not exist, it does not matter. 
 
-* REFL_CODE = where the reflection code inputs (SNR files and instructions) and outputs (RH) 
-will be stored (see below)
 
-You should make sure you have installed all the required python libraries. 
+Make sure you have installed all the required python libraries. 
 
 Unless you already have codes to make my SNR files, you will need to 
 install RINEX translators.  I have two of them. One is for people that only have 
 GPS data - and thus uses the nav file for the orbits. 
 The other translates all GNSS signals and uses a sp3 file.  Both 
-codes are hosted at GitHub. If you are going to rely on a GPS/GNSS archive 
-for your RINEX files, you almost certainly
-need to have the ability to convert from what is called "compressed RINEX" to regular 
-RINEX files.  Such a converter is available publicly (see below).
+codes are hosted at GitHub. 
 
-# RINEX translators 
+# Non-Python Code 
 
 * RINEX translator for multi-GNSS, which must be called gnssSNR.e, https://github.com/kristinemlarson/gnssSNR 
+If the executable from this code is not gnssSNR.e, please change it and move it to the EXE directory
 
 * RINEX Translator for GPS, which must be called gpsSNR.e, https://github.com/kristinemlarson/gpsonlySNR
 
-* CRX2RNX, Compressed to Uncompressed RINEX, http://terras.gsi.go.jp/ja/crx2rnx.html
+* CRX2RNX, Compressed to Uncompressed RINEX, http://terras.gsi.go.jp/ja/crx2rnx.html This must be stored 
+in the EXE directory.
 
-* teqc, not required, but highly recommended if you are going down the 
-RINEX rabbit hole.  There is a list of executables at the 
+* teqc is not required, but highly recommended if you are going down the 
+RINEX rabbit hole.  There is a list of static executables at the 
 bottom of this page, http://www.unavco.org/software/data-processing/teqc/teqc.html
+It needs to be stored in the EXE directory.
 
 
-# Inputs for RINEX translation code
+# Making SNR files
 
-The python driver is called rinex2snr.py.
-It will need to know how to find the fortran executables, so
-make sure the EXE environment variable is set. 
-The fortran codes are available on gitHub - use the links given above. 
-And the makefiles assume you are using gfortran.
-Once you make executable files, you will need to either copy 
-them to the EXE area - or easier,
-just make a symbolic link. If you are in the EXE directory
-
-ln -s physical-location-of-executable gpsSNR.e (for example)
-
-If I have more users and support for these codes, I will elimimate the 
-fortran converters and move to python only.
+The python driver is called rinex2snr.py. Make sure EXE is defined and the relevant 
+executables are there.
 
 A sample call of of the python driver rinex2snr.py would be:
 
@@ -95,9 +93,18 @@ python3 rinex2snr.py at01 2019 75 80 66 gbm
 
 * at01 is the station name 
 * 2019 is the year 
-* 70 and 80 are the starting and ending day of years.
+* 75 and 80 are the starting and ending day of years.
 * 66 is the snr option type (see the translator code for more information).  
 * The last input is the orbit type.
+
+The snr options are always two digit numbers.  Choices are:
+
+* 99 is elevation angles of 5-30 degrees 
+* 88 is elevation angles of 5-90 degrees
+* 66 is elevation angles less than 30 degrees
+* 50 is elevation angles less than 10 degrees
+
+Legal orbit types:
 
 1. nav - is using the GPS nav message. The main plus is that it is available in near 
 real-time.  A nav file only has GPS orbits in it, so you should not use this 
@@ -105,24 +112,22 @@ option if you want to do true multi-GNSS
 reflectometry. I pick my file up from SOPAC, but you can use other archives if you prefer.
 2. sp3 - is using the IGS sp3 file, so again, your RINEX file should be GPS only. 
 3. gbm - is now my only option for getting a multi-GNSS orbit file.  This is also 
-in sp3 format. It comes from the group at GFZ.  
+in sp3 format. The gbm file comes from the group at GFZ.  
+
 
 If the orbit files don't already exist on your system, the rinex2snr.py code attempts 
 to pick them up for you. They are then stored in the ORBITS directory.
 
 Unless the RINEX data are sitting there in your working directory, the code attempts to 
-pick up your RINEX file at UNAVCO. I think there is a high-rate option, but I have 
-not extensively tested it.  Code to download files from SOPAC is also in gps.py
-but is not currently called. Brendan Crowell gave me a rinexdownloader.py script - and you
-are welcome to give it a look see if you want to write your own.  Please thank him the next time
-you see him ;-)
+pick up your RINEX file from UNAVCO, SOPAC, and SONEL. I think there is a high-rate option, but I have 
+not extensively tested it.  It only works for UNAVCO. 
 
-The snr files are stored in REFL_CODE/YYYY/snr
+The SNR files created by this code are stored in REFL_CODE/YYYY/snr
 
 One more thing- it is very comon for GPS archives to store files in the Hatanaka (compressed) format.
 So currently it tries to get the regular RINEX file but if that fails, it tries to download
 Hatanaka format. You need the Hatanaka decompression code (see above) to translate this.  
-You need to put it in the EXE area.
+You need to put it in the EXE area. It is called CRX2RNX.
 
 # Running the RH (gnssIR_lomb.py) code
 
