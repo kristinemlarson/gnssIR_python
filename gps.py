@@ -517,32 +517,25 @@ def rinex_sopac(station, year, month, day):
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     sopac = 'ftp://garner.ucsd.edu'
     oname,fname = rinex_name(station, year, month, day) 
+    # compressed version??
     file1 = fname + '.Z'
     path1 = '/pub/rinex/' + cyyyy + '/' + cdoy + '/' 
-    url = sopac + path1 + file1 
-    print(url)
+    url1 = sopac + path1 + file1 
+    # print(url)
 
-    file2 = oname   + '.Z'
-    path2 = '/pub/rinex/' + cyyyy + '/' + cdoy + '/' 
-    url2 = sopac + path2 + file2 
-    print(url2)
+    #file2 = oname   + '.Z'
+    #path2 = '/pub/rinex/' + cyyyy + '/' + cdoy + '/' 
+    #url2 = sopac + path2 + file2 
     try:
-        wget.download(url2,file2)
-        subprocess.call(['uncompress', file2])
+        wget.download(url1,file1)
+        subprocess.call(['uncompress', file1])
+        subprocess.call([crnxpath, fname])
+        subprocess.call(['rm', '-f',fname])
+        print('successful Hatanaka download from SOPAC ')
     except:
-        print('problem ', file2, oname)
-    if os.path.isfile(oname):
-        print('successful download')
-    else:
-        try:
-            wget.download(url,file1)
-            subprocess.call(['uncompress', file1])
-            subprocess.call([crnxpath, fname])
-            subprocess.call(['rm', '-f',fname])
-            print('successful Hatanaka download from SOPAC ')
-        except:
-            print('some kind of problem with Hatanaka download',file1)
-            subprocess.call(['rm', '-f',file1])
+        print('some kind of problem with Hatanaka download',file1)
+        subprocess.call(['rm', '-f',file1])
+        subprocess.call(['rm', '-f',fname])
 
 def rinex_sonel(station, year, month, day):
     """
@@ -614,37 +607,18 @@ def getnavfile(year, month, day):
         doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     navname,navdir = nav_name(year, month, day)
     # painful painful - this should work for all of it
-    navstatus = navfile_retrieve(navname, cyyyy,cyy,cdoy) 
-    if navstatus:
-        subprocess.call(['mv',navname, navdir])
-    else:
-        print('huh?')
-
-    # only look for the compressed version
-    file1 = navname + '.Z'
-    path1 = '/pub/rinex/' + cyyyy + '/' + cdoy + '/'
-    url1 = sopac + path1 + file1
-    url2 = sopac + path1 + navname
-    if (os.path.isfile(navdir + '/' + navname ) == True):
-        print('nav file already exists online')
+    print(navname,navdir)
+    if os.path.exists(navdir + '/' + navname):
         foundit = True
     else:
-        print('look for compressed nav file at sopac')
-        try:
-            wget.download(url1,file1)
-            subprocess.call(['uncompress',file1])
-            store_orbitfile(navname,year,'nav') 
+        print('go pick up the navfile')
+        navstatus = navfile_retrieve(navname, cyyyy,cyy,cdoy) 
+        if navstatus:
+            print('mv the navfile')
+            subprocess.call(['mv',navname, navdir])
             foundit = True
-            print('success')
-        except:
-            print('look for uncompressed nav file at sopac')
-            try:
-                wget.download(url2,navname)
-                store_orbitfile(navname,year,'nav') 
-                foundit = True
-                print('success')
-            except:
-                print('give up downloading nav file for now')
+        else:
+            print('no navfile')
 
     return navname,navdir,foundit
 
@@ -2247,7 +2221,6 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
             f,orbdir,foundit=getsp3file_mgex(year,month,day,'gbm')
             snrexe = exedir + '/gnssSNR.e' 
         if orbtype == 'nav':
-            print('using nav message')
             f,orbdir,foundit=getnavfile(year, month, day) 
             snrexe = exedir  + '/gpsSNR.e' 
         # if you have the orbit file, you can get the rinex file
@@ -2259,7 +2232,6 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
                 print('rinex file exists')
             else:
                 print('go get the rinex file')
-            # new version
                 if receiverrate == 'low':
                     print('seeking low rate at unavco')
                     rinex_unavco(station, year, month, day) 
@@ -2269,14 +2241,17 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
                 if os.path.isfile(rinexfile):
                     print('you have the rinex file')
                 else:
-                    print('try to get it from SOPAC.')
-                    rinex_sopac(station, year, month, day)
-                    print('only regular RINEX the last 30 days, Hatanaka the rest')
+                    try:
+                        print('try to get it from SOPAC')
+                        rinex_sopac(station, year, month, day)
+                    except:
+                        print('no success at SOPAC.')
                 if not os.path.isfile(rinexfile):
-                    print('try SONEL')
-                    rinex_sonel(station, year, month, day)
-                else:
-                    print('nothing')
+                    try:
+                        print('try SONEL')
+                        rinex_sonel(station, year, month, day)
+                    except:
+                        print('got nothing - give up')
 
 
     # check to see if you found the rinex file
@@ -2888,12 +2863,12 @@ def update_quick_plot(station, f):
 def navfile_retrieve(navfile,cyyyy,cyy,cdoy):
     """
     """
-
+    print('in navfile_retrieve')
     FileExists = True
     unavco= 'ftp://data-out.unavco.org'
     sopac = 'ftp://garner.ucsd.edu'
     cddis = 'ftp://ftp.cddis.eosdis.nasa.gov'
-
+    navname = navfile
     navfile_sopac1 =  navfile   + '.Z' # regular nav file
     navfile_compressed = navfile + '.Z'
     url_sopac1 = sopac + '/pub/rinex/' + cyyyy + '/' + cdoy + '/' + navfile_sopac1
@@ -2908,27 +2883,29 @@ def navfile_retrieve(navfile,cyyyy,cyy,cdoy):
     url_cddis = cddis + '/gps/data/daily/' + cyyyy + '/' + cdoy + '/' +cyy + 'n/' + navfile_cddis
 
     try:
-        print('compressed nav file from SOPAC')
+        print('try to download compressed nav file from SOPAC')
         wget.download(url_sopac1,navfile_sopac1)
         subprocess.call(['uncompress',navfile_sopac1])
     except:
-        print('regular nav file from SOPAC')
+        print('no success at sopac')
+    if not os.path.exists(navname):
+        print(' get rid of corrupted file, if any')
+        subprocess.call(['rm','-f',navfile_sopac1])
+        subprocess.call(['rm','-f',navname])
         try:
-            wget.download(url_sopac2,navfile)
+            wget.download(url_unavco,navfile_compressed)
+            subprocess.call(['uncompress',navfile_compressed])
+            print('success at unavco')
         except:
-            print('try unavco')
-            try:
-                print(url_unavco)
-                wget.download(url_unavco,navfile_compressed)
-                subprocess.call(['uncompress',navfile_compressed])
-            except:
-                print('try cddis')
-                try:
-                    print(url_cddis)
-                    wget.download(url_cddis,navfile_compressed)
-                    subprocess.call(['uncompress',navfile_compressed])
-                except:
-                    print('no success anywhere ')
+           print('no success at unavco')
+    if not os.path.exists(navname):
+        try:
+            print('try cddis')
+            wget.download(url_cddis,navfile_compressed)
+            subprocess.call(['uncompress',navfile_compressed])
+            print('success at cddis')
+        except:
+            print('no success anywhere ')
 
     if not os.path.isfile(navfile):
         FileExists = False
