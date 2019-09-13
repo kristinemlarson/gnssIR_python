@@ -1900,8 +1900,11 @@ def find_satlist(f,snrExist):
 # 
 #   these are the only L2C satellites as of 18oct10
     l2c_sat = [1, 3, 5, 6, 7, 8, 9, 10, 12, 15, 17, 24, 25, 26, 27, 29, 30, 31, 32]
+    # added PRN 4 recently, new Block III - was gonna, but it is not healthy yet
+    # l2c_sat = [1, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 17, 24, 25, 26, 27, 29, 30, 31, 32]
 #   only L5 satellites thus far
     l5_sat = [1, 3,  6,  8, 9, 10, 24, 25, 26, 27, 30,  32]
+    # l5_sat = [1, 3,  4, 6,  8, 9, 10, 24, 25, 26, 27, 30,  32]
 #   assume l1 and l2 can be up to 32
     l1_sat = np.arange(1,33,1)
     satlist = []
@@ -2171,6 +2174,7 @@ def update_plot(plt_screen,x,y,px,pz):
     if (plt_screen == 1):
         plt.subplot(211)  
         plt.plot(x,y)
+        #plt.title(station)
         plt.subplot(212)  
         plt.plot(px,pz)
 def open_plot(plt_screen):

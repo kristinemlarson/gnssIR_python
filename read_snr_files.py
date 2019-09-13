@@ -39,7 +39,7 @@ def read_snr_multiday(obsfile,obsfile2,twoDays):
 #        print(ele)
 #        g.print_file_stats(ele,sat,s1,s2,s5,s6,s7,s8,e1,e2)
     except:
-        print('failed to read the first file')
+        print('failed to read the first SNR file')
 #
 #
 #

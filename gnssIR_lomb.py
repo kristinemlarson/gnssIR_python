@@ -24,6 +24,9 @@
 # 19jun28, change result file naming convetion to include snr file type
 # toggle for overwriting LSP results (default will be ot overwrite, but
 # for cdron jobs, nice not to)
+# 19sep13, code will attempt to make an SNR file for you if one does not exist. 
+# It will be GPS only. i.e. us
+# nav file
 # 
 """
 import sys
@@ -136,12 +139,11 @@ else:
 
 # You should not use the peak periodogram value unless it is significant. Using a 
 # peak to noise value is one way of defining that significance (not the only way).
-# I often use 3, but here I am using much less stringent requirement
-PkNoise = 2
+# I often use 3, but for now it is set to 2.7
+PkNoise = 2.7
 # this defines the minimum number of points in an arc.  This depends entirely on the sampling
 # rate for the receiver, so you should not assume this value is relevant to your case.
 minNumPts = 20 
-
 
 
 # get the month and day and the modified julian day, 
@@ -180,9 +182,7 @@ else:
     setA = setA + 1
 
 if (setA == 2):
-    naz = 1
-    azval[0] = azim1
-    azval[1] = azim2
+    naz = 1; azval[0] = azim1; azval[1] = azim2
 
 # this is for when you want to run the code with just a single frequency, i.e. input at the console
 # rather than using the input restrictions
@@ -218,9 +218,15 @@ for doy in doy_list:
         allGood = 0
         print('>>>>> The result file exists for this day and you have selected the do not overwrite option')
     else:
-        print('go ahead and read the files')
+        print('go ahead and read the files- first define SNR filename?')
         obsfile,obsfileCmp = g.define_filename(station,year,doy,snr_type)
         obsfile2,obsfile2Cmp = g.define_filename_prevday(station,year,doy,snr_type)
+        #  compressed function is pretty silly in the day of large disks
+        if not os.path.isfile(obsfile):
+            print('SNR file does not exist, so I will try to make it for you')
+            rate = 'low'; dec_rate = 0; orbtype = 'nav'
+            g.quick_rinex_snr(year, doy, station, snr_type, orbtype,rate, dec_rate)
+
 #   define two datasets - one from one day snr file and the other with 24 hours that
 #   have three hours from before midnite and first 21 hours on the given day
 #
@@ -283,20 +289,24 @@ for doy in doy_list:
                         iAzim = int(avgAzim)
                         if (delT < delTmax) & (eminObs < (e1 + ediff)) & (emaxObs > (e2 - ediff)) & (maxAmp > reqAmp[ct]) & (maxAmp/Noise > PkNoise):
                             fout.write(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} {8:6.2f} {9:4.0f} {10:3.0f} {11:2.0f} {12:8.5f} {13:6.2f} {14:7.2f} {15:12.6f} {16:1.0f} \n".format(year,doy,maxF,satNu, UTCtime, avgAzim,maxAmp,eminObs,emaxObs,Nv, f,riseSet, Edot2, maxAmp/Noise, delT, MJD,irefr))
-                            print('SUCCESS Azimuth {0:.1f} {1:2.0f} RH {2:5.1f} meters'.format( iAzim,satNu,maxF))
+                            print('SUCCESS Azimuth {0:.1f} {1:3.0f} RH {2:6.2f} meters'.format( iAzim,satNu,maxF))
                             gj +=1
                             g.update_plot(plt_screen,x,y,px,pz)
                         else:
-                            print('FAILED QC for Azimuth {0:.1f} Satellite {1:2.0f} '.format( iAzim,satNu))
-                            g.write_QC_fails(delT,delTmax,eminObs,emaxObs,e1,e2,ediff,maxAmp, Noise,PkNoise,reqAmp[ct])
-                            frej.write(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} \
+                            if eminObs > 15:
+                                print('useless tiny arc')
+                            else:
+                                print('failed QC for Azimuth {0:.1f} Satellite {1:2.0f} '.format( iAzim,satNu))
+                                g.write_QC_fails(delT,delTmax,eminObs,emaxObs,e1,e2,ediff,maxAmp, Noise,PkNoise,reqAmp[ct])
+                                frej.write(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} \
 {8:6.2f} {9:4.0f} {10:3.0f} {11:2.0f} {12:8.5f} {13:6.2f} {14:7.2f} {15:12.6f} \n".format(year,doy,maxF,satNu, UTCtime,\
                        avgAzim,maxAmp,eminObs,emaxObs,Nv, f,riseSet, Edot2,maxAmp/Noise,delT, MJD))
-                            rj +=1
+                                rj +=1
             print('     good arcs:', gj, ' rejected arcs:', rj)
             ct += 1
             total_arcs = gj + total_arcs
 # close the output files
+            g.quick_plot(plt_screen, total_arcs,station,pltname,f)
         fout.close() ; frej.close()
+#        g.quick_plot(plt_screen, total_arcs,station,pltname,f)
 # plot to the screen
-        g.quick_plot(plt_screen, total_arcs,station,pltname,f)

@@ -93,13 +93,13 @@ def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pel
                     maxF, maxAmp, eminObs, emaxObs,riseSet,px,pz= g.strip_compute(x,y,cf,maxH,desiredP,polyV,minH) 
                     nij =   pz[(px > NReg[0]) & (px < NReg[1])]
                     Noise = 0
+                    iAzim = int(avgAzim)
                     if (len(nij) > 0):
                         Noise = np.mean(nij)
-                        iAzim = int(avgAzim)
                     else:
                         Noise = 1; iAzim = 0 # made up numbers
                     if (delT < delTmax) & (eminObs < (e1 + ediff)) & (emaxObs > (e2 - ediff)) & (maxAmp > requireAmp) & (maxAmp/Noise > PkNoise):
-                        print('SUCCESS Azimuth {0:3.0f} RH {1:.2f} m, Sat {2:2.0f} Freq {3:.0f} Amp {4:3.1f} '.format( iAzim,maxF,satNu,f,maxAmp))
+                        print('SUCCESS Azimuth {0:5.1f} RH {1:.2f} m, Sat {2:2.0f} Freq {3:.0f} Amp {4:3.1f} '.format( avgAzim,maxF,satNu,f,maxAmp))
                         if not webapp:
                             plt.plot(px,pz)
                         else:

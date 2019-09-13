@@ -19,7 +19,7 @@ import gps as g
 parser = argparse.ArgumentParser()
 parser.add_argument("station", help="station name ", type=str)
 parser.add_argument("year", help="year ", type=int)
-parser.add_argument("month", help="month ", type=int)
+parser.add_argument("month", help="month (if day is zero, then this is day of year)", type=int)
 parser.add_argument("day", help="day ", type=int)
 parser.add_argument("-rate", default=None, type=str, help="low/high (not required)")
 
@@ -28,6 +28,10 @@ station = args.station
 year = args.year
 month = args.month
 day = args.day
+# if you use day of 0, then month is really the day of year
+if day == 0:
+    doy = month
+    y, month, day, cyyyy,cdoy, YMD = g.ydoy2useful(year,doy)
 
 if args.rate == None:
     rate = 'low'
