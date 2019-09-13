@@ -1,14 +1,13 @@
-# gnssIR_lomb.py, rinex2snr.py, and wrapper_quickLook.py
+# gnssIR_lomb.py, rinex2snr.py, and quickLook.py
 
-gnssIR_lomb.py computes reflector heights (RH) fairly automatically.
+gnssIR_lomb.py computes reflector heights (RH) from GNSS data.
+
 rinex2snr.py translates the RINEX files into SNR files, which are fed into gnssIR_lomb.py
-wrapper_quickLook.py will try to give you a quick assessment of a file wihtout dealing
+
+quickLook.py will try to give you a quick assessment of a file wihtout dealing
 with the details associated with gnssIR_lomb.py.
 
-Some things to know:
-
-I only support python3. 
-
+Other things to know: I only support python3. 
 The library dependencies are provided in the pyproject.toml file (I am using a package manager called poetry).
 
 
@@ -20,26 +19,25 @@ This doesn't matter for snow applications.
 When I get a chance, I will be adding a RH dot correction which is needed for tides.
 Again, this effect can be ignored for snow/ice reflections.
 
-I recently added another code (rinex2snr.py) that allows the user 
-to make the input files for the gnssIR_lomb.py code. I call these the SNR files. These are 
-created from RINEX files. RINEX is the standard format for GPS/GNSS files.
-
-A simple refraction error correction has been added.
+A simple refraction error correction has been added to gnssIR_lomb.py.
 
 July 2, 2019
-I have added another code (wrapper_quickLook.py) that will give you a "quick and dirty" evaluation
-of a single site. It has the nice advantage that it will make a SNR file for you if your
-RINEX file is in your working directory or if it is stored at one of three archive (unavco,sopac, and sonel).
+I have added another code (quickLook.py) that will give you a "quick and dirty" evaluation
+of the data for a single site. It has the nice advantage that it will make a SNR file for you if your
+RINEX file is in your working directory or if it is stored at one of three main archives (UNAVCO, SOPAC, and SONEL).
+
+September 13, 2019
+gnssIR_lomb.py will now attempt to make a SNR file for you if one does not exist on your machine.
 
 
 WARNING: These codes do not calculate soil moisture.
 
 # Installing the code
 
-You need to define three environment variables:
+You need to define (at least) three environment variables:
 
 * EXE = where the Fortran translator executables will live. Also the code that
-translates certain RINEX files is needed and will be stored in this directory.  
+translates certain kinds of RINEX files is needed and will be stored in this directory.  
 I do not control these codes - but they are very important
 modules in the GPS/GNSS communities.
 
@@ -84,8 +82,7 @@ It needs to be stored in the EXE directory.
 
 # Making SNR files
 
-The python driver is called rinex2snr.py. Make sure EXE is defined and the relevant 
-executables are there.
+The python driver is called rinex2snr.py. Make sure EXE is defined.
 
 A sample call of of the python driver rinex2snr.py would be:
 
@@ -108,40 +105,38 @@ Legal orbit types:
 
 1. nav - is using the GPS nav message. The main plus is that it is available in near 
 real-time.  A nav file only has GPS orbits in it, so you should not use this 
-option if you want to do true multi-GNSS 
-reflectometry. I pick my file up from SOPAC, but you can use other archives if you prefer.
-2. sp3 - is using the IGS sp3 file, so again, your RINEX file should be GPS only. 
-3. gbm - is now my only option for getting a multi-GNSS orbit file.  This is also 
+option if you want to do true multi-GNSS reflectometry. 
+2. sp3 - is using the IGS sp3 file, so again, your RINEX file does not have to be be GPS only, but
+you won't get any non-GPS data because it doesn't have the orbit.
+3. gbm - is currently my only option for getting a multi-GNSS orbit file.  This is also 
 in sp3 format. The gbm file comes from the group at GFZ.  
 
 
 If the orbit files don't already exist on your system, the rinex2snr.py code attempts 
 to pick them up for you. They are then stored in the ORBITS directory.
 
-Unless the RINEX data are sitting there in your working directory, the code attempts to 
+Unless the RINEX data are sitting in your working directory, the code attempts to 
 pick up your RINEX file from UNAVCO, SOPAC, and SONEL. I think there is a high-rate option, but I have 
 not extensively tested it.  It only works for UNAVCO. 
 
 The SNR files created by this code are stored in REFL_CODE/YYYY/snr
 
-One more thing- it is very comon for GPS archives to store files in the Hatanaka (compressed) format.
-So currently it tries to get the regular RINEX file but if that fails, it tries to download
-Hatanaka format. You need the Hatanaka decompression code (see above) to translate this.  
+It is very common for GPS archives to store files in the Hatanaka (compressed) format. 
+You cannot do GNSS IR without the ability to read Hatanaka files.  In particular, you 
+need the Hatanaka decompression code (see above) to translate this.  
 You need to put it in the EXE area. It is called CRX2RNX.
 
 # Running the RH (gnssIR_lomb.py) code
 
 
-* The expected SNR files must be translated from RINEX before you run this code. 
+* It needs a SNR file. It tries ot make it for you if it does not exist. But if you do this, it will assume 
+you only have GPS data.
 
-* There are A LOT of publications about GPS/GNSS interferometric reflectometry.
-If you want something with a how-to flavor, try this: 
-https://link.springer.com/article/10.1007/s10291-018-0744-8
 
 * The code assumes you are going to have a working directory for input and outputfiles.  
 The environment variable for this - REFL_CODE - is described above.  
 
-* put the gpt_1wa.pickle file in the REFL_CODE/input area
+* put the gpt_1wa.pickle file in the REFL_CODE/input area. This is for the refraction correction.
 
 * Input: your snr files need to live in REFL_CODE/YYYY/snr/aaaa, where YYYY is 4 character
 year and aaaa is station name.  The SNR file must use my naming conventions: 
@@ -156,7 +151,7 @@ yy is two character year
 nn is a specific kind of snr file (99, 77, and 50 are the most commonly used)
 ```
 
-* User inputs for the lomb scargle periodogram calculation  
+* User inputs for the Lomb Scargle Periodogram calculation  
 
 This should be stored in a file called REFL_CODE/input/aaaa 
 See sample file called input_smm3_example. 
@@ -231,17 +226,25 @@ Run gnssIR_lomb.py -h to see options.
 # Usage of quickLook Code
 The gnssIR_lomb.py code requires you have set up some instructions for analyzing your data, i.e.
 which frequencies you want to use, the lat/long/ht for the refraction correction, blah blah blah.
-And it requires you have previously translated a RINEX file into SNR format.
 If you don't want to bother with all of that - and just want a quick look to see if it is even worth
 your time to look at a site, you can try quickLook.py.  You just give it the station name, year, doy of year,
-and translate format (99 is usually a good start). It will go pick up the RINEX data and translate it for you.
+and SNR format (99 is usually a good start). It will go pick up the RINEX data and translate it for you.
 There are stored defaults for analyzing the spectral characteristics of the data.  If you want to override those
 run quickLook.py -h 
 
+This code needs the environment variables to exist, i.e. ORBITS and REFL_CODE and EXE. So you cannot avoid setting those.
+
 Examples:
 
-*  python quickLook.py gls1 2011 271 99  (uses defaults, which are usually ok for cryosphere 
+*  python quickLook.py gls1 2011 271 99  (this uses defaults, which are usually ok for cryosphere)
 ice/snow reflections)
-* python quickLook.py rec1 2008 271 99 - example where the system fails to find this file at UNAVCO
+* python quickLook.py rec1 2008 271 99  (example where the system fails to find this file at UNAVCO)
+* python quickLook.py smm3 2019 100 99 -h1 10 -h2 20 -e1 5 -e2 15  (example for overriding the defaults because this is a tall site)
 
 
+# Publications
+* There are A LOT of publications about GPS/GNSS interferometric reflectometry.
+If you want something with a how-to flavor, try this, which is open option: 
+https://link.springer.com/article/10.1007/s10291-018-0744-8
+
+Also look to my website, https://kristinelarson.net
