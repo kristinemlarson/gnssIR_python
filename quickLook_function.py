@@ -41,7 +41,8 @@ def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pel
     desiredP = 0.01 # 1 cm precision
     ediff = 2 # this is a QC value, eliminates small arcs
     #four_in_one = True # put the plots together
-    PkNoise = 2
+    # this is pretty loose
+    PkNoise = 2.5
     minNumPts = 20 
     NReg = [0.35, 6] # noise region for LSP QC. these are meters
     # for quickLook, we use the four geographic quadrants - these are azimuth angles in degrees

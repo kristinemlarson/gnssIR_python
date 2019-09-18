@@ -2256,17 +2256,19 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
                 if os.path.isfile(rinexfile):
                     print('you have the rinex file')
                 else:
-                    try:
-                        print('try to get it from SOPAC')
-                        rinex_sopac(station, year, month, day)
-                    except:
-                        print('no success at SOPAC.')
-                if not os.path.isfile(rinexfile):
-                    try:
-                        print('try SONEL')
-                        rinex_sonel(station, year, month, day)
-                    except:
-                        print('got nothing - give up')
+                    # only keep looking if you are seeking lowrate data
+                    if receiverrate == 'low':
+                        try:
+                            print('try to get it from SOPAC')
+                            rinex_sopac(station, year, month, day)
+                        except:
+                            print('no success at SOPAC.')
+                    if not os.path.isfile(rinexfile) and receiverrate == 'low':
+                        try:
+                            print('try SONEL')
+                            rinex_sonel(station, year, month, day)
+                        except:
+                            print('got nothing - I give up')
 
 
     # check to see if you found the rinex file
