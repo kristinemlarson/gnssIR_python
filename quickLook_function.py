@@ -107,7 +107,7 @@ def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pel
                     else:
                         Noise = 1; iAzim = 0 # made up numbers
                     if (delT < delTmax) & (eminObs < (e1 + ediff)) & (emaxObs > (e2 - ediff)) & (maxAmp > requireAmp) & (maxAmp/Noise > PkNoise):
-                        print('SUCCESS Azimuth {0:5.1f} RH {1:.2f} m, Sat {2:2.0f} Freq {3:.0f} Amp {4:3.1f} PkNoise {5:3.1f} '.format( avgAzim,maxF,satNu,f,maxAmp,maxAmp/Noise))
+                        print('SUCCESS Azimuth {0:3.0f} RH {1:6.3f} m, Sat {2:3.0f} Freq {3:3.0f} Amp {4:4.1f} PkNoise {5:3.1f} '.format( avgAzim,maxF,satNu,f,maxAmp,maxAmp/Noise))
                         if not webapp:
                             plt.plot(px,pz)
                         else:
