@@ -15,7 +15,7 @@ import quick_read_snr as q
 from matplotlib.figure import Figure
 
 
-def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pele,webapp):
+def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pele,webapp,satsel):
     """
     inputs:
     station name (4 char), year, day of year
@@ -26,6 +26,8 @@ def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pel
     reqAmp is LSP amplitude significance criterion
     pele is the elevation angle limits for the polynomial removal.  units: degrees
     """
+    # orbit directories
+    ann = g.make_nav_dirs(year)
     # titles in 4 quadrants - for webApp
     titles = ['Northwest', 'Southwest','Northeast', 'Southeast']
     # define where the axes are located
@@ -68,7 +70,7 @@ def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pel
                 if os.path.isfile(obsfile):
                     print('the SNR file now exists')  
                 else:
-                    print('the RINEX file did not exist, so no SNR file.')
+                    print('the RINEX file did not exist, had no SNR data, or failed to convert, so exiting.')
     allGood,sat,ele,azi,t,edot,s1,s2,s5,s6,s7,s8,snrE = q.read_snr_simple(obsfile)
     if allGood == 1:
         minEdataset = np.min(ele)
@@ -86,7 +88,12 @@ def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pel
                 plt.subplot(2,2,bz[a])
                 plt.title(titles[a])
             az1 = azval[(a*2)] ; az2 = azval[(a*2 + 1)]
-            satlist = g.find_satlist(f,snrE)
+            # this means no satellite list was given, so get them all
+            if satsel == None:
+                satlist = g.find_satlist(f,snrE)
+            else:
+                satlist = [satsel]
+
             for satNu in satlist:
                 x,y,Nv,cf,UTCtime,avgAzim,avgEdot,Edot2,delT= g.window_data(s1,s2,s5,s6,s7,s8,sat,ele,azi,t,edot,f,az1,az2,e1,e2,satNu,polyV,pele) 
                 if Nv > minNumPts:
@@ -99,7 +106,7 @@ def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pel
                     else:
                         Noise = 1; iAzim = 0 # made up numbers
                     if (delT < delTmax) & (eminObs < (e1 + ediff)) & (emaxObs > (e2 - ediff)) & (maxAmp > requireAmp) & (maxAmp/Noise > PkNoise):
-                        print('SUCCESS Azimuth {0:5.1f} RH {1:.2f} m, Sat {2:2.0f} Freq {3:.0f} Amp {4:3.1f} '.format( avgAzim,maxF,satNu,f,maxAmp))
+                        print('SUCCESS Azimuth {0:5.1f} RH {1:.2f} m, Sat {2:2.0f} Freq {3:.0f} Amp {4:3.1f} PkNoise {5:3.1f} '.format( avgAzim,maxF,satNu,f,maxAmp,maxAmp/Noise))
                         if not webapp:
                             plt.plot(px,pz)
                         else:

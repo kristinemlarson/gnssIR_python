@@ -599,6 +599,7 @@ def getnavfile(year, month, day):
 
     """
     foundit = False
+    ann = make_nav_dirs(year)
     sopac = 'ftp://garner.ucsd.edu'
     if (day == 0):
         doy = month
@@ -608,7 +609,14 @@ def getnavfile(year, month, day):
     navname,navdir = nav_name(year, month, day)
     # painful painful - this should work for all of it
     print(navname,navdir)
+    if os.path.exists(navdir):
+        print('navdir exists')
+    else:
+        print('make navdir')
+        subprocess.call(['mkdir',navdir])
+
     if os.path.exists(navdir + '/' + navname):
+        print('navfile exists')
         foundit = True
     else:
         print('go pick up the navfile')
@@ -2192,9 +2200,10 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
     if the later, then gnssSNR
     this assumes you follow my definitions for where things go,
     i.e. REFL_CODE and ORBITS
-    it currently checks Unavco, SOPAC, and SONEL
+    it currently checks Unavco, SOPAC, and SONEL. I should add CDDIS
     author: kristine m. larson
     19may20, added decimation
+    19sep12, I got tired of code crashing for files > 20 observables.  I am thus using teqc
     """
     # define directory for the conversion executables
     exedir = os.environ['EXE']
@@ -2264,6 +2273,21 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
     # should check that the orbit really exists too
             oexist = os.path.isfile(orbdir + '/' + f) == True
             rexist = os.path.isfile(rinexfile) == True
+            # if rinex exists
+            if rexist:
+                exc = exedir + '/teqc' 
+                # and teqc executable exists, then 
+                # get rid of all the observables i do not need
+                if os.path.isfile(exc):
+                    print('teqc executable exists, so let us use it')
+                    foutname = 'tmp.' + rinexfile
+                    fout = open(foutname,'w')
+                # not sure this will work
+                    subprocess.call([exc, '-O.obs','S1+S2+S5+S6+S7+S8', rinexfile],stdout=fout)
+                    fout.close()
+                # store it in the original rinex filename
+                    subprocess.call(['rm','-f',rinexfile])
+                    subprocess.call(['mv','-f',foutname, rinexfile])
             if (rexist and dec_rate > 0):
                 try:
                     print('decimate using teqc ', dec_rate, ' seconds')
@@ -2283,16 +2307,20 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
                 snrname = snr_name(station, year,month,day,option)
                 orbfile = orbdir + '/' + f
                 print('make SNR file using subprocess')
-                subprocess.call([snrexe, rinexfile, snrname, orbfile, str(option)])
-                print('remove the rinexfile using subprocess')
-                status = subprocess.call(['rm','-f', rinexfile ])
-#       move the snr file to its proper place
-                if (os.stat(snrname).st_size == 0):
-                    print('you created a zero file size which could mean a lot of things')
-                    print('bad exe, bad snr option, do not really have the orbit file')
-                    status = subprocess.call(['rm','-f', snrname ])
-                else:
-                    store_snrfile(snrname,year,station) 
+                try:
+                    subprocess.call([snrexe, rinexfile, snrname, orbfile, str(option)])
+                    status = subprocess.call(['rm','-f', rinexfile ])
+                except:
+                    print('no success making SNR file')
+                if os.path.isfile(snrname): 
+#                make sure it exists and is non-zero size before moving it
+                    if (os.stat(snrname).st_size == 0):
+                        print('you created a zero file size which could mean a lot of things')
+                        print('bad exe, bad snr option, do not really have the orbit file')
+                        status = subprocess.call(['rm','-f', snrname ])
+                    else:
+                        print('file created and it is non-zero')
+                        store_snrfile(snrname,year,station) 
             else:
                 print('rinex file or orbit file does not exist, so there is nothing to convert')
 
@@ -2917,3 +2945,22 @@ def navfile_retrieve(navfile,cyyyy,cyy,cdoy):
         FileExists = False
 
     return FileExists
+def make_nav_dirs(yyyy):
+    """
+    input year and it makes sure output directories are created for orbits
+    """
+    cyyyy = '{:04d}'.format(yyyy)
+    navfiledir = os.environ['ORBITS'] + '/' + cyyyy 
+    if not os.path.exists(navfiledir):
+        subprocess.call(['mkdir',navfiledir])
+        print('making year directory')
+    navfiledir1 = os.environ['ORBITS'] + '/' + cyyyy + '/nav' 
+    if not os.path.exists(navfiledir1):
+        subprocess.call(['mkdir',navfiledir1])
+        print('making nav specific directory')
+    navfiledir2 = os.environ['ORBITS'] + '/' + cyyyy + '/sp3'
+    if not os.path.exists(navfiledir2):
+        print('making sp3 specific directory')
+        subprocess.call(['mkdir',navfiledir2])
+
+    return True

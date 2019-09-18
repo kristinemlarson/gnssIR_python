@@ -50,6 +50,7 @@ else:
 # decimation rate
 dec_rate = args.dec
 #
+ann = g.make_nav_dirs(year)
 
 doy_list = list(range(doy1, doy2+1))
 

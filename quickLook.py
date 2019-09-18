@@ -42,6 +42,7 @@ parser.add_argument("-e1", "--e1", default=None, type=int, help="lower limit ele
 parser.add_argument("-e2", "--e2", default=None, type=int, help="upper limit elevation angle")
 parser.add_argument("-h1", "--h1", default=None, type=float, help="lower limit reflector height (m)")
 parser.add_argument("-h2", "--h2", default=None, type=float, help="upper limit reflector height (m)")
+parser.add_argument("-sat", "--sat", default=None, type=float, help="satellite")
 args = parser.parse_args()
 #
 # rename the user inputs as variables
@@ -96,6 +97,10 @@ if (args.h1 != None):
     Hlimits[0] = args.h1
 if (args.h2 != None):
     Hlimits[1] = args.h2
+if (args.sat != None):
+    sat = int(args.sat)
+else:
+    sat = None
 # minimum and maximum LSP limits
 minH = Hlimits[0]; maxH = Hlimits[1]
 
@@ -113,5 +118,5 @@ print('Using reflector height limits (m) : ', Hlimits[0], ' and ', Hlimits[1], '
 f=freqs[0]
 webapp = False
 print('calling the function that does everything')
-quick.quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pele,webapp)
+quick.quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pele,webapp,sat)
 
