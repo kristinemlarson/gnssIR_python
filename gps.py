@@ -111,13 +111,15 @@ def read_inputs(station):
     """
     given station name, read LSP parameters for strip_snrfile.py
     author: Kristine M Larson
+    19sep22 change name of longitude variable, add error messages
+
     """
 #   directory name is currently defined using REFL_CODE
     xdir = os.environ['REFL_CODE']
     fname = xdir + '/input/' + station
-    print('default inputs: ', fname)
+    print('default inputs should be in this file: ', fname)
 #   default location values - not used now
-    lat = 0; long = 0; h = 0;
+    lat = 0; lon = 0; h = 0;
 #   counter variables
     k = 0
     lc = 0
@@ -149,9 +151,9 @@ def read_inputs(station):
                 if k==1:
 # read in the latitude, longitude, and height. currently this information is not used
                     lat = float(nfo[0])
-                    long = float(nfo[1])
+                    lon = float(nfo[1])
                     h = float(nfo[2])
-                    print("latitude/longitude/height:", lat,long,h)
+                    print("latitude/longitude/height:", lat,lon,h)
 # read in the elevation angle ranges
                 if k==2:
                     elang.append(float(nfo[0]))
@@ -191,10 +193,15 @@ def read_inputs(station):
                         
         f.close
     except:
-        print('some kind of problem reading input file')
+        print('Some kind of problem reading the required input file: ' + fname)
+        print('Please use make_input_file.py if it does not exist. It will need at a minimum the ')
+        print('latitude, longitude, and height of the station.  This location does not need to be precise')
+        print('If you do not have your site location handy, just enter 0,0,0.')
+        print('The rest of the inputs can be defaults, but if ')
+        print('your site requires RH > 6 meters, please adjust using -h1 and -h2. Exiting now.')
         sys.exit()
 
-    return lat,long,h,elang, azval, freqs, reqAmp,polyFit, desiredP, Hlimits, ediff, pele,noiseRegion
+    return lat,lon,h,elang, azval, freqs, reqAmp,polyFit, desiredP, Hlimits, ediff, pele,noiseRegion
 
 def satclock(week, epoch, prn, closest_ephem):
     """
@@ -2966,3 +2973,35 @@ def make_nav_dirs(yyyy):
         subprocess.call(['mkdir',navfiledir2])
 
     return True
+
+
+def check_inputs(station,year,doy,snr_type):
+    """
+    inputs to Lomb Scargle and Rinex translation codes
+    are checked for sensibility. Returns true or false to 
+    code can exit. Error messages sent to the screen
+    author: kristine m. larson
+    2019sep22
+    """
+    exitSys = False
+    if len(station) != 4:
+        print('Station name must be four characters. Exiting')
+        exitSys = True
+
+    if len(str(year)) != 4:
+        print('Year must be four characters. Exiting')
+        exitSys = True
+
+    if (doy < 1) or (doy > 366):
+        print('Day of year must be bewteen 1 and 366. Exiting')
+        exitSys = True
+
+    s = snr_type
+    if (s == 99) or (s == 50) or (s==66) or (s==88):
+        print('You have picked a proper SNR file format ending.' )
+    else:
+        print('You have picked an improper SNR file format ending: ' + str(s))
+        print('Allowed values are 99, 66, 88, or 50. Exiting')
+        exitSys = True
+
+    return exitSys

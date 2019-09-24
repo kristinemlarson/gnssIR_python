@@ -104,7 +104,7 @@ def gpt2_1w (station, dmjd,dlat,dlon,hell,it):
 
 # factors for amplitudes, i.e. whether you want time varying
     if (it==1):
-        print('>>>> no time variation in the outputs')
+        print('>>>> no refraction time variation ')
         cosfy = 0; coshy = 0; sinfy = 0; sinhy = 0;
     else: 
         cosfy = np.cos(pi2*dmjd1/365.25)
@@ -252,9 +252,19 @@ def readWrite_gpt2_1w(xdir, station, site_lat, site_lon):
 #   read VMF gridfile in pickle format 
         pname = xdir + '/input/' + 'gpt_1wA.pickle'
         print('larg refraction file is stored here:', pname)
-        f = open(pname, 'rb')
-        [All_pgrid, All_Tgrid, All_Qgrid, All_dTgrid, All_U, All_Hs, All_ahgrid, All_awgrid, All_lagrid, All_Tmgrid] = pickle.load(f)
-        f.close()
+        try:
+            f = open(pname, 'rb')
+            [All_pgrid, All_Tgrid, All_Qgrid, All_dTgrid, All_U, All_Hs, All_ahgrid, All_awgrid, All_lagrid, All_Tmgrid] = pickle.load(f)
+            f.close()
+        except:
+            print('I did not find the file where it is supposed to be, but I will try looking in your home directory')
+            try:
+                pname =  'gpt_1wA.pickle'
+                f = open(pname, 'rb')
+                [All_pgrid, All_Tgrid, All_Qgrid, All_dTgrid, All_U, All_Hs, All_ahgrid, All_awgrid, All_lagrid, All_Tmgrid] = pickle.load(f)
+                f.close()
+            except:
+                print('hmm, failed again - should exit .... ')
 
 #    print(np.shape(All_pgrid))
 # really should e zero to four, but whatever

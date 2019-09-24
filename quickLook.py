@@ -25,6 +25,7 @@ import quickLook_function as quick
 # import refraction as refr
 # i think this is only used for MJD, so turned off in quickLook
 # import datetime
+# 2019 Sep 24 added error checking on inputs
 
 
 #
@@ -52,6 +53,10 @@ year = args.year
 doy= args.doy
 snr_type = args.snrEnd
 plt_screen = 1 # always have a plot come to screen
+
+exitS = g.check_inputs(station,year,doy,snr_type)
+if exitS:
+    sys.exit()
 
 InputFromScreen = True
 
@@ -85,12 +90,14 @@ if (args.e1 != None):
     elval[0] = args.e1
     if elval[0] < 5:
         print('have to change the polynomial limits because you went below 5 degrees')
+        print('this restriction is for quickLook only ')
         pele[0] = elval[0] 
 if (args.e2 != None):
     elval[1] = args.e2
 # elevation angle limit values for the Lomb Scargle
 e1 = elval[0]; e2 = elval[1]
 print('Start out using elevation angles: ', e1, ' and ', e2)
+print('you can change with e1 and e2 if you like')
 
 
 if (args.h1 != None):

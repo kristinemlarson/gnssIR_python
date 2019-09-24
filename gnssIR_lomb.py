@@ -27,6 +27,7 @@
 # 19sep13, code will attempt to make an SNR file for you if one does not exist. 
 # It will be GPS only. i.e. us
 # nav file
+# 19sep22 added error checking on required inputs
 # 
 """
 import sys
@@ -54,6 +55,12 @@ import datetime
 # you can also set this in your .bashrc, which is what i am doing now
 # os.environ['REFL_CODE'] = '/Users/kristine/Documents/Research'
 xdir = os.environ['REFL_CODE']
+# make sure the input directory exists
+outputdir  = xdir + '/input'
+if not os.path.isdir(outputdir):
+    subprocess.call(['mkdir',outputdir])
+else:
+    print('The directory for analysis instruction exists.')
  
 # if you want the SNR files to be xv compressed after using them.
 wantCompression = True 
@@ -65,7 +72,7 @@ allowMidniteCross = False
 
 # eventually we will use something else but this restricts arcs to one hour
 # units are in minutes
-delTmax = 70
+delTmax = 75
 #
 # user inputs the observation file information
 parser = argparse.ArgumentParser()
@@ -73,8 +80,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument("station", help="station", type=str)
 parser.add_argument("year", help="year", type=int)
 parser.add_argument("doy", help="doy", type=int)
-parser.add_argument("snrEnd", help="snrEnding", type=int)
-parser.add_argument("plt", help="plot", type=int)
+parser.add_argument("snrEnd", help="snr file ending", type=int)
+parser.add_argument("plt", help="plot to screen? 1 is yes, 0 is no", type=int)
+
+
+
 # these are the addons (not required)
 parser.add_argument("-fr", "--onefreq", default=None, type=int, help="try -fr 1 for GPS L1 only, or -fr 101 for Glonass L1")
 parser.add_argument("-amp", "--ampl", default=None, type=float, help="try -amp 10 for minimum spectral amplitude")
@@ -96,17 +106,22 @@ doy= args.doy
 snr_type = args.snrEnd
 plt_screen = args.plt
 pltname = args.pltname
+
+exitS = g.check_inputs(station,year,doy,snr_type)
+if exitS:
+    sys.exit()
+
 #
 # make sure directories are there for orbits
 ann = g.make_nav_dirs(year)
 
 # in case you want to analyze multiple days of data
-
 if args.doy_end == None:
     doy_end = doy
 else:
     doy_end = args.doy_end
 
+# this makes no sense
 if args.onefreq == None:
     InputFromScreen = False
 else:
@@ -122,6 +137,7 @@ else:
     irefr = 0
 
 # allow people to have an extension to the output file name so they can run different analysis strategies
+# this is undocumented and only for Kristine at the moment
 if args.extension == None:
     extension = ''
 else:
@@ -198,12 +214,13 @@ if InputFromScreen:
 
 # use the returned lat,long,ht to compute a refraction correction profile
 # this is only done once per site 
-refr.readWrite_gpt2_1w(xdir, station, lat, long)
+if RefractionCorrection:
+    refr.readWrite_gpt2_1w(xdir, station, lat, long)
 # time varying is set to no for now (it = 1)
-it = 1
-dlat = lat*np.pi/180; dlong = long*np.pi/180
-p,T,dT,Tm,e,ah,aw,la,undu = refr.gpt2_1w(station, dmjd,dlat,dlong,ht,it)
-print("Pressure {0:8.2f} Temperature {1:6.1f} \n".format(p,T))
+    it = 1
+    dlat = lat*np.pi/180; dlong = long*np.pi/180
+    p,T,dT,Tm,e,ah,aw,la,undu = refr.gpt2_1w(station, dmjd,dlat,dlong,ht,it)
+    print("Pressure {0:8.2f} Temperature {1:6.1f} \n".format(p,T))
 
 
 # only doing one day at a time for now

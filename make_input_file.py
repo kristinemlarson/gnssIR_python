@@ -37,27 +37,34 @@ ediff=2
 
 # defaults for RH restrictions
 h1=0.5
-h2=8.0
+h2=6.0
 if (args.h1 != None):
     h1 = args.h1
 if (args.h2 != None):
     h2 = args.h2
 
+# default elevation angles
 e1=5
 e2=25
 if (args.e1 != None):
     e1 = args.e1
 if (args.e2 != None):
     e2 = args.e2
-nr1=0.5
-nr2=6
+# the default noise region will the same as the RH exclusion area for now
+nr1=h1 
+nr2=h2
 if (args.nr1 != None):
     nr1 = args.nr1
 if (args.nr2 != None):
     nr2 = args.nr2
 
 xdir = os.environ['REFL_CODE']
-outputfile = xdir + '/input/' + station
+outputdir  = xdir + '/input' 
+if not os.path.isdir(outputdir):
+    subprocess.call(['mkdir',outputdir])
+
+outputfile = outputdir + '/' + station
+
 print('opening:', outputfile)
 f=open(outputfile,'w+')
 line1='# comment lines start with a #'
