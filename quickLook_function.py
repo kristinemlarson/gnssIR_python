@@ -64,7 +64,7 @@ def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pel
             print(obsfile)
             if (not os.path.isfile(obsfile)) :
                 print('>>>> Sigh, - SNR the file does not exist ',obsfile)
-                print('because I am a nice person I will try to pick up a RINEX file ')
+                print('I will try to pick up a RINEX file ')
                 print('and translate it for you. This will be GPS only.')
                 rate = 'low'; dec_rate = 0
                 g.quick_rinex_snr(year, doy, station, snr_type, 'nav',rate, dec_rate)

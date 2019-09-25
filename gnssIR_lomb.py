@@ -172,7 +172,8 @@ dmjd, fracS = g.mjd(year,month,day,0,0,0)
 
 
 # retrieve the inputs needed to window the data and compute Lomb Scargle Periodograms 
-lat,long,ht,elval,azval,freqs,reqAmp,polyV,desiredP,Hlimits,ediff,pele,NReg = g.read_inputs(station) 
+# changed long to lon
+lat,lon, ht,elval,azval,freqs,reqAmp,polyV,desiredP,Hlimits,ediff,pele,NReg = g.read_inputs(station) 
 
 # You can have peaks in two regions, and you may only be interested in one of them.
 # You can refine the region you care about here.
@@ -215,10 +216,10 @@ if InputFromScreen:
 # use the returned lat,long,ht to compute a refraction correction profile
 # this is only done once per site 
 if RefractionCorrection:
-    refr.readWrite_gpt2_1w(xdir, station, lat, long)
+    refr.readWrite_gpt2_1w(xdir, station, lat, lon)
 # time varying is set to no for now (it = 1)
     it = 1
-    dlat = lat*np.pi/180; dlong = long*np.pi/180
+    dlat = lat*np.pi/180; dlong = lon*np.pi/180
     p,T,dT,Tm,e,ah,aw,la,undu = refr.gpt2_1w(station, dmjd,dlat,dlong,ht,it)
     print("Pressure {0:8.2f} Temperature {1:6.1f} \n".format(p,T))
 
@@ -242,7 +243,7 @@ for doy in doy_list:
         obsfile2,obsfile2Cmp = g.define_filename_prevday(station,year,doy,snr_type)
         #  compressed function is pretty silly in the day of large disks
         if not os.path.isfile(obsfile):
-            print('SNR file does not exist, so I will try to make it for you')
+            print('SNR file does not exist. I will try to make a GPS only file.')
             rate = 'low'; dec_rate = 0; orbtype = 'nav'
             g.quick_rinex_snr(year, doy, station, snr_type, orbtype,rate, dec_rate)
 

@@ -2230,6 +2230,9 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
             print('uses default IGS orbits, so only GPS')
             f,orbdir,foundit=getsp3file_flex(year,month,day,'igs')
             snrexe = exedir + '/gnssSNR.e' 
+            if (os.path.isfile(snrexe) == False):
+                print('The translation executable does not exist:' + snrexe + ' Exiting ')
+                sys.exit()
         if orbtype == 'gfz':
             print('using gfz sp3 file, GPS and GLONASS')
             f,orbdir,foundit=getsp3file_flex(year,month,day,'gfz')
@@ -2242,9 +2245,15 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
             # this uses GFZ multi-GNSS 
             f,orbdir,foundit=getsp3file_mgex(year,month,day,'gbm')
             snrexe = exedir + '/gnssSNR.e' 
+            if (os.path.isfile(snrexe) == False):
+                print('The translation executable does not exist:' + snrexe + ' Exiting ')
+                sys.exit()
         if orbtype == 'nav':
             f,orbdir,foundit=getnavfile(year, month, day) 
             snrexe = exedir  + '/gpsSNR.e' 
+            if (os.path.isfile(snrexe) == False):
+                print('The translation executable does not exist:' + snrexe + ' Exiting ')
+                sys.exit()
         # if you have the orbit file, you can get the rinex file
         if foundit:
             # now you can look for a rinex file
@@ -2328,7 +2337,7 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
                         print('bad exe, bad snr option, do not really have the orbit file')
                         status = subprocess.call(['rm','-f', snrname ])
                     else:
-                        print('file created and it is non-zero')
+                        print('a SNR file was created and it is non-zero in length')
                         store_snrfile(snrname,year,station) 
             else:
                 print('rinex file or orbit file does not exist, so there is nothing to convert')
@@ -2350,7 +2359,7 @@ def store_orbitfile(filename,year,orbtype):
         print('moving ', filename, ' to ', xdir)
         status = subprocess.call(['mv','-f', filename, xdir])
     else:
-        print('file did not exist, so it was not stored')
+        print('The orbit file did not exist, so it was not stored')
     return xdir
 
 
@@ -2372,7 +2381,7 @@ def store_snrfile(filename,year,station):
     if (os.path.isfile(filename) == True):
         status = subprocess.call(['mv','-f', filename, xdir])
     else:
-        print('file does not exist, so nothing was moved')
+        print('the SNR file does not exist, so nothing was moved')
 
 def rinex_name(station, year, month, day):
     """
@@ -2958,6 +2967,12 @@ def make_nav_dirs(yyyy):
     """
     input year and it makes sure output directories are created for orbits
     """
+    n = os.environ['ORBITS']
+    # if parent nav dir does not exist, exit
+    if not os.path.isdir(n):
+        print('You have not defined ORBITS environment variable properly. Exiting')
+        print(n)
+        sys.exit()
     cyyyy = '{:04d}'.format(yyyy)
     navfiledir = os.environ['ORBITS'] + '/' + cyyyy 
     if not os.path.exists(navfiledir):
@@ -2997,11 +3012,11 @@ def check_inputs(station,year,doy,snr_type):
         exitSys = True
 
     s = snr_type
-    if (s == 99) or (s == 50) or (s==66) or (s==88):
+    if (s == 99) or (s == 50) or (s==66) or (s==88) or (s==77):
         print('You have picked a proper SNR file format ending.' )
     else:
         print('You have picked an improper SNR file format ending: ' + str(s))
-        print('Allowed values are 99, 66, 88, or 50. Exiting')
+        print('Allowed values are 99, 66, 88, 77, or 50. Exiting')
         exitSys = True
 
     return exitSys

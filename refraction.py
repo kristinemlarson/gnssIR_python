@@ -4,6 +4,7 @@ from scipy.interpolate import interp1d
 import os
 import pickle
 import datetime
+import sys
 
 
 def read_4by5(station, dlat,dlon,hell):
@@ -89,6 +90,7 @@ def gpt2_1w (station, dmjd,dlat,dlon,hell,it):
 
 
 # change the reference epoch to January 1 2000
+    print('Modified Julian Day', dmjd)
     dmjd1 = dmjd-51544.5 
 
     pi2 = 2*np.pi
@@ -251,20 +253,21 @@ def readWrite_gpt2_1w(xdir, station, site_lat, site_lon):
 
 #   read VMF gridfile in pickle format 
         pname = xdir + '/input/' + 'gpt_1wA.pickle'
-        print('larg refraction file is stored here:', pname)
+        print('large refraction file is stored here:', pname)
         try:
             f = open(pname, 'rb')
             [All_pgrid, All_Tgrid, All_Qgrid, All_dTgrid, All_U, All_Hs, All_ahgrid, All_awgrid, All_lagrid, All_Tmgrid] = pickle.load(f)
             f.close()
         except:
-            print('I did not find the file where it is supposed to be, but I will try looking in your home directory')
+            print('I did not find the large refraction file where it is supposed to be, but I will try looking in your home directory')
             try:
                 pname =  'gpt_1wA.pickle'
                 f = open(pname, 'rb')
                 [All_pgrid, All_Tgrid, All_Qgrid, All_dTgrid, All_U, All_Hs, All_ahgrid, All_awgrid, All_lagrid, All_Tmgrid] = pickle.load(f)
                 f.close()
             except:
-                print('hmm, failed again - should exit .... ')
+                print('hmm, failed again. Go into gnssIR_lomb.py, set RefractionCorrection to false, and rerun the code.... ')
+                sys.exit()
 
 #    print(np.shape(All_pgrid))
 # really should e zero to four, but whatever

@@ -98,6 +98,7 @@ if (args.e2 != None):
 e1 = elval[0]; e2 = elval[1]
 print('Start out using elevation angles: ', e1, ' and ', e2)
 print('you can change with e1 and e2 if you like')
+print('Refraction correction is not used by quickLook code')
 
 
 if (args.h1 != None):
