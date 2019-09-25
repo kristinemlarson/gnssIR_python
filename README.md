@@ -19,7 +19,8 @@ This doesn't matter for snow applications.
 When I get a chance, I will be adding a RH dot correction which is needed for tides.
 Again, this effect can be ignored for snow/ice reflections.
 
-A simple refraction error correction has been added to gnssIR_lomb.py.
+A simple refraction error correction has been added to gnssIR_lomb.py. You can turn
+it on/off by setting the RefractionCorrection variable
 
 July 2, 2019
 I have added another code (quickLook.py) that will give you a "quick and dirty" evaluation
@@ -28,6 +29,12 @@ RINEX file is in your working directory or if it is stored at one of three main 
 
 September 13, 2019
 gnssIR_lomb.py will now attempt to make a SNR file for you if one does not exist on your machine.
+This will be GPS satellites only.
+
+September 22, 2019
+I have added a lot of error checking to make sure you are using proper inputs 
+and that you have put the required files in the correct place (i.e. executables
+and inputs).
 
 
 WARNING: These codes do not calculate soil moisture.
@@ -43,7 +50,7 @@ modules in the GPS/GNSS communities.
 
 * ORBITS = where the GPS/GNSS orbits will be stored (nav directory for GPS only and 
 sp3 subdirectory for multi GNSS). These files are only 
-used in the fortran conversion code from RINEX to SNR.
+used in the Fortran conversion code from RINEX to SNR.
 
 * REFL_CODE = where the reflection code inputs (SNR files and instructions) and outputs (RH) 
 will be stored (see below)
@@ -82,7 +89,7 @@ It needs to be stored in the EXE directory.
 
 # Making SNR files
 
-The python driver is called rinex2snr.py. Make sure EXE is defined.
+The python driver is called rinex2snr.py. 
 
 A sample call of of the python driver rinex2snr.py would be:
 
@@ -127,7 +134,7 @@ You cannot do GNSS IR without the ability to read Hatanaka files.  In particular
 need the Hatanaka decompression code (see above) to translate this.  
 You need to put it in the EXE area. It is called CRX2RNX.
 
-# Running the RH (gnssIR_lomb.py) code
+# Running the reflector height (gnssIR_lomb.py) code
 
 
 * It needs a SNR file. It tries ot make it for you if it does not exist. But if you do this, it will assume 
@@ -157,8 +164,9 @@ nn is a specific kind of snr file (99, 77, and 50 are the most commonly used)
 This should be stored in a file called REFL_CODE/input/aaaa 
 See sample file called input_smm3_example. I also have a python script that will make
 this file for you: make_input_file.py
-It requires several inputs, so use the help option. Some inputs are required and others are optional.
-The require lat/lon/height does not need to be very precise.  It is only used for the refraction correction.
+It requires several inputs, so use the help option. 
+It requires lat/lon/height does not need to be very precise.  This 
+is only used for the refraction correction, so you can enter 0,0,0 if you aren't using that.
 
 * Output: Your output files will go in REFL_CODE/YYYY/results/aaaa 
 This is basically a text listing of individual arc reflector heights. 
@@ -221,20 +229,23 @@ There is also the ability to look at the results for a single satellite.
 
 # Usage of quickLook Code
 The gnssIR_lomb.py code requires you have set up some instructions for analyzing your data, i.e.
-which frequencies you want to use, the lat/long/ht for the refraction correction, blah blah blah.
+which frequencies you want to use, the lat/long/ht for the refraction correction.
 If you don't want to bother with all of that - and just want a quick look to see if it is even worth
-your time to look at a site, you can try quickLook.py.  You just give it the station name, year, doy of year,
-and SNR format (99 is usually a good start). It will go pick up the RINEX data and translate it for you.
-There are stored defaults for analyzing the spectral characteristics of the data.  If you want to override those
+your time to analyze the data at a site, you can try quickLook.py.  You just give 
+it the station name, year, doy of year,
+and SNR format (99 is usually a good start). It will go pick up 
+the RINEX data and translate it for you.
+There are stored defaults for analyzing the spectral characteristics of 
+the data.  If you want to override those
 run quickLook.py -h 
 
-This code needs the environment variables to exist, i.e. ORBITS and REFL_CODE and EXE. So you cannot avoid setting those.
+This code needs the environment variables to exist, i.e. ORBITS and REFL_CODE and EXE. 
 
 Examples:
 
 *  python quickLook.py gls1 2011 271 99  (this uses defaults, which are usually ok for cryosphere)
 ice/snow reflections)
-* python quickLook.py rec1 2008 271 99  (example where the system fails to find this file at UNAVCO)
+* python quickLook.py rec1 2008 271 99  (this is an example where the system fails to find this file at UNAVCO)
 * python quickLook.py smm3 2019 100 99 -h1 10 -h2 20 -e1 5 -e2 15  (example for overriding the defaults because this is a tall site)
 
 
