@@ -8,10 +8,10 @@ import os
 # user inputs the observation file information
 parser = argparse.ArgumentParser()
 # required arguments
-parser.add_argument("station", help="station", type=str)
-parser.add_argument("lat", help="latitude", type=float)
-parser.add_argument("long", help="longitude", type=float)
-parser.add_argument("height", help="ellipsoidal height", type=float)
+parser.add_argument("station", help="station (lowercase)", type=str)
+parser.add_argument("lat", help="latitude (degrees)", type=float)
+parser.add_argument("long", help="longitude (degrees)", type=float)
+parser.add_argument("height", help="ellipsoidal height (meters)", type=float)
 # these are the optional inputs 
 parser.add_argument("-e1", "--e1", default=None, type=int, help="lower limit elevation angle")
 parser.add_argument("-e2", "--e2", default=None, type=int, help="upper limit elevation angle")

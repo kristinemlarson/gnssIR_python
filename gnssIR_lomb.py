@@ -54,6 +54,7 @@ import datetime
 # CHANGE FOR YOUR MACHINE
 # you can also set this in your .bashrc, which is what i am doing now
 # os.environ['REFL_CODE'] = '/Users/kristine/Documents/Research'
+seekRinex = False
 xdir = os.environ['REFL_CODE']
 # make sure the input directory exists
 outputdir  = xdir + '/input'
@@ -72,7 +73,7 @@ allowMidniteCross = False
 
 # eventually we will use something else but this restricts arcs to one hour
 # units are in minutes
-delTmax = 75
+delTmax = 120
 #
 # user inputs the observation file information
 parser = argparse.ArgumentParser()
@@ -130,7 +131,7 @@ else:
 # Setting some defaults
 # use the refraction correction
 RefractionCorrection = True
-#RefractionCorrection = False
+RefractionCorrection = False
 if RefractionCorrection:
     irefr = 1
 else:
@@ -242,7 +243,7 @@ for doy in doy_list:
         obsfile,obsfileCmp = g.define_filename(station,year,doy,snr_type)
         obsfile2,obsfile2Cmp = g.define_filename_prevday(station,year,doy,snr_type)
         #  compressed function is pretty silly in the day of large disks
-        if not os.path.isfile(obsfile):
+        if not os.path.isfile(obsfile) and seekRinex:
             print('SNR file does not exist. I will try to make a GPS only file.')
             rate = 'low'; dec_rate = 0; orbtype = 'nav'
             g.quick_rinex_snr(year, doy, station, snr_type, orbtype,rate, dec_rate)
@@ -309,7 +310,7 @@ for doy in doy_list:
                         iAzim = int(avgAzim)
                         if (delT < delTmax) & (eminObs < (e1 + ediff)) & (emaxObs > (e2 - ediff)) & (maxAmp > reqAmp[ct]) & (maxAmp/Noise > PkNoise):
                             fout.write(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} {8:6.2f} {9:4.0f} {10:3.0f} {11:2.0f} {12:8.5f} {13:6.2f} {14:7.2f} {15:12.6f} {16:1.0f} \n".format(year,doy,maxF,satNu, UTCtime, avgAzim,maxAmp,eminObs,emaxObs,Nv, f,riseSet, Edot2, maxAmp/Noise, delT, MJD,irefr))
-                            print('SUCCESS Azimuth {0:.1f} {1:3.0f} RH {2:7.3f} meters PkNoise {3:6.1f} '.format( iAzim,satNu,maxF,maxAmp/Noise))
+                            print('SUCCESS Azimuth {0:3.0f} Satellite {1:3.0f} RH {2:7.3f} meters PkNoise {3:6.1f} '.format( iAzim,satNu,maxF,maxAmp/Noise))
                             gj +=1
                             g.update_plot(plt_screen,x,y,px,pz)
                         else:

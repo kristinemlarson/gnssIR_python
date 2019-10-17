@@ -595,6 +595,35 @@ def rinex_cddis(station, year, month, day):
             print('some kind of problem with download',file1)
             subprocess.call(['rm', '-f',file1])
 
+def rinex_nz(station, year, month, day):
+    """
+    author: kristine larson
+    inputs: station name, year, month, day
+    picks up a RINEX file from GNS New zealand
+    you can input day =0 and it will assume month is day of year
+    """
+    exedir = os.environ['EXE']
+    crnxpath = exedir + '/CRX2RNX'
+    # if doy is input 
+    if day == 0:
+        doy=month
+        d = doy2ymd(year,doy);
+        month = d.month; day = d.day
+    doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
+    gns = 'ftp://ftp.geonet.org.nz/gnss/rinex/'
+    oname,fname = rinex_name(station, year, month, day)
+    file1 = oname + '.gz'
+    url = gns +  cyyyy + '/' + cdoy +  '/' + file1
+    print(url)
+
+    try:
+        wget.download(url,file1)
+        subprocess.call(['gunzip', file1])
+        print('successful download from GeoNet New Zealand')
+    except:
+            print('some kind of problem with download',file1)
+            subprocess.call(['rm', '-f',file1])
+
 def getnavfile(year, month, day):
     """
     author: kristine larson
@@ -2324,7 +2353,6 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
             #convert to SNR file
                 snrname = snr_name(station, year,month,day,option)
                 orbfile = orbdir + '/' + f
-                print('make SNR file using subprocess')
                 try:
                     subprocess.call([snrexe, rinexfile, snrname, orbfile, str(option)])
                     status = subprocess.call(['rm','-f', rinexfile ])
@@ -2542,16 +2570,14 @@ def rewrite_UNR_highrate(fname,station,year,doy):
     the latter three are in meters
     stores in $REFL_CODE/yyyy/pos/station
     """
-    xdir = os.environ['REFL_CODE'] 
 # make sure the various output directories  are there
+    xdir = os.environ['REFL_CODE'] 
     dir1 = xdir + '/' + str(year)
     if not os.path.isdir(dir1):
-        print('use subprocess instead of os.system')
         status = subprocess.call(['mkdir', dir1])
 
     dir1 = xdir + '/' + str(year) + '/' + 'pos'
     if not os.path.isdir(dir1):
-        print('use subprocess instead of os.system')
         status = subprocess.call(['mkdir', dir1])
 
     dir1 = xdir + '/' + str(year) + '/' + 'pos' + '/' + station
@@ -2870,6 +2896,14 @@ def result_directories(station,year,extension):
     else:
         print('no extension')
 
+    f1 = xdir + '/' + cyear + '/phase'
+    if not os.path.isdir(f1):
+        subprocess.call(['mkdir',f1])
+
+    f1 = f1 + '/' + station
+    if not os.path.isdir(f1):
+        subprocess.call(['mkdir',f1])
+
 def write_QC_fails(delT,delTmax,eminObs,emaxObs,e1,e2,ediff,maxAmp, Noise,PkNoise,reqamp):
     """
     prints out various QC fails to the screen
@@ -2914,8 +2948,14 @@ def update_quick_plot(station, f):
 
 def navfile_retrieve(navfile,cyyyy,cyy,cdoy):
     """
+    inputs are navfile name and character strings for year, two character year, and 
+    day of year.
+    output: a boolean is returned if the file exists
+    the code tries to find a file at unavco first, then sopac, then cddis.  it checks for illegal
+    files at sopac. it stores the file as autoDDD0.YYn where DDD is day of year and YY
+    is two charadter year irregardless of what the original name is.
+    author: kristine larson, september 2019
     """
-    print('in navfile_retrieve')
     FileExists = True
     unavco= 'ftp://data-out.unavco.org'
     sopac = 'ftp://garner.ucsd.edu'
@@ -2935,29 +2975,28 @@ def navfile_retrieve(navfile,cyyyy,cyy,cdoy):
     url_cddis = cddis + '/gps/data/daily/' + cyyyy + '/' + cdoy + '/' +cyy + 'n/' + navfile_cddis
 
     try:
-        print('try to download compressed nav file from SOPAC')
-        wget.download(url_sopac1,navfile_sopac1)
-        subprocess.call(['uncompress',navfile_sopac1])
+        wget.download(url_unavco,navfile_compressed)
+        subprocess.call(['uncompress',navfile_compressed])
+        print('success at unavco')
     except:
-        print('no success at sopac')
-    if not os.path.exists(navname):
-        print(' get rid of corrupted file, if any')
-        subprocess.call(['rm','-f',navfile_sopac1])
-        subprocess.call(['rm','-f',navname])
+        print('no success at unavco')
         try:
-            wget.download(url_unavco,navfile_compressed)
-            subprocess.call(['uncompress',navfile_compressed])
-            print('success at unavco')
+            print('try to download compressed nav file from SOPAC')
+            wget.download(url_sopac1,navfile_sopac1)
+            subprocess.call(['uncompress',navfile_sopac1])
         except:
-           print('no success at unavco')
-    if not os.path.exists(navname):
-        try:
-            print('try cddis')
-            wget.download(url_cddis,navfile_compressed)
-            subprocess.call(['uncompress',navfile_compressed])
-            print('success at cddis')
-        except:
-            print('no success anywhere ')
+            print('no success at sopac')
+            if not os.path.exists(navname):
+                print('get rid of corrupted SOPAC file, if any')
+                subprocess.call(['rm','-f',navfile_sopac1])
+                subprocess.call(['rm','-f',navname])
+            try:
+                print('try cddis')
+                wget.download(url_cddis,navfile_compressed)
+                subprocess.call(['uncompress',navfile_compressed])
+                print('success at cddis')
+            except:
+                print('no success anywhere ')
 
     if not os.path.isfile(navfile):
         FileExists = False
