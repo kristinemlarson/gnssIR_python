@@ -42,9 +42,12 @@ def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pel
     ediff = 2 # this is a QC value, eliminates small arcs
     #four_in_one = True # put the plots together
     # this is pretty loose
-    PkNoise = 2.5
+    PkNoise = 2.7
     minNumPts = 20 
     NReg = [0.35, 6] # noise region for LSP QC. these are meters
+    NReg = [minH, maxH]
+    print('noise region', NReg)
+    # change noise region to the reflector height region
     # for quickLook, we use the four geographic quadrants - these are azimuth angles in degrees
     azval = [270, 360, 180, 270, 0, 90, 90, 180]
     naz = int(len(azval)/2) # number of azimuth pairs
@@ -113,6 +116,7 @@ def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pel
                         else:
                             axes[bx[a],by[a]].plot(px,pz)
                             axes[bx[a],by[a]].set_title(titles[a])
+                        #print('   failure Azimuth {0:3.0f} RH {1:6.3f} m, Sat {2:3.0f} Freq {3:3.0f} Amp {4:4.1f} PkNoise {5:3.1f} '.format( avgAzim,maxF,satNu,f,maxAmp,maxAmp/Noise))
 
             # i do not know how to add a grid using these version of matplotlib
             tt = 'GNSS-IR results: ' + station.upper() + ' Freq:' + str(f) + ' ' + str(year) + '/' + str(doy)

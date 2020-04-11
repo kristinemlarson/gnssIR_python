@@ -3,6 +3,7 @@
 # kristine larson, june 2017
 # toolbox for GPS/GNSS data analysis
 import datetime
+from datetime import date
 import math
 import os
 import pickle
@@ -624,6 +625,36 @@ def rinex_nz(station, year, month, day):
             print('some kind of problem with download',file1)
             subprocess.call(['rm', '-f',file1])
 
+def rinex_nrcan(station, year, month, day):
+    """
+    author: kristine larson
+    inputs: station name, year, month, day
+    picks up a RINEX file from GNS New zealand
+    you can input day =0 and it will assume month is day of year
+    """
+    exedir = os.environ['EXE']
+    crnxpath = exedir + '/CRX2RNX'
+    # if doy is input 
+    if day == 0:
+        doy=month
+        d = doy2ymd(year,doy);
+        month = d.month; day = d.day
+    doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
+    gns = 'ftp://gauss.geod.nrcan.gc.ca/data/ftp/naref/pub/rinex/'
+    oname,fname = rinex_name(station, year, month, day)
+    # only hatanaka in canada and normal compression
+    file1 = fname + '.Z'
+    url = gns +  cyy + cdoy + '/' +  file1
+    print(url)
+
+    try:
+        wget.download(url,file1)
+        subprocess.call(['uncompress', file1])
+        print('successful download from NRCAN ')
+    except:
+            print('some kind of problem with download',file1)
+            subprocess.call(['rm', '-f',file1])
+
 def getnavfile(year, month, day):
     """
     author: kristine larson
@@ -633,6 +664,8 @@ def getnavfile(year, month, day):
     19may7 now checks for compressed and uncompressed nav file
     19may20 now allows day of year input if day is set to zero
 
+    if the day is zero it assumes month is doy
+
     """
     foundit = False
     ann = make_nav_dirs(year)
@@ -640,6 +673,7 @@ def getnavfile(year, month, day):
     if (day == 0):
         doy = month
         year, month, day, cyyyy,cdoy, YMD = ydoy2useful(year,doy)
+        cyy = cyyyy[2:4]
     else:
         doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     navname,navdir = nav_name(year, month, day)
@@ -2366,6 +2400,7 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
                         status = subprocess.call(['rm','-f', snrname ])
                     else:
                         print('a SNR file was created and it is non-zero in length')
+                        print(snrname_full)
                         store_snrfile(snrname,year,station) 
             else:
                 print('rinex file or orbit file does not exist, so there is nothing to convert')
@@ -2721,6 +2756,9 @@ def getseries(site):
     fname = 'tseries/' + siteid + '.IGS08.tenv3'
     # NA12 env time series
     fname2 = 'tseries/' + siteid + '.NA12.tenv3'
+    # NA12 env rapid time series
+    fname3 = 'tseries/' + siteid + '.NA12.rapid.tenv3'
+
     if (os.path.isfile(fname) == True):
         print ('Timeseries file ' + fname + ' already exists')
     else:
@@ -2733,6 +2771,12 @@ def getseries(site):
         url = 'http://geodesy.unr.edu/gps_timeseries/tenv3/NA12/' + siteid + '.NA12.tenv3'
         wget.download(url, out='tseries/')
 
+    if (os.path.isfile(fname3) == True):
+        print ('Timeseries file ' + fname3 + ' already exists')
+    else:
+        url = 'http://geodesy.unr.edu/gps_timeseries/rapids/tenv3/NA12/' + siteid + '.NA12.tenv3'
+        wget.download(url, out=fname3)
+
 def rewrite_tseries(station):
     """
     given a station name, look at a daily blewitt position (ENV) 
@@ -2741,6 +2785,7 @@ def rewrite_tseries(station):
     siteid = station.upper()
     # NA12 env time series
     fname = 'tseries/' + siteid + '.NA12.tenv3'
+    fname_rapid = 'tseries/' + siteid + '.NA12.rapid.tenv3'
     outputfile = 'tseries/' + station+ '_na12.env'
     print(fname,outputfile)
     try:
@@ -2955,6 +3000,10 @@ def navfile_retrieve(navfile,cyyyy,cyy,cdoy):
     files at sopac. it stores the file as autoDDD0.YYn where DDD is day of year and YY
     is two charadter year irregardless of what the original name is.
     author: kristine larson, september 2019
+    CHANGED April 2, 2020  Should not use the Sc02 file from UNAVCO.  This was a poor
+    choice. Now will use CDDIS first, then SOPAC, 
+    I have removed unavco as they do not seem to provide global nav files
+    If they do, I do not know where they are kept.
     """
     FileExists = True
     unavco= 'ftp://data-out.unavco.org'
@@ -2971,15 +3020,16 @@ def navfile_retrieve(navfile,cyyyy,cyy,cdoy):
     navfile_unavco = 'sc02' + navfile[4:] + '.Z'
     url_unavco = unavco + '/pub/rinex/nav/' + cyyyy + '/' + cdoy + '/' + navfile_unavco
 
-    navfile_cddis = 'onsa' + navfile[4:] + '.Z'
+    navfile_cddis = 'brdc' + navfile[4:] + '.Z'
     url_cddis = cddis + '/gps/data/daily/' + cyyyy + '/' + cdoy + '/' +cyy + 'n/' + navfile_cddis
-
+    print(url_cddis)
     try:
-        wget.download(url_unavco,navfile_compressed)
+        print('try cddis')
+        wget.download(url_cddis,navfile_compressed)
         subprocess.call(['uncompress',navfile_compressed])
-        print('success at unavco')
+        print('success at cddis')
     except:
-        print('no success at unavco')
+        print('no success at cddis')
         try:
             print('try to download compressed nav file from SOPAC')
             wget.download(url_sopac1,navfile_sopac1)
@@ -2990,13 +3040,6 @@ def navfile_retrieve(navfile,cyyyy,cyy,cdoy):
                 print('get rid of corrupted SOPAC file, if any')
                 subprocess.call(['rm','-f',navfile_sopac1])
                 subprocess.call(['rm','-f',navname])
-            try:
-                print('try cddis')
-                wget.download(url_cddis,navfile_compressed)
-                subprocess.call(['uncompress',navfile_compressed])
-                print('success at cddis')
-            except:
-                print('no success anywhere ')
 
     if not os.path.isfile(navfile):
         FileExists = False
@@ -3059,3 +3102,167 @@ def check_inputs(station,year,doy,snr_type):
         exitSys = True
 
     return exitSys
+
+
+def rewrite_tseries_wrapids(station):
+    """
+    given a station name, look at a daily blewitt position (ENV)
+    file and write a new file that is less insane to understand
+    """
+    siteid = station.upper()
+    # NA12 env time series
+    fname = 'tseries/' + siteid + '.NA12.tenv3'
+    fname_rapid = 'tseries/' + siteid + '.NA12.rapid.tenv3'
+    outputfile = 'tseries/' + station+ '_na12.env'
+    print(fname,outputfile)
+    try:
+        x=np.genfromtxt(fname, skip_header=1, usecols = (3, 7, 8, 9, 10, 11, 12,13))
+        y=np.genfromtxt(fname_rapid, skip_header=1, usecols = (3, 7, 8, 9, 10, 11, 12,13))
+        N = len(x)
+        N2 = len(y)
+        print(N,'open outputfile',outputfile)
+        f=open(outputfile,'w+')
+        for i in range(0,N):
+            mjd = x[i,0]
+            yy,mm,dd = mjd_to_date(mjd)
+            doy, cdoy, cyyyy, cyy = ymd2doy(yy,mm,dd)
+            east = x[i,1] + x[i,2]
+            north= x[i,3] + x[i,4]
+            # adding in the antenna
+            vert = x[i,5] + x[i,6] +  x[i,7]
+            f.write(" {0:4.0f} {1:2.0f} {2:2.0f} {3:3.0f} {4:13.4f} {5:13.4f} {6:13.4f} \n".format(yy,mm,dd,doy,east,north,vert))
+# write out the rapid numbers
+        for i in range(0,N2):
+            mjd = y[i,0]
+            yy,mm,dd = mjd_to_date(mjd)
+            doy, cdoy, cyyyy, cyy = ymd2doy(yy,mm,dd)
+            east = y[i,1] + y[i,2]
+            north= y[i,3] + y[i,4]
+            # adding in the antenna
+            vert = y[i,5] + y[i,6] +  y[i,7]
+            f.write(" {0:4.0f} {1:2.0f} {2:2.0f} {3:3.0f} {4:13.4f} {5:13.4f} {6:13.4f} \n".format(yy,mm,dd,doy,east,north,vert))
+#  then close it
+        f.close()
+    except:
+        print('some problem writing the output')
+
+def back2thefuture(iyear, idoy):
+    """
+    user inputs iyear and idoy
+    and the code checks that this is not a day in the future
+    also don't allow the dates to agree exactly because we 
+    do not have the current day's orbit file available (though
+    it could be chagned to allow it.
+
+    reject data before the year 2000
+    """
+    # find out today's date
+    year = int(date.today().strftime("%Y"));
+    month = int(date.today().strftime("%m"));
+    day = int(date.today().strftime("%d"));
+
+    today=datetime.datetime(year,month,day)
+    doy = (today - datetime.datetime(today.year, 1, 1)).days + 1
+
+    badDay = False
+    if (iyear > year):
+        badDay = True
+    elif (iyear == year) & (idoy >= doy):
+        badDay = True
+    elif (iyear < 2000):
+        badDay = True
+
+    return badDay
+
+
+def rinex_ga_highrate(station, year, month, day):
+    """
+    author: kristine larson
+    inputs: station name, year, month, day
+    picks up a higrate RINEX file from Geoscience Australia
+    you can input day =0 and it will assume month is day of year
+    not sure if it merges them ...
+    """
+    exedir = os.environ['EXE']
+    crnxpath = exedir + '/CRX2RNX'
+    teqcpath = exedir + '/teqc'
+    alpha='abcdefghijklmnopqrstuvwxyz'
+    # if doy is input
+    if day == 0:
+        doy=month
+        d = doy2ymd(year,doy);
+        month = d.month; day = d.day
+    doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
+    gns = 'ftp://ftp.ga.gov.au/geodesy-outgoing/gnss/data/highrate/' + cyyyy + '/' + cyy + cdoy 
+    for h in range(0,24):
+        # subdirectory
+        ch = '{:02d}'.format(h)
+        for e in ['00', '15', '30', '45']:
+            dname = station + cdoy + alpha[h] + e + '.' + cyy + 'd.Z'
+            dname1 = station + cdoy + alpha[h] + e + '.' + cyy + 'd'
+            dname2 = station + cdoy + alpha[h] + e + '.' + cyy + 'o'
+            url = gns + '/' + ch + '/' + dname
+            print(url)
+            try:
+                wget.download(url,dname)
+                subprocess.call(['uncompress',dname])
+                subprocess.call([crnxpath, dname1])
+                subprocess.call([teqcpath])
+            except:
+                print('did not work')
+
+
+def highrate_nz(station, year, month, day):
+    """
+    author: kristine larson
+    inputs: station name, year, month, day
+    picks up a RINEX file from GNS New zealand
+    you can input day =0 and it will assume month is day of year
+    """
+    doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
+    gns = 'ftp://ftp.geonet.org.nz/gnss/event.highrate/1hz/raw/' + cyyyy +'/' + cdoy + '/'
+    print(gns)
+    stationU=station.upper()
+    # will not work for all days but life is short
+    cmm  = '{:02d}'.format(month)
+    cdd  = '{:02d}'.format(day)
+    exedir = os.environ['EXE']
+    trimbleexe = exedir + '/runpkr00' 
+    teqc = exedir + '/teqc' 
+    for h in range(0,24):
+        # subdirectory
+        chh = '{:02d}'.format(h)
+        file1= stationU + cyyyy + cmm + cdd  + chh + '00b.T02'
+        file1out= stationU + cyyyy + cmm + cdd  + chh + '00b.tgd'
+        file2= stationU + cyyyy + cmm + cdd  + chh + '00b.rnx'
+        url = gns + file1
+        try:
+            wget.download(url,file1)
+            subprocess.call([trimbleexe, '-g','-d',file1])
+            print(file1out, file2)
+            f = open(file2, 'w')
+            subprocess.call([teqc, '-week', '2083', '-O.obs', 'S1+S2+C2+L2', file1out], stdout=f)
+            f.close()
+            print('successful download from GeoNet New Zealand')
+        except:
+            print('some kind of problem with download',file1)
+
+def llh2xyz(lat,lon,height):
+    """
+    inputs lat,lon (in degrees) and height in meters
+    returns x,y,z in meters
+    # not sure where I got this
+    """
+    A_EARTH = 6378137;
+    f= 1/298.257223563;
+    NAV_E2 = (2-f)*f; # also e^2
+    deg2rad = math.pi/180.0
+
+    slat = math.sin(lat*deg2rad);
+    clat = math.cos(lat*deg2rad);
+    #    print(username,lat,slat)
+    r_n = A_EARTH/(math.sqrt(1 - NAV_E2*slat*slat))
+    x= (r_n + height)*clat*math.cos(lon*deg2rad)
+    y= (r_n + height)*clat*math.sin(lon*deg2rad)
+    z= (r_n*(1 - NAV_E2) + height)*slat
+    return x,y,z

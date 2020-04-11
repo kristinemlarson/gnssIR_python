@@ -27,8 +27,15 @@
 # 19sep13, code will attempt to make an SNR file for you if one does not exist. 
 # It will be GPS only. i.e. us
 # nav file
-# 19sep22 added error checking on required inputs
-# 
+# 2019sep22 added error checking on required inputs
+# added subprocess import
+# 2020mar01 added seekRinex logical. Originally my thinking was to have 
+# everymake their snr files using a separate utility (rinex2snr.py).  But after
+# numerous comments, I added the feature that it would at least try to make it for you
+# if it could find a RINEX file. The problem with this feature is that of course 
+# it keeps looking for RINEX files even when they do not exist and will never exist.
+# so I have a logical called seekRinex.  It is set to False. If you want this 
+code to look for RINEX files and make snr files for you, by all means change it to True.
 """
 import sys
 import os
@@ -37,6 +44,7 @@ import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings("ignore")
 import cProfile
+import subprocess
 
 import gps as g
 import argparse
@@ -49,14 +57,10 @@ import read_snr_files as snr
 import refraction as refr
 import datetime
 
-# set an environment variable for where you are keeping your LSP
-# instructions and input files 
-# CHANGE FOR YOUR MACHINE
-# you can also set this in your .bashrc, which is what i am doing now
-# os.environ['REFL_CODE'] = '/Users/kristine/Documents/Research'
 seekRinex = False
+# pick up the environment variable for where you are keeping your LSP data
 xdir = os.environ['REFL_CODE']
-# make sure the input directory exists
+# make sure the input directory exists, if not, create it
 outputdir  = xdir + '/input'
 if not os.path.isdir(outputdir):
     subprocess.call(['mkdir',outputdir])
@@ -71,7 +75,7 @@ wantCompression = False
 # but for tides, these is illegal. 
 allowMidniteCross = False
 
-# eventually we will use something else but this restricts arcs to one hour
+# eventually we will use something else but this restricts arcs to two hours
 # units are in minutes
 delTmax = 120
 #
@@ -131,7 +135,7 @@ else:
 # Setting some defaults
 # use the refraction correction
 RefractionCorrection = True
-RefractionCorrection = False
+#RefractionCorrection = False
 if RefractionCorrection:
     irefr = 1
 else:
@@ -158,7 +162,7 @@ else:
 
 # You should not use the peak periodogram value unless it is significant. Using a 
 # peak to noise value is one way of defining that significance (not the only way).
-# I often use 3, but for now it is set to 2.7
+# I often use 3, but for now it is set to 2.7. For snow, I would suggest 3.5
 PkNoise = 2.7
 # this defines the minimum number of points in an arc.  This depends entirely on the sampling
 # rate for the receiver, so you should not assume this value is relevant to your case.
