@@ -7,10 +7,9 @@ rinex2snr.py translates the RINEX files into SNR files, which are fed into gnssI
 quickLook.py will try to give you a quick assessment of a file wihtout dealing
 with the details associated with gnssIR_lomb.py.
 
-Other things to know: I only support python3. 
-The library dependencies are provided in the pyproject.toml file (I am using a package manager 
-called poetry). Please make sure to install subprocess as well- as I inadvertently forgot 
-to update that file before posting. 
+Other things to know: I only support python3. The library dependencies 
+are provided in the pyproject.toml file (I am using a package 
+manager called poetry). 
 
 The RH estimation depends on satellite elevation angle, not time. This can
 cause complications for tides where large RH changes occur and time matters.
