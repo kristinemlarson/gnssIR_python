@@ -71,14 +71,14 @@ def define_filename(station,year,doy,snr):
     returns snr filename
     author: Kristine Larson
     19mar25: return compressed filename too
+    20apr12: fixed typo in xz name!
     """
     xdir = os.environ['REFL_CODE']
     cdoy = '{:03d}'.format(doy)
     cyy = '{:02d}'.format(year-2000)
     f= station + str(cdoy) + '0.' + cyy + '.snr' + str(snr)
     fname = xdir + '/' + str(year) + '/snr/' + station + '/' + f 
-    fname2 = xdir + '/' + str(year) + '/snr/' + station + '/' + f  + '.xv'
-    print('snr filename is ', fname) 
+    fname2 = xdir + '/' + str(year) + '/snr/' + station + '/' + f  + '.xz'
     return fname, fname2
 
 def define_filename_prevday(station,year,doy,snr):
@@ -2281,42 +2281,14 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
     snrname_full,snrname_compressed = define_filename(station,year,doy,option)
     if (os.path.isfile(snrname_full) == True):
         print('snrfile already exists:', snrname_full)
+    elif (os.path.isfile(snrname_compressed) == True):
+        print('xz compressed snrfile already exists:')
+        print(snrname_compressed)
     else:
-    # SECOND MAKE SURE YOU HAVE THE ORBITS YOU NEED
+        print('snr does not exist so pick up orbits and rinex')
         d = doy2ymd(year,doy); 
         month = d.month; day = d.day
-        if orbtype == 'mgex':
-            # this means you are using multi-GNSS and GFZ
-            f,orbdir,foundit=getsp3file_mgex(year,month,day,'gbm')
-            snrexe = exedir  + '/gnssSNR.e' 
-        if orbtype == 'sp3':
-            print('uses default IGS orbits, so only GPS')
-            f,orbdir,foundit=getsp3file_flex(year,month,day,'igs')
-            snrexe = exedir + '/gnssSNR.e' 
-            if (os.path.isfile(snrexe) == False):
-                print('The translation executable does not exist:' + snrexe + ' Exiting ')
-                sys.exit()
-        if orbtype == 'gfz':
-            print('using gfz sp3 file, GPS and GLONASS')
-            f,orbdir,foundit=getsp3file_flex(year,month,day,'gfz')
-            snrexe = exedir + '/gnssSNR.e' 
-        if orbtype == 'igr':
-            print('using rapid orbits, so only GPS')
-            f,orbdir,foundit=getsp3file_flex(year,month,day,'igr')
-            snrexe = exedir + '/gnssSNR.e' 
-        if orbtype == 'gbm':
-            # this uses GFZ multi-GNSS 
-            f,orbdir,foundit=getsp3file_mgex(year,month,day,'gbm')
-            snrexe = exedir + '/gnssSNR.e' 
-            if (os.path.isfile(snrexe) == False):
-                print('The translation executable does not exist:' + snrexe + ' Exiting ')
-                sys.exit()
-        if orbtype == 'nav':
-            f,orbdir,foundit=getnavfile(year, month, day) 
-            snrexe = exedir  + '/gpsSNR.e' 
-            if (os.path.isfile(snrexe) == False):
-                print('The translation executable does not exist:' + snrexe + ' Exiting ')
-                sys.exit()
+        foundit, f, orbdir, snrexe = get_orbits_setexe(year,month,day,orbtype) 
         # if you have the orbit file, you can get the rinex file
         if foundit:
             # now you can look for a rinex file
@@ -2348,7 +2320,6 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
                             rinex_sonel(station, year, month, day)
                         except:
                             print('got nothing - I give up')
-
 
     # check to see if you found the rinex file
     # should check that the orbit really exists too
@@ -3266,3 +3237,53 @@ def llh2xyz(lat,lon,height):
     y= (r_n + height)*clat*math.sin(lon*deg2rad)
     z= (r_n*(1 - NAV_E2) + height)*slat
     return x,y,z
+
+def get_orbits_setexe(year,month,day,orbtype):
+    """
+    helper script to make snr files
+    takes year, month, day and orbit type
+    picks up and stores
+    also sets executable location (gpsonly vs gnss)
+    returns whether file was found, its name, the directory, and name of snrexe
+    kristine larson
+    """
+    #default values
+    foundit = False
+    f=''; orbdir=''
+    # define directory for the conversion executables
+    exedir = os.environ['EXE']
+    snrexe = exedir  + '/gpsSNR.e'
+    if orbtype == 'mgex':
+        # this means you are using multi-GNSS and GFZ
+        f,orbdir,foundit=getsp3file_mgex(year,month,day,'gbm')
+        snrexe = exedir  + '/gnssSNR.e'
+    if orbtype == 'sp3':
+        print('uses default IGS orbits, so only GPS')
+        f,orbdir,foundit=getsp3file_flex(year,month,day,'igs')
+        snrexe = exedir + '/gnssSNR.e'
+        if (os.path.isfile(snrexe) == False):
+            print('The translation executable does not exist:' + snrexe + ' Exiting ')
+            sys.exit()
+    if orbtype == 'gfz':
+        print('using gfz sp3 file, GPS and GLONASS')
+        f,orbdir,foundit=getsp3file_flex(year,month,day,'gfz')
+        snrexe = exedir + '/gnssSNR.e'
+    if orbtype == 'igr':
+        print('using rapid orbits, so only GPS')
+        f,orbdir,foundit=getsp3file_flex(year,month,day,'igr')
+        snrexe = exedir + '/gnssSNR.e'
+    if orbtype == 'gbm':
+        # this uses GFZ multi-GNSS
+        f,orbdir,foundit=getsp3file_mgex(year,month,day,'gbm')
+        snrexe = exedir + '/gnssSNR.e'
+        if (os.path.isfile(snrexe) == False):
+            print('The translation executable does not exist:' + snrexe + ' Exiting ')
+            sys.exit()
+    if orbtype == 'nav':
+        f,orbdir,foundit=getnavfile(year, month, day)
+        snrexe = exedir  + '/gpsSNR.e'
+        if (os.path.isfile(snrexe) == False):
+            print('The translation executable does not exist:' + snrexe + ' Exiting ')
+            sys.exit()
+
+    return foundit, f, orbdir, snrexe

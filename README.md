@@ -22,6 +22,13 @@ Again, this effect can be ignored for snow/ice reflections.
 A simple refraction error correction has been added to gnssIR_lomb.py. You can turn
 it on/off by setting the RefractionCorrection variable
 
+
+April 2020
+Added an optional year_end option so you can process multiple years with one command.
+works the same way as doy_end.
+
+Changed the source of the nav messages. It checks CDDIS, SOPAC, and the NGS.
+
 July 2, 2019
 I have added another code (quickLook.py) that will give you a "quick and dirty" evaluation
 of the data for a single site. It has the nice advantage that it will make a SNR file for you if your
@@ -82,7 +89,7 @@ If the executable from this code is not gnssSNR.e, please change it and move it 
 in the EXE directory.
 
 * teqc is not required, but highly recommended if you are going down the 
-RINEX rabbit hole.  There is a list of static executables at the 
+RINEX rabbit hole. There is a list of static executables at the 
 bottom of this page, http://www.unavco.org/software/data-processing/teqc/teqc.html
 It needs to be stored in the EXE directory.
 

@@ -34,6 +34,7 @@ parser.add_argument("orbType", help="orbit type, nav or sp3", type=str)
 parser.add_argument("-rate", default=None, type=int, help="sampling rate(not req)")
 parser.add_argument("-dec", default=0, type=int, help="decimate (seconds) requires teqc be installed")
 parser.add_argument("-doy_end", default=None, help="end day of year", type=int)
+parser.add_argument("-year_end", default=None, help="end year", type=int)
 parser.add_argument("-nolook", "--nolook", default='False', type=str, help="True means only look locally for RINEX")
 
 args = parser.parse_args()
@@ -63,24 +64,31 @@ if args.doy_end == None:
 else:
     doy2 = args.doy_end
 
+year1=year
+if args.year_end == None:
+    year2 = year 
+else:
+    year2 = args.year_end
+
 # decimation rate
 dec_rate = args.dec
 #
 ann = g.make_nav_dirs(year)
-print(nol)
 
 doy_list = list(range(doy1, doy2+1))
+year_list = list(range(year1, year2+1))
 
-# for each day in the doy list
-for doy in doy_list:
-    cdoy = '{:03d}'.format(doy)
-    cyy = '{:02d}'.format(year-2000)
-    r = station + cdoy + '0.' + cyy + 'o'
+# loop thru years and days 
+for year in year_list:
+    for doy in doy_list:
+        cdoy = '{:03d}'.format(doy)
+        cyy = '{:02d}'.format(year-2000)
+        r = station + cdoy + '0.' + cyy + 'o'
     # if no look, make sure the file is there
-    if nol:
-        if os.path.exists(r):
-            print('rinex file exists locally')
-            g.quick_rinex_snr(year, doy, station, snrt, orbtype,rate, dec_rate )
-    else:
-        print('will look locally and externally')
-        g.quick_rinex_snr(year, doy, station, snrt, orbtype,rate, dec_rate)
+        if nol:
+            if os.path.exists(r):
+                print('rinex file exists locally')
+                g.quick_rinex_snr(year, doy, station, snrt, orbtype,rate, dec_rate )
+        else:
+            print('will look locally and externally')
+            g.quick_rinex_snr(year, doy, station, snrt, orbtype,rate, dec_rate)

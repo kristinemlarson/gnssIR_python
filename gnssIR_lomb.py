@@ -96,6 +96,7 @@ parser.add_argument("-amp", "--ampl", default=None, type=float, help="try -amp 1
 parser.add_argument("-sat", "--sat", default=None, type=int, help="allow individual satellite")
 parser.add_argument("-pltname", "--pltname", default='None', type=str, help="plot name")
 parser.add_argument("-doy_end", "--doy_end", default=None, type=int, help="doy end")
+parser.add_argument("-year_end", "--year_end", default=None, type=int, help="year end")
 parser.add_argument("-azim1", "--azim1", default=None, type=int, help="lower limit azimuth")
 parser.add_argument("-azim2", "--azim2", default=None, type=int, help="upper limit azimuth")
 parser.add_argument("-nooverwrite", "--nooverwrite", default=None, type=int, help="use any integer to not overwrite")
@@ -125,6 +126,12 @@ if args.doy_end == None:
     doy_end = doy
 else:
     doy_end = args.doy_end
+
+# in case you want to analyze multiple years of data
+if args.year_end == None:
+    year_end = year
+else:
+    year_end = args.year_end
 
 # this makes no sense
 if args.onefreq == None:
@@ -232,106 +239,92 @@ if RefractionCorrection:
 # only doing one day at a time for now
 twoDays = False
 
+year_list = list(range(year, year_end+1))
 doy_list = list(range(doy, doy_end+1))
 # for each day in the doy list
-for doy in doy_list:
-    fname, resultExist = g.LSPresult_name(station,year,doy,extension) 
-    if (resultExist):
-        print('Results already exist on disk')
+for year in year_list:
+    for doy in doy_list:
+        fname, resultExist = g.LSPresult_name(station,year,doy,extension) 
+        if (resultExist):
+            print('Results already exist on disk')
 # find the observation file name and try to read it
-    if (overwriteResults == False) & (resultExist == True):
-        allGood = 0
-        print('>>>>> The result file exists for this day and you have selected the do not overwrite option')
-    else:
-        print('go ahead and read the files- first define SNR filename?')
-        obsfile,obsfileCmp = g.define_filename(station,year,doy,snr_type)
-        obsfile2,obsfile2Cmp = g.define_filename_prevday(station,year,doy,snr_type)
+        if (overwriteResults == False) & (resultExist == True):
+            allGood = 0
+            print('>>>>> The result file exists for this day and you have selected the do not overwrite option')
+        else:
+            print('go ahead and read the files- first define SNR filename?')
+            obsfile,obsfileCmp = g.define_filename(station,year,doy,snr_type)
+            obsfile2,obsfile2Cmp = g.define_filename_prevday(station,year,doy,snr_type)
         #  compressed function is pretty silly in the day of large disks
-        if not os.path.isfile(obsfile) and seekRinex:
-            print('SNR file does not exist. I will try to make a GPS only file.')
-            rate = 'low'; dec_rate = 0; orbtype = 'nav'
-            g.quick_rinex_snr(year, doy, station, snr_type, orbtype,rate, dec_rate)
-
+            if not os.path.isfile(obsfile) and seekRinex:
+                print('SNR file does not exist. I will try to make a GPS only file.')
+                rate = 'low'; dec_rate = 0; orbtype = 'nav'
+                g.quick_rinex_snr(year, doy, station, snr_type, orbtype,rate, dec_rate)
 #   define two datasets - one from one day snr file and the other with 24 hours that
 #   have three hours from before midnite and first 21 hours on the given day
-#
-        allGood,sat,ele,azi,t,edot,s1,s2,s5,s6,s7,s8,snrE = snr.read_snr_multiday(obsfile,obsfile2,twoDays)
+            allGood,sat,ele,azi,t,edot,s1,s2,s5,s6,s7,s8,snrE = snr.read_snr_multiday(obsfile,obsfile2,twoDays)
 #   compress it here
-        snr.compress_snr_files(wantCompression, obsfile, obsfile2,twoDays) 
-
-#
+            snr.compress_snr_files(wantCompression, obsfile, obsfile2,twoDays) 
 #   twoDays = True
-#   21:00-23:59 day before plus 0-21:00 day of
-# comment out for now - need to correct the elevation angles eventually
-#   allGoodP,Psat,Pele,Pazi,Pt,Pedot,Ps1,Ps2,Ps5,Ps6,Ps7,Ps8,PsnrE = snr.read_snr_multiday(obsfile,obsfile2,twoDays)
-    if (allGood == 1):
-        print('successfully read the first SNR file')
-        if RefractionCorrection:
-            print('<<<<<< apply refraction correction >>>>>>') 
-            corrE = refr.corr_el_angles(ele, p,T)
-            ele = corrE
-#           g.print_file_stats(ele,sat,s1,s2,s5,s6,s7,s8,e1,e2) 
-        ct = 0
+        if (allGood == 1):
+            print('successfully read the first SNR file')
+            if RefractionCorrection:
+                print('<<<<<< apply refraction correction >>>>>>') 
+                corrE = refr.corr_el_angles(ele, p,T)
+                ele = corrE
+            ct = 0
 # good arcs saved to a plain text file, rejected arcs to local file. Open those file names
-        fout,frej = g.open_outputfile(station,year,doy,extension) 
-
+            fout,frej = g.open_outputfile(station,year,doy,extension) 
 #  main loop
 # for a given list of frequencies
-
-        total_arcs = 0
-        for f in freqs:
+            total_arcs = 0
+            for f in freqs:
        # If you want to make a plot for each frequency?
-            g.open_plot(plt_screen)
-            rj = 0
-            gj = 0
-            print('**** looking at frequency ', f, ' ReqAmp', reqAmp[ct], ' doy ', doy)
+                g.open_plot(plt_screen)
+                rj = 0
+                gj = 0
+                print('**** looking at frequency ', f, ' ReqAmp', reqAmp[ct], ' doy ', doy)
 #   get the list of satellites for this frequency
-            if onesat == None:
-                satlist = g.find_satlist(f,snrE)
-            else:
-                satlist = [onesat]
+                if onesat == None:
+                    satlist = g.find_satlist(f,snrE)
+                else:
+                    satlist = [onesat]
 # for a given satellite
-            for satNu in satlist:
-#                print('>> Sat number ', satNu)
-# and azimuth range
-                for a in range(naz):
-                    az1 = azval[(a*2)] ; az2 = azval[(a*2 + 1)]
-#                    print('>>>> azimuths', az1, az2)
+                for satNu in satlist:
+                    for a in range(naz):
+                        az1 = azval[(a*2)] ; az2 = azval[(a*2 + 1)]
 # window the data
-                    x,y,Nv,cf,UTCtime,avgAzim,avgEdot,Edot2,delT= g.window_data(s1,s2,s5,s6,s7,s8,sat,ele,azi,t,edot,f,az1,az2,e1,e2,satNu,polyV,pele) 
+                        x,y,Nv,cf,UTCtime,avgAzim,avgEdot,Edot2,delT= g.window_data(s1,s2,s5,s6,s7,s8,sat,ele,azi,t,edot,f,az1,az2,e1,e2,satNu,polyV,pele) 
 #           this is a kluge for snr files that have non edot values in column 5
-                    MJD = g.getMJD(year,month,day, UTCtime)
-                    if Nv > minNumPts:
-                        maxF, maxAmp, eminObs, emaxObs,riseSet,px,pz= g.strip_compute(x,y,cf,maxH,desiredP,polyV,minH) 
-                        nij =   pz[(px > NReg[0]) & (px < NReg[1])]
-                        Noise = 0
-                        if (len(nij) > 0):
-                            Noise = np.mean(nij)
-#                    print(len(nij),NReg[0], NReg[1],eminObs,emaxObs,maxAmp/Noise)
-#                   I  will write out the Edot2 value, as Edot is not provided in all snr files
-#
+                        MJD = g.getMJD(year,month,day, UTCtime)
+                        if Nv > minNumPts:
+                            maxF, maxAmp, eminObs, emaxObs,riseSet,px,pz= g.strip_compute(x,y,cf,maxH,desiredP,polyV,minH) 
+                            nij =   pz[(px > NReg[0]) & (px < NReg[1])]
+                            Noise = 0
+                            if (len(nij) > 0):
+                                Noise = np.mean(nij)
 #  this is the main QC statement
-                        iAzim = int(avgAzim)
-                        if (delT < delTmax) & (eminObs < (e1 + ediff)) & (emaxObs > (e2 - ediff)) & (maxAmp > reqAmp[ct]) & (maxAmp/Noise > PkNoise):
-                            fout.write(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} {8:6.2f} {9:4.0f} {10:3.0f} {11:2.0f} {12:8.5f} {13:6.2f} {14:7.2f} {15:12.6f} {16:1.0f} \n".format(year,doy,maxF,satNu, UTCtime, avgAzim,maxAmp,eminObs,emaxObs,Nv, f,riseSet, Edot2, maxAmp/Noise, delT, MJD,irefr))
-                            print('SUCCESS Azimuth {0:3.0f} Satellite {1:3.0f} RH {2:7.3f} meters PkNoise {3:6.1f} '.format( iAzim,satNu,maxF,maxAmp/Noise))
-                            gj +=1
-                            g.update_plot(plt_screen,x,y,px,pz)
-                        else:
-                            if eminObs > 15:
-                                print('useless tiny arc')
+                            iAzim = int(avgAzim)
+                            if (delT < delTmax) & (eminObs < (e1 + ediff)) & (emaxObs > (e2 - ediff)) & (maxAmp > reqAmp[ct]) & (maxAmp/Noise > PkNoise):
+                                fout.write(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} {8:6.2f} {9:4.0f} {10:3.0f} {11:2.0f} {12:8.5f} {13:6.2f} {14:7.2f} {15:12.6f} {16:1.0f} \n".format(year,doy,maxF,satNu, UTCtime, avgAzim,maxAmp,eminObs,emaxObs,Nv, f,riseSet, Edot2, maxAmp/Noise, delT, MJD,irefr))
+                                print('SUCCESS Azimuth {0:3.0f} Satellite {1:3.0f} RH {2:7.3f} meters PkNoise {3:6.1f} '.format( iAzim,satNu,maxF,maxAmp/Noise))
+                                gj +=1
+                                g.update_plot(plt_screen,x,y,px,pz)
                             else:
-                                print('failed QC for Azimuth {0:.1f} Satellite {1:2.0f} '.format( iAzim,satNu))
-                                g.write_QC_fails(delT,delTmax,eminObs,emaxObs,e1,e2,ediff,maxAmp, Noise,PkNoise,reqAmp[ct])
-                                frej.write(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} \
+                                if eminObs > 15:
+                                    print('useless tiny arc')
+                                else:
+                                    print('failed QC for Azimuth {0:.1f} Satellite {1:2.0f} '.format( iAzim,satNu))
+                                    g.write_QC_fails(delT,delTmax,eminObs,emaxObs,e1,e2,ediff,maxAmp, Noise,PkNoise,reqAmp[ct])
+                                    frej.write(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} \
 {8:6.2f} {9:4.0f} {10:3.0f} {11:2.0f} {12:8.5f} {13:6.2f} {14:7.2f} {15:12.6f} \n".format(year,doy,maxF,satNu, UTCtime,\
                        avgAzim,maxAmp,eminObs,emaxObs,Nv, f,riseSet, Edot2,maxAmp/Noise,delT, MJD))
-                                rj +=1
-            print('     good arcs:', gj, ' rejected arcs:', rj)
-            ct += 1
-            total_arcs = gj + total_arcs
+                                    rj +=1
+                print('     good arcs:', gj, ' rejected arcs:', rj)
+                ct += 1
+                total_arcs = gj + total_arcs
 # close the output files
-            g.quick_plot(plt_screen, total_arcs,station,pltname,f)
-        fout.close() ; frej.close()
+                g.quick_plot(plt_screen, total_arcs,station,pltname,f)
+            fout.close() ; frej.close()
 #        g.quick_plot(plt_screen, total_arcs,station,pltname,f)
 # plot to the screen
