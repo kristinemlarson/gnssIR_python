@@ -57,7 +57,7 @@ import read_snr_files as snr
 import refraction as refr
 import datetime
 
-seekRinex = False
+seekRinex = True
 # pick up the environment variable for where you are keeping your LSP data
 xdir = os.environ['REFL_CODE']
 # make sure the input directory exists, if not, create it
@@ -68,8 +68,8 @@ else:
     print('The directory for analysis instruction exists.')
  
 # if you want the SNR files to be xv compressed after using them.
-wantCompression = True 
 wantCompression = False
+#wantCompression = True 
 
 # for some applications, allowing tracks that cross midnite is fine (such as snow)
 # but for tides, these is illegal. 
@@ -236,8 +236,9 @@ if RefractionCorrection:
     print("Pressure {0:8.2f} Temperature {1:6.1f} \n".format(p,T))
 
 
-# only doing one day at a time for now
+# only doing one day at a time for now - but have started defining the needed inputs for using it
 twoDays = False
+obsfile2= '' # dummy value for name of file for the day before, when we get to that
 
 year_list = list(range(year, year_end+1))
 doy_list = list(range(doy, doy_end+1))
@@ -252,22 +253,28 @@ for year in year_list:
             allGood = 0
             print('>>>>> The result file exists for this day and you have selected the do not overwrite option')
         else:
-            print('go ahead and read the files- first define SNR filename?')
-            obsfile,obsfileCmp = g.define_filename(station,year,doy,snr_type)
-            obsfile2,obsfile2Cmp = g.define_filename_prevday(station,year,doy,snr_type)
+            print('go ahead and access SNR data - first define SNR filename')
+            #obsfile,obsfileCmp = g.define_filename(station,year,doy,snr_type)
+            obsfile, obsfileCmp, snre = g.define_and_xz_snr(station,year,doy,snr_type) 
+            # turning this off for now
+            # print('SNR filename for previous day')
+            # obsfile2, obsfile2Cmp, snre2 = g.define_and_xz_snr(station,year,doy-1,snr_type) 
         #  compressed function is pretty silly in the day of large disks
-            if not os.path.isfile(obsfile) and seekRinex:
+            if (not snre) and (not seekRinex):
+                print('SNR file does not exist and you have set the seekRinex variable to False')
+                print('Use rinex2snr.py to make SNR files')
+            if (not snre) and seekRinex:
                 print('SNR file does not exist. I will try to make a GPS only file.')
                 rate = 'low'; dec_rate = 0; orbtype = 'nav'
-                g.quick_rinex_snr(year, doy, station, snr_type, orbtype,rate, dec_rate)
+                g.quick_rinex_snrC(year, doy, station, snr_type, orbtype,rate, dec_rate)
+
 #   define two datasets - one from one day snr file and the other with 24 hours that
 #   have three hours from before midnite and first 21 hours on the given day
             allGood,sat,ele,azi,t,edot,s1,s2,s5,s6,s7,s8,snrE = snr.read_snr_multiday(obsfile,obsfile2,twoDays)
-#   compress it here
+#   if desired , compress files here
             snr.compress_snr_files(wantCompression, obsfile, obsfile2,twoDays) 
-#   twoDays = True
+#   twoDays = True  - for now using only one day at a time
         if (allGood == 1):
-            print('successfully read the first SNR file')
             if RefractionCorrection:
                 print('<<<<<< apply refraction correction >>>>>>') 
                 corrE = refr.corr_el_angles(ele, p,T)

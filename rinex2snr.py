@@ -5,11 +5,13 @@ These files are then used by gnss_lomb.py
 author: kristine larson
 date: 20 march 2019
 19oct20 changed inputs to put doy_end as an optional input rather than requiring it
+20apr15 tried to streamline data pick up, eventually add compression
 """
 import argparse
 import datetime
 import os
 import sys
+import subprocess
 
 import numpy as np
 
@@ -35,13 +37,23 @@ parser.add_argument("-rate", default=None, type=int, help="sampling rate(not req
 parser.add_argument("-dec", default=0, type=int, help="decimate (seconds) requires teqc be installed")
 parser.add_argument("-doy_end", default=None, help="end day of year", type=int)
 parser.add_argument("-year_end", default=None, help="end year", type=int)
-parser.add_argument("-nolook", "--nolook", default='False', type=str, help="True means only look locally for RINEX")
+parser.add_argument("-nolook", default='False', type=str, help="True means only use RINEX files on local machine")
 
 args = parser.parse_args()
 #
 # rename the user inputs as variables
 #
 station = args.station
+NS = len(station)
+if (NS == 4):
+    print('assume RINEX 2.11')
+    version = 2
+elif (NS == 9):
+    print('assume RINEX 3')
+    version = 3
+else:
+    print('illegal input - Station must have 4 or 9 characters')
+    sys.exit()
 year = args.year
 doy1= args.doy1
 snrt = args.snrEnd
@@ -51,9 +63,11 @@ orbtype = args.orbType
 nolook = args.nolook
 if nolook == 'True':
     nol = True
+    print('will only use RINEX on local machine')
 else:
     nol = False
-  
+    print('will look for RINEX on local machine and external archives')
+
 if args.rate == None:
     rate = 'low'
 else:
@@ -88,7 +102,19 @@ for year in year_list:
         if nol:
             if os.path.exists(r):
                 print('rinex file exists locally')
-                g.quick_rinex_snr(year, doy, station, snrt, orbtype,rate, dec_rate )
+                g.quick_rinex_snrC(year, doy, station, snrt, orbtype,rate, dec_rate )
         else:
             print('will look locally and externally')
-            g.quick_rinex_snr(year, doy, station, snrt, orbtype,rate, dec_rate)
+            if version == 3:
+                # will look for version 3 at CDDIS and convert to version 2
+                srate = 30 # for now
+                rinex2exists, rinex3name = g.cddis_rinex3(station, year, doy,srate)
+                # remove rinex3 file since from this point on only use rinex2
+                subprocess.call(['rm', rinex3name])
+                station = station[0:4]
+                print('change station name from 9 characters to 4', station)
+                if not rinex2exists:
+                    print('rinex 3/rinex 2 file does not exist')
+                    
+
+            g.quick_rinex_snrC(year, doy, station, snrt, orbtype,rate, dec_rate)

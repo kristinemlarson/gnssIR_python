@@ -29,6 +29,9 @@ works the same way as doy_end.
 
 Changed the source of the nav messages. It checks CDDIS, SOPAC, and the NGS.
 
+Started xz compressing orbit files.  snr files can also be compressed, but you need to set the 
+wantCompression boolean variable in gnssIR_lomb.py
+
 July 2, 2019
 I have added another code (quickLook.py) that will give you a "quick and dirty" evaluation
 of the data for a single site. It has the nice advantage that it will make a SNR file for you if your
@@ -44,7 +47,7 @@ and that you have put the required files in the correct place (i.e. executables
 and inputs).
 
 
-WARNING: These codes do not calculate soil moisture.
+WARNING: These codes are useful for but do not directly calculate soil moisture.
 
 # Installing the code
 
@@ -78,20 +81,21 @@ GPS data - and thus uses the nav file for the orbits.
 The other translates all GNSS signals and uses a sp3 file.  Both 
 codes are hosted at GitHub. 
 
-# Non-Python Code 
+# Non-Python Code  (All executables must be stored in the EXE directory)
 
-* RINEX translator for multi-GNSS, which must be called gnssSNR.e, https://github.com/kristinemlarson/gnssSNR 
-If the executable from this code is not gnssSNR.e, please change it and move it to the EXE directory
+* gnssSNR.e, RINEX translator for multi-GNSS, https://github.com/kristinemlarson/gnssSNR 
 
-* RINEX Translator for GPS, which must be called gpsSNR.e, https://github.com/kristinemlarson/gpsonlySNR
+* gpsSNR.e, RINEX Translator for GPS data, https://github.com/kristinemlarson/gpsonlySNR
 
-* CRX2RNX, Compressed to Uncompressed RINEX, http://terras.gsi.go.jp/ja/crx2rnx.html This must be stored 
-in the EXE directory.
+* CRX2RNX, Compressed to Uncompressed RINEX, http://terras.gsi.go.jp/ja/crx2rnx.html 
 
 * teqc is not required, but highly recommended if you are going down the 
 RINEX rabbit hole. There is a list of static executables at the 
 bottom of this page, http://www.unavco.org/software/data-processing/teqc/teqc.html
-It needs to be stored in the EXE directory.
+
+* gfzrnx, Nischan, Thomas (2016): GFZRNX - RINEX GNSS Data Conversion and Manipulation Toolbox. 
+GFZ Data Services. http://dx.doi.org/10.5880/GFZ.1.1.2016.002
+This code is essential if you want to use RINEX 3 files.
 
 
 # Making SNR files
@@ -117,12 +121,12 @@ The snr options are always two digit numbers.  Choices are:
 
 Legal orbit types:
 
-1. nav - is using the GPS nav message. The main plus is that it is available in near 
+* nav - is using the GPS nav message. The main plus is that it is available in near 
 real-time.  A nav file only has GPS orbits in it, so you should not use this 
 option if you want to do true multi-GNSS reflectometry. 
-2. sp3 - is using the IGS sp3 file, so again, your RINEX file does not have to be be GPS only, but
+* sp3 - is using the IGS sp3 file, so again, your RINEX file does not have to be be GPS only, but
 you won't get any non-GPS data because it doesn't have the orbit.
-3. gbm - is currently my only option for getting a multi-GNSS orbit file.  This is also 
+* gbm - is currently my only option for getting a multi-GNSS orbit file.  This is also 
 in sp3 format. The gbm file comes from the group at GFZ.  
 
 
@@ -136,10 +140,6 @@ to do that decimation.
 
 The SNR files created by this code are stored in REFL_CODE/YYYY/snr
 
-It is very common for GPS archives to store files in the Hatanaka (compressed) format. 
-You cannot do GNSS IR without the ability to read Hatanaka files.  In particular, you 
-need the Hatanaka decompression code (see above) to translate this.  
-You need to put it in the EXE area. It is called CRX2RNX.
 
 # Running the reflector height (gnssIR_lomb.py) code
 
@@ -262,3 +262,4 @@ If you want something with a how-to flavor, try this, which is open option:
 https://link.springer.com/article/10.1007/s10291-018-0744-8
 
 Also look to my website, https://kristinelarson.net
+

@@ -81,6 +81,34 @@ def define_filename(station,year,doy,snr):
     fname2 = xdir + '/' + str(year) + '/snr/' + station + '/' + f  + '.xz'
     return fname, fname2
 
+def define_and_xz_snr(station,year,doy,snr):
+    """
+    given station name, year, doy, snr type
+    returns snr filename
+    author: Kristine Larson
+    19mar25: return compressed filename too
+    20apr12: fixed typo in xz name! now try to compress here
+    """
+    xdir = os.environ['REFL_CODE']
+    cdoy = '{:03d}'.format(doy)
+    cyy = '{:02d}'.format(year-2000)
+    f= station + str(cdoy) + '0.' + cyy + '.snr' + str(snr)
+    fname = xdir + '/' + str(year) + '/snr/' + station + '/' + f
+    fname2 = xdir + '/' + str(year) + '/snr/' + station + '/' + f  + '.xz'
+    snre = False
+    if os.path.isfile(fname):
+        print('snr file exists')
+        snre = True
+    else:
+        if os.path.isfile(fname2):
+            print('found xz compressed snr file - try to unxz it')
+            subprocess.call(['unxz', fname2])
+        # check that it was success
+            if os.path.isfile(fname):
+                snre = True
+#   return fname2 but mostly for backwards compatibility
+    return fname, fname2, snre 
+
 def define_filename_prevday(station,year,doy,snr):
     """
     given station name, year, doy, snr type
@@ -529,7 +557,6 @@ def rinex_sopac(station, year, month, day):
     file1 = fname + '.Z'
     path1 = '/pub/rinex/' + cyyyy + '/' + cdoy + '/' 
     url1 = sopac + path1 + file1 
-    # print(url)
 
     #file2 = oname   + '.Z'
     #path2 = '/pub/rinex/' + cyyyy + '/' + cdoy + '/' 
@@ -541,7 +568,7 @@ def rinex_sopac(station, year, month, day):
         subprocess.call(['rm', '-f',fname])
         print('successful Hatanaka download from SOPAC ')
     except:
-        print('some kind of problem with Hatanaka download',file1)
+        print('not able to download from SOPAC',file1)
         subprocess.call(['rm', '-f',file1])
         subprocess.call(['rm', '-f',fname])
 
@@ -570,8 +597,8 @@ def rinex_sonel(station, year, month, day):
         subprocess.call(['rm', '-f',fname])
         print('successful Hatanaka download from SONEL ')
     except:
-            print('some kind of problem with Hatanaka download from SONEL',file1)
-            subprocess.call(['rm', '-f',file1])
+        print('some kind of problem with Hatanaka download from SONEL',file1)
+        subprocess.call(['rm', '-f',file1])
 
 def rinex_cddis(station, year, month, day):
     """
@@ -586,15 +613,14 @@ def rinex_cddis(station, year, month, day):
     oname,fname = rinex_name(station, year, month, day)
     file1 = oname + '.Z'
     url = cddis + '/pub/gnss/data/daily/' + cyyyy + '/' + cdoy + '/' + cyy + 'o/' + file1
-    print(url)
 
     try:
         wget.download(url,file1)
         subprocess.call(['uncompress', file1])
         print('successful download from CDDIS')
     except:
-            print('some kind of problem with download',file1)
-            subprocess.call(['rm', '-f',file1])
+        print('file not found at CDDIS',file1)
+        subprocess.call(['rm', '-f',file1])
 
 def rinex_nz(station, year, month, day):
     """
@@ -622,8 +648,8 @@ def rinex_nz(station, year, month, day):
         subprocess.call(['gunzip', file1])
         print('successful download from GeoNet New Zealand')
     except:
-            print('some kind of problem with download',file1)
-            subprocess.call(['rm', '-f',file1])
+        print('some kind of problem with download',file1)
+        subprocess.call(['rm', '-f',file1])
 
 def rinex_nrcan(station, year, month, day):
     """
@@ -652,8 +678,8 @@ def rinex_nrcan(station, year, month, day):
         subprocess.call(['uncompress', file1])
         print('successful download from NRCAN ')
     except:
-            print('some kind of problem with download',file1)
-            subprocess.call(['rm', '-f',file1])
+        print('some kind of problem with download',file1)
+        subprocess.call(['rm', '-f',file1])
 
 def getnavfile(year, month, day):
     """
@@ -663,13 +689,13 @@ def getnavfile(year, month, day):
     returns the name of the file,  its directory, and a boolean
     19may7 now checks for compressed and uncompressed nav file
     19may20 now allows day of year input if day is set to zero
+    20apr15 check for xz compression
 
     if the day is zero it assumes month is doy
 
     """
     foundit = False
     ann = make_nav_dirs(year)
-    sopac = 'ftp://garner.ucsd.edu'
     if (day == 0):
         doy = month
         year, month, day, cyyyy,cdoy, YMD = ydoy2useful(year,doy)
@@ -677,16 +703,17 @@ def getnavfile(year, month, day):
     else:
         doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     navname,navdir = nav_name(year, month, day)
-    # painful painful - this should work for all of it
-    print(navname,navdir)
+    nfile = navdir + '/' + navname
     if os.path.exists(navdir):
-        print('navdir exists')
+        print('navdir already exists')
     else:
-        print('make navdir')
         subprocess.call(['mkdir',navdir])
 
-    if os.path.exists(navdir + '/' + navname):
-        print('navfile exists')
+    if os.path.exists(nfile):
+        foundit = True
+    elif os.path.exists(nfile + '.xz' ):
+        print('xz compressed navfile exists online')
+        subprocess.call(['unxz',nfile + '.xz'])
         foundit = True
     else:
         print('go pick up the navfile')
@@ -737,6 +764,7 @@ def getsp3file_flex(year,month,day,pCtr):
     inputs are year, month, and day  (integers), and 
     pCtr, the processing center  (3 characters)
     returns the name of the file and its directory
+    20apr15 check for xz compression
     """
     # returns name and the directory
     name, fdir = sp3_name(year,month,day,pCtr) 
@@ -745,8 +773,13 @@ def getsp3file_flex(year,month,day,pCtr):
     file1 = pCtr + name[3:8] + '.sp3.Z'
     name = pCtr + name[3:8] + '.sp3'
     foundit = False
-    if (os.path.isfile(fdir + '/' + name ) == True):
-        print('sp3file already exists')
+    ofile = fdir + '/' + name
+    if (os.path.isfile(ofile ) == True):
+        print('sp3file already exists online')
+        foundit = True
+    elif (os.path.isfile(ofile + '.xz') == True):
+        print('xz compressed sp3file already exists online')
+        subprocess.call(['unxz', ofile + '.xz'])
         foundit = True
     else:
         filename1 = '/gnss/products/' + str(gps_week) + '/' + file1
@@ -772,6 +805,7 @@ def getsp3file_mgex(year,month,day,pCtr):
     pCtr, the processing center  (3 characters)
     right now it checks for the "new" name, but in reality, it 
     assumes you are going to use the GFZ product
+    20apr15  check for xz compression
     """
     # this returns sp3 orbit product name
     name, fdir = sp3_name(year,month,day,pCtr) 
@@ -781,7 +815,7 @@ def getsp3file_mgex(year,month,day,pCtr):
     # get the sp3 filename for the new format, and GFZ
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     file2 = 'GFZ0MGXRAP_' + cyyyy + cdoy + '0000_01D_05M_ORB.SP3.gz'
-    print(file2)
+    #print(file2)
     name2 = file2[:-3] 
     foundit = False
 
@@ -791,14 +825,30 @@ def getsp3file_mgex(year,month,day,pCtr):
     url = cddis + dirlocation  + file1; print(url)
     url2 = cddis + dirlocation + file2; print(url2)
     mgex = 0
-    if (os.path.isfile(fdir + '/' + name ) == True):
-        print('first kind of MGEX sp3file already exists')
+    n1 = os.path.isfile(fdir + '/' + name)
+    n1c = os.path.isfile(fdir + '/' + name + '.xz')
+    if (n1 == True):
+        print('first kind of MGEX sp3file already exists online')
         mgex = 1
         foundit = True
-    if (os.path.isfile(fdir + '/' + name2 ) == True):
-        print('second kind of MGEX sp3file already exists')
-        mgex = 2
+    elif (n1c  == True): 
+        print('xz first kind of MGEX sp3file already exists online-unxz it')
+        fx =  fdir + '/' + name + '.xz'
+        subprocess.call(['unxz', fx])
+        mgex = 1
         foundit = True
+
+    n2 = os.path.isfile(fdir + '/' + name2)
+    n2c = os.path.isfile(fdir + '/' + name2 + '.xz')
+    if (n2 == True):
+        print('second kind of MGEX sp3file already exists online')
+        mgex = 2 ; foundit = True
+    elif (n2c == True):
+        print('xz second kind of MGEX sp3file already exists online')
+        mgex = 2 ; foundit = True
+        fx =  fdir + '/' + name2 + '.xz'
+        subprocess.call(['unxz', fx])
+
 # there has to be a better way ... but for now  this works
 # only try to download if neither exists
     if (mgex == 2):
@@ -814,7 +864,6 @@ def getsp3file_mgex(year,month,day,pCtr):
             store_orbitfile(name,year,'sp3') 
             foundit = True
         except:
-            print('some kind of problem trying to get first sp3 file')
             subprocess.call(['rm', '-f',file1])
             name = file2[:-3]
         # try the second file
@@ -827,7 +876,7 @@ def getsp3file_mgex(year,month,day,pCtr):
                 store_orbitfile(name,year,'sp3') 
                 foundit = True
             except:
-                print('some kind of problem downloading 2nd kind of MGEX sp3 file')
+                print('some kind of problem downloading MGEX sp3 file')
 
     return name, fdir, foundit
 
@@ -2274,20 +2323,20 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
     author: kristine m. larson
     19may20, added decimation
     19sep12, I got tired of code crashing for files > 20 observables.  I am thus using teqc
+    20apr15, xz compression added
     """
     # define directory for the conversion executables
     exedir = os.environ['EXE']
     # FIRST, check to see if the SNR file already exists
-    snrname_full,snrname_compressed = define_filename(station,year,doy,option)
-    if (os.path.isfile(snrname_full) == True):
+#    snrname_full,snrname_compressed = define_filename(station,year,doy,option)
+    snrname_full, snrname_compressed, snre = define_and_xz_snr(station,year,doy,option)
+    if (snre == True):
         print('snrfile already exists:', snrname_full)
-    elif (os.path.isfile(snrname_compressed) == True):
-        print('xz compressed snrfile already exists:')
-        print(snrname_compressed)
     else:
         print('snr does not exist so pick up orbits and rinex')
         d = doy2ymd(year,doy); 
         month = d.month; day = d.day
+        # new function to do the whole orbit thing
         foundit, f, orbdir, snrexe = get_orbits_setexe(year,month,day,orbtype) 
         # if you have the orbit file, you can get the rinex file
         if foundit:
@@ -2335,7 +2384,8 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
                     foutname = 'tmp.' + rinexfile
                     fout = open(foutname,'w')
                 # not sure this will work
-                    subprocess.call([exc, '-O.obs','S1+S2+S5+S6+S7+S8', rinexfile],stdout=fout)
+                    print('try to fix glonass bug using teqc input')
+                    subprocess.call([exc, '-O.obs','S1+S2+S5+S6+S7+S8', '-n_GLONASS', '26', rinexfile],stdout=fout)
                     fout.close()
                 # store it in the original rinex filename
                     subprocess.call(['rm','-f',rinexfile])
@@ -3245,6 +3295,7 @@ def get_orbits_setexe(year,month,day,orbtype):
     picks up and stores
     also sets executable location (gpsonly vs gnss)
     returns whether file was found, its name, the directory, and name of snrexe
+    20apr15:  check for xz compression
     kristine larson
     """
     #default values
@@ -3257,33 +3308,304 @@ def get_orbits_setexe(year,month,day,orbtype):
         # this means you are using multi-GNSS and GFZ
         f,orbdir,foundit=getsp3file_mgex(year,month,day,'gbm')
         snrexe = exedir  + '/gnssSNR.e'
+        warn_and_exit(snrexe)
     if orbtype == 'sp3':
         print('uses default IGS orbits, so only GPS')
         f,orbdir,foundit=getsp3file_flex(year,month,day,'igs')
         snrexe = exedir + '/gnssSNR.e'
-        if (os.path.isfile(snrexe) == False):
-            print('The translation executable does not exist:' + snrexe + ' Exiting ')
-            sys.exit()
+        warn_and_exit(snrexe)
     if orbtype == 'gfz':
         print('using gfz sp3 file, GPS and GLONASS')
         f,orbdir,foundit=getsp3file_flex(year,month,day,'gfz')
         snrexe = exedir + '/gnssSNR.e'
+        warn_and_exit(snrexe)
     if orbtype == 'igr':
         print('using rapid orbits, so only GPS')
         f,orbdir,foundit=getsp3file_flex(year,month,day,'igr')
         snrexe = exedir + '/gnssSNR.e'
+        warn_and_exit(snrexe)
     if orbtype == 'gbm':
         # this uses GFZ multi-GNSS
         f,orbdir,foundit=getsp3file_mgex(year,month,day,'gbm')
         snrexe = exedir + '/gnssSNR.e'
-        if (os.path.isfile(snrexe) == False):
-            print('The translation executable does not exist:' + snrexe + ' Exiting ')
-            sys.exit()
+        warn_and_exit(snrexe)
     if orbtype == 'nav':
         f,orbdir,foundit=getnavfile(year, month, day)
         snrexe = exedir  + '/gpsSNR.e'
-        if (os.path.isfile(snrexe) == False):
-            print('The translation executable does not exist:' + snrexe + ' Exiting ')
-            sys.exit()
+        warn_and_exit(snrexe)
 
     return foundit, f, orbdir, snrexe
+
+def warn_and_exit(snrexe):
+    """
+    if snr executable does not exist, exit
+    """
+    if (os.path.isfile(snrexe) == False):
+        print('The translation executable does not exist:' + snrexe + ' Exiting ')
+        sys.exit()
+
+def quick_rinex_snrC(year, doy, station, option, orbtype,receiverrate,dec_rate):
+    """
+    inputs: year and day of year (integers) and station name
+    option is for the snr creation
+    orbtype can be nav or sp3.  if the former, then gpsSNR is used.
+    if the later, then gnssSNR
+    this assumes you follow my definitions for where things go,
+    i.e. REFL_CODE and ORBITS
+    it currently checks Unavco, SOPAC, and SONEL. I should add CDDIS
+    author: kristine m. larson
+    19may20, added decimation
+    19sep12, I got tired of code crashing for files > 20 observables.  I am thus using teqc
+    20apr15, xz compression added but also try to streamline it.
+
+    """
+    # define directory for the conversion executables
+    exedir = os.environ['EXE']
+    snrname_full, snrname_compressed, snre = define_and_xz_snr(station,year,doy,option)
+    if (snre == True):
+        print('snrfile already exists:', snrname_full)
+    else:
+        print('the snrfile does not exist so pick up orbits and rinex')
+        d = doy2ymd(year,doy); 
+        month = d.month; day = d.day
+        # new function to do the whole orbit thing
+        foundit, f, orbdir, snrexe = get_orbits_setexe(year,month,day,orbtype) 
+        # if you have the orbit file, you can get the rinex file
+        if foundit:
+            # now you can look for a rinex file
+            rinexfile,rinexfiled = rinex_name(station, year, month, day)
+            go_get_rinex(station,year,month,day,receiverrate)
+# define booleans
+            oexist = os.path.isfile(orbdir + '/' + f) == True
+            rexist = os.path.isfile(rinexfile) == True
+            exc = exedir + '/teqc' 
+            texist = os.path.isfile(exc) == True
+            if rexist:
+                # and teqc executable exists, then 
+                # get rid of all the observables i do not need
+                if texist:
+                    print('teqc executable exists, so let us use it')
+                    foutname = 'tmp.' + rinexfile
+                    fout = open(foutname,'w')
+                    subprocess.call([exc, '-O.obs','S1+S2+S5+S6+S7+S8', '-n_GLONASS', '26', rinexfile],stdout=fout)
+                    fout.close()
+                # store it in the original rinex filename
+                    subprocess.call(['rm','-f',rinexfile])
+                    subprocess.call(['mv','-f',foutname, rinexfile])
+                # decimate this new rinex file
+                    if (rexist and dec_rate > 0): 
+                        print('decimate using teqc ', dec_rate, ' seconds')
+                        rinexout = rinexfile + '.tmp'; cdec = str(dec_rate)
+                        fout = open(rinexout,'w')
+                        subprocess.call([exc, '-O.dec', cdec, rinexfile],stdout=fout)
+                        fout.close() # needed?
+                        status = subprocess.call(['mv','-f', rinexout, rinexfile])
+            if (oexist and rexist):
+            #convert to SNR file
+                snrname = snr_name(station, year,month,day,option)
+                orbfile = orbdir + '/' + f
+                try:
+                    subprocess.call([snrexe, rinexfile, snrname, orbfile, str(option)])
+                    status = subprocess.call(['rm','-f', rinexfile ])
+                    print('xz compress the orbit files here')
+                    status = subprocess.call(['xz', orbfile])
+                except:
+                    print('no success making SNR file')
+                if os.path.isfile(snrname): 
+#                make sure it exists and is non-zero size before moving it
+                    if (os.stat(snrname).st_size == 0):
+                        print('you created a zero file size which could mean a lot of things')
+                        print('bad exe, bad snr option, do not really have the orbit file')
+                        status = subprocess.call(['rm','-f', snrname ])
+                    else:
+                        print('a SNR file was created and it is non-zero in length')
+                        print(snrname_full)
+                        store_snrfile(snrname,year,station) 
+            else:
+                print('Either the rinex file or orbit file does not exist, so there is nothing to convert')
+
+def go_get_rinex(station,year,month,day,receiverrate):
+    """
+    function to do the dirty work of getting a rinex file
+    inputs station name, year, month, day
+    """
+    rinexfile,rinexfiled = rinex_name(station, year, month, day)
+    print('rinexfile should be ', rinexfile)
+    if (os.path.isfile(rinexfile) == True):
+        print('rinex file exists')
+    else:
+        print('go get the rinex file')
+        if receiverrate == 'low':
+            print('seeking low rate at unavco')
+            rinex_unavco(station, year, month, day)
+        else:
+            print('seeking high rate at unavco')
+            rinex_unavco_highrate(station, year, month, day)
+        if os.path.isfile(rinexfile):
+            print('you now have the rinex file')
+        else:
+          # only keep looking if you are seeking lowrate data
+            if receiverrate == 'low':
+                try:
+                    rinex_sopac(station, year, month, day)
+                except:
+                    print('SOPAC did not work')
+                if not os.path.isfile(rinexfile):
+                    try:
+                        rinex_cddis(station, year, month, day)
+                    except:
+                        print('CDDIS did not work')
+                if not os.path.isfile(rinexfile):
+                    try:
+                        rinex_sonel(station, year, month, day)
+                    except:
+                        print('SONEL did not work')
+                if not os.path.isfile(rinexfile):
+                    print('no RINEX')
+#
+def cddis_rinex3(station9ch, year, doy,srate):
+    """
+    feeble attempt to download Rinex3 files from CDDIS
+    and then translate them to something useful (Rinex 2.11)
+    inputs: 9 character station name (should be all capitals)
+    year, day of year (doy) and sample rate (in seconds)
+    station9ch can be lower or upper case - code changes it to upper case
+
+    returns file existence boolean and name of the RINEX 3 file (so it can be cleaned up)
+    author: kristine larson
+    """
+#    https://cddis.nasa.gov/Data_and_Derived_Products/GNSS/RINEX_Version_3.html
+    fexists = False 
+    ftp = 'ftp://cddis.nasa.gov/gnss/data/daily/'
+    cdoy = '{:03d}'.format(doy)
+    cyy = '{:02d}'.format(year-2000)
+    cyyyy = str(year)
+
+    f = cyyyy + '/' + cdoy + '/' + cyy + 'd'  + '/'
+    ff = station9ch.upper() +   '_R_' + cyyyy + cdoy + '0000_01D_' + str(srate) + 'S_MO'
+    smallff = station9ch[0:4].lower() + cdoy + '0.' + cyy + 'o'
+    print(smallff)
+    ending = '.crx'
+    rending = '.rnx'
+    gzfilename = ff+ending + '.gz' # the crx.gz file
+    filename = ff+ending  # the crx file
+    rfilename = ff+rending # the rnx file
+    url = ftp + f + gzfilename  
+    print(url)
+    exedir = os.environ['EXE']
+    crnxpath = exedir + '/CRX2RNX'
+    gexe = exedir + '/gfzrnx' # gfzrnx executable location
+    # I hate S2W 
+    gobblygook = 'G:S1C,S2X,S2L,S2S,S5+R:S1P,S1C,S2P,S2C+E:S1,S5,S6,S7,S8'
+    if os.path.isfile(rfilename):
+        print('rinex3 file already exists')
+    else:
+        try:
+            wget.download(url,gzfilename)
+            # unzip and Hatanaka decompress
+            subprocess.call(['gunzip',gzfilename])
+            subprocess.call([crnxpath,filename])
+            # remove the crx file
+            subprocess.call(['rm',filename])
+        except:
+            print('no file at CDDIS')
+
+    if os.path.isfile(rfilename) and os.path.isfile(gexe):
+        print('making rinex 2.11')
+        try:
+            subprocess.call([gexe,'-finp', rfilename, '-fout', smallff, '-vo','2','-ot', gobblygook, '-f'])
+            print('woohoo!')
+            print('look for the rinex 2.11 file here: ', smallff)
+            fexists = True
+        except:
+            print('some kind of problem in translation to 2.11')
+    else:
+        print('either the rinex3 file does not exist OR the gfzrnx executable does not exist')
+
+    return fexists, rfilename
+def bkg_rinex3(station9ch, year, doy,srate):
+    """
+    download rinex 3 from BKG
+    srate is sample rate
+    """
+    cdoy = '{:03d}'.format(doy)
+    cyy = '{:02d}'.format(year-2000)
+    csrate = '{:02d}'.format(srate)
+    cyyyy = str(year)
+    url = 'ftp://igs.bkg.bund.de/EUREF/obs/' + cyyyy + '/' + cdoy + '/'
+    #f = cyyyy + '/' + cdoy + '/' + cyy + 'd'  + '/'
+    ff = station9ch.upper() +   '_R_' + cyyyy + cdoy + '0000_01D_' + csrate + 'S_MO' + '.crx.gz'
+    #smallff = station9ch[0:4].lower() + cdoy + '0.' + cyy + 'o'
+    url = url + ff
+    print(url)
+    try:
+        wget.download(url,ff)
+    except:
+        print('problem')
+
+def rinex3_rinex2(gzfilename,v2_filename):
+    """
+    input gzfile name
+    gunzip, de-hatanaka, then convert to 2.11
+    """
+    fexists = False
+    gexe = gfz_version()
+    hexe = hatanaka_version()
+    # I hate S2W for this version, only GPS
+    # / OBS TYPES AUBG claims to have these
+    # S1C   S2S S2W S5Q
+    gobblygook = 'G:S1C,S5'
+    gobblygook = 'G:S1C,S2X,S2L,S2S,S5'
+    l=len(gzfilename)
+    cnxfilename = gzfilename[0:l-3]
+    rnxfilename = gzfilename[0:l-6] + 'rnx'
+    print(cnxfilename)
+    print(rnxfilename)
+    if os.path.isfile(gzfilename):
+        # unzip and Hatanaka decompress
+        subprocess.call(['gunzip',gzfilename])
+        subprocess.call([hexe,cnxfilename])
+    if os.path.isfile(rnxfilename) and os.path.isfile(gexe):
+        print('making rinex 2.11 of this file')
+        try:
+            subprocess.call([gexe,'-finp', rnxfilename, '-fout', v2_filename, '-vo','2','-ot', gobblygook, '-f'])
+            print('woohoo!')
+            print('look for the rinex 2.11 file here: ', v2_filename)
+            fexists = True
+        except:
+            print('some kind of problem in translation to 2.11')
+    else:
+        print('either the rinex3 file does not exist OR the gfzrnx executable does not exist')
+
+    return fexists
+
+def hatanaka_version():
+    """
+    return string with location of hatanaka executable
+    """
+    hatanakav = '/Users/kristine/bin/CRX2RNX'
+    # heroku version should be in the main area
+    if not os.path.exists(hatanakav):
+        hatanakav = './CRX2RNX'
+    return hatanakav
+
+def gfz_version():
+    """
+    return string with location of gfzrnx executable
+    """
+    gfzv = '/Users/kristine/bin/gfzrnx'
+    # heroku version should be in the main area
+    if not os.path.exists(gfzv):
+        gfzv = './gfzrnx'
+    return gfzv
+
+def gpsSNR_version():
+    """
+    return string with location of gpsSNR exectuable
+    """
+    gpse = '/Users/kristine/bin/gpsSNR.e'
+    # heroku version should be in the main area
+    if not os.path.exists(gpse):
+        gpse = './gpsSNR.e'
+    return gpse
+

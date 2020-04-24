@@ -56,21 +56,24 @@ def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pel
 
 # to avoid having to do all the indenting over again
 # this allows snr file to live in main directory
+# not sure that that is all that useful as I never let that happen
     obsfile = g.define_quick_filename(station,year,doy,snr_type)
     print('the SNR filename is', obsfile)
     if os.path.isfile(obsfile):
         print('>>>> WOOHOOO - THE SNR FILE EXISTS ',obsfile)
     else:
         if True:
-            print(' look for it elsewhere')
-            obsfile,obsfileCmp = g.define_filename(station,year,doy,snr_type)
-            print(obsfile)
-            if (not os.path.isfile(obsfile)) :
+            print('look for the SNR file elsewhere')
+            obsfile, obsfileCmp, snre =  g.define_and_xz_snr(station,year,doy,snr_type)
+            # obsfile,obsfileCmp = g.define_filename(station,year,doy,snr_type)
+            if snre:
+                print('file exists on disk')
+            else:
                 print('>>>> Sigh, - SNR the file does not exist ',obsfile)
                 print('I will try to pick up a RINEX file ')
                 print('and translate it for you. This will be GPS only.')
                 rate = 'low'; dec_rate = 0
-                g.quick_rinex_snr(year, doy, station, snr_type, 'nav',rate, dec_rate)
+                g.quick_rinex_snrC(year, doy, station, snr_type, 'nav',rate, dec_rate)
                 if os.path.isfile(obsfile):
                     print('the SNR file now exists')  
                 else:
