@@ -26,6 +26,7 @@ import gps as g
 #WARNING - If you want to decimate, you need to install teqc in $EXEC 
  
 #
+print('If your station name is 9 characters long, this code assumes you plan to use a RINEX 3 file')
 # user inputs the observation file information
 parser = argparse.ArgumentParser()
 parser.add_argument("station", help="station name", type=str)
