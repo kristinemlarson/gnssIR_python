@@ -30,8 +30,8 @@ Height = args.height
 
 # polynomial order for DC component
 pvorder = 4
-# precision of periodogram (m).  You can go smaller, but it makes the code slower and usually overkill
-prec = 0.01
+# precision of periodogram (m).  
+prec = 0.005
 # this is a QC thing - gets rid of small arcs
 ediff=2
 
@@ -89,7 +89,7 @@ f.write("{0:60s} \n".format(line5))
 line6 = '# frequencies and required amplitudes - beware - it will vary with elevation angles and frequencies...'
 line7 = '# 1 is GPS L1, 2 is GPS L2, 5 is GPS L5, 101 is Glonass L1, 102 is Glonass L2'
 line8 = '# 201, 205, 206, 208 are the Galileo frequencies, 30* are for Beidou'
-line9 = '1 8 2 8'
+line9 = '1 8 2 8 5 8'
 f.write("{0:60s} \n".format(line6))
 f.write("{0:60s} \n".format(line7))
 f.write("{0:60s} \n".format(line8))
@@ -98,6 +98,6 @@ f.write("{0:60s} \n".format(line9))
 line10= '# default polynomial value, periodogram precision(meters), minH(m), maxH(m), ediff (QC), Noise region (meters) used for QC'
 f.write("{0:60s} \n".format(line10))
 
-f.write("{0:3.0f} {1:7.2f} {2:7.1f} {3:7.1f} {4:5.1f} {5:7.1f} {6:7.1f} \n".format(pvorder,prec,h1,h2,ediff,nr1,nr2))
+f.write("{0:3.0f} {1:7.3f} {2:7.1f} {3:7.1f} {4:5.1f} {5:7.1f} {6:7.1f} \n".format(pvorder,prec,h1,h2,ediff,nr1,nr2))
 
 f.close()

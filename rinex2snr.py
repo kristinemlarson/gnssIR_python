@@ -49,9 +49,12 @@ NS = len(station)
 if (NS == 4):
     print('assume RINEX 2.11')
     version = 2
+    station = station.lower()
 elif (NS == 9):
     print('assume RINEX 3')
     version = 3
+    station9ch = station.upper()
+    station = station[0:4].lower()
 else:
     print('illegal input - Station must have 4 or 9 characters')
     sys.exit()
@@ -64,10 +67,10 @@ orbtype = args.orbType
 nolook = args.nolook
 if nolook == 'True':
     nol = True
-    print('will only use RINEX on local machine')
+    #print('will only use RINEX on local machine')
 else:
     nol = False
-    print('will look for RINEX on local machine and external archives')
+    #print('will look for RINEX on local machine and external archives')
 
 if args.rate == None:
     rate = 'low'
@@ -92,30 +95,36 @@ ann = g.make_nav_dirs(year)
 
 doy_list = list(range(doy1, doy2+1))
 year_list = list(range(year1, year2+1))
-
 # loop thru years and days 
 for year in year_list:
     for doy in doy_list:
-        cdoy = '{:03d}'.format(doy)
-        cyy = '{:02d}'.format(year-2000)
-        r = station + cdoy + '0.' + cyy + 'o'
-    # if no look, make sure the file is there
-        if nol:
-            if os.path.exists(r):
-                print('rinex file exists locally')
-                g.quick_rinex_snrC(year, doy, station, snrt, orbtype,rate, dec_rate )
+        cdoy = '{:03d}'.format(doy) ; cyy = '{:02d}'.format(year-2000)
+        # rinex name
+        # first, check to see if the SNR file exists
+        snre = g.snr_exist(station,year,doy,snrt)
+        if snre:
+            print('snr file already exists')
         else:
-            print('will look locally and externally')
-            if version == 3:
-                # will look for version 3 at CDDIS and convert to version 2
-                srate = 30 # for now
-                rinex2exists, rinex3name = g.cddis_rinex3(station, year, doy,srate)
-                # remove rinex3 file since from this point on only use rinex2
-                subprocess.call(['rm', rinex3name])
-                station = station[0:4]
-                print('change station name from 9 characters to 4', station)
-                if not rinex2exists:
-                    print('rinex 3/rinex 2 file does not exist')
-                    
+            r = station + cdoy + '0.' + cyy + 'o'
+            print(year, doy, ' will try to find/make from : ', r)
+            if nol:
+                if os.path.exists(r):
+                    print('rinex file exists locally')
+                    g.quick_rinex_snrC(year, doy, station, snrt, orbtype,rate, dec_rate )
+            else:
+                print('will look locally and externally')
+                if version == 3:
+                    print('rinex 3 search')
+                    # will look for version 3 at CDDIS and convert to version 2
+                    srate = 30 # for now
+                    print('orbtype',orbtype)
+                    rinex2exists, rinex3name = g.cddis_rinex3(station9ch, year, doy,srate,orbtype)
+                    subprocess.call(['rm', rinex3name]) # remove rinex3 file
+                    if rinex2exists:
+                        g.quick_rinex_snrC(year, doy, station, snrt, orbtype,rate, dec_rate)
+                    else:
+                        print('Either rinex file does not exist for ', year, doy)
+                else:
+                    print('rinex 2.11 search')
+                    g.quick_rinex_snrC(year, doy, station, snrt, orbtype,rate, dec_rate)
 
-            g.quick_rinex_snrC(year, doy, station, snrt, orbtype,rate, dec_rate)

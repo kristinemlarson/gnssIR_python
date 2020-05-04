@@ -515,7 +515,7 @@ def rinex_unavco(station, year, month, day):
     WARNING: only rinex version 2 in this world
     """
     exedir = os.environ['EXE']
-    crnxpath = exedir + '/CRX2RNX'
+    crnxpath = hatanaka_version() 
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     rinexfile,rinexfiled = rinex_name(station, year, month, day)
     unavco= 'ftp://data-out.unavco.org'
@@ -549,7 +549,7 @@ def rinex_sopac(station, year, month, day):
     hatanaka exe hardwired  for my machine
     """
     exedir = os.environ['EXE']
-    crnxpath = exedir + '/CRX2RNX'
+    crnxpath = hatanaka_version()
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     sopac = 'ftp://garner.ucsd.edu'
     oname,fname = rinex_name(station, year, month, day) 
@@ -2058,7 +2058,7 @@ def find_satlist(f,snrExist):
 #   galileo has no L2 frequency, so set that always to zero
     if f == 202:
         satlist = []
-#   pretend there are 32 satellitesfor now
+#   pretend there are 32 Beidou satellites for now
     if (f > 300):
         satlist = np.arange(301,333,1)
 
@@ -2376,8 +2376,7 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
             rexist = os.path.isfile(rinexfile) == True
             # if rinex exists
             if rexist:
-                exc = exedir + '/teqc' 
-                # and teqc executable exists, then 
+                exc = teqc_version()
                 # get rid of all the observables i do not need
                 if os.path.isfile(exc):
                     print('teqc executable exists, so let us use it')
@@ -2385,7 +2384,7 @@ def quick_rinex_snr(year, doy, station, option, orbtype,receiverrate,dec_rate):
                     fout = open(foutname,'w')
                 # not sure this will work
                     print('try to fix glonass bug using teqc input')
-                    subprocess.call([exc, '-O.obs','S1+S2+S5+S6+S7+S8', '-n_GLONASS', '26', rinexfile],stdout=fout)
+                    subprocess.call([exc, '-O.obs','S1+S2+S5+S6+S7+S8', '-n_GLONASS', '27', rinexfile],stdout=fout)
                     fout.close()
                 # store it in the original rinex filename
                     subprocess.call(['rm','-f',rinexfile])
@@ -3303,35 +3302,33 @@ def get_orbits_setexe(year,month,day,orbtype):
     f=''; orbdir=''
     # define directory for the conversion executables
     exedir = os.environ['EXE']
-    snrexe = exedir  + '/gpsSNR.e'
+    snrexe = gpsSNR_version()
     if orbtype == 'mgex':
         # this means you are using multi-GNSS and GFZ
         f,orbdir,foundit=getsp3file_mgex(year,month,day,'gbm')
-        snrexe = exedir  + '/gnssSNR.e'
+        snrexe = gnssSNR_version()
         warn_and_exit(snrexe)
     if orbtype == 'sp3':
-        print('uses default IGS orbits, so only GPS')
+        print('uses default IGS orbits, so only GPS ?')
         f,orbdir,foundit=getsp3file_flex(year,month,day,'igs')
-        snrexe = exedir + '/gnssSNR.e'
+        snrexe = gnssSNR_version()
         warn_and_exit(snrexe)
     if orbtype == 'gfz':
         print('using gfz sp3 file, GPS and GLONASS')
         f,orbdir,foundit=getsp3file_flex(year,month,day,'gfz')
-        snrexe = exedir + '/gnssSNR.e'
+        snrexe = gnssSNR_version()
         warn_and_exit(snrexe)
     if orbtype == 'igr':
         print('using rapid orbits, so only GPS')
-        f,orbdir,foundit=getsp3file_flex(year,month,day,'igr')
-        snrexe = exedir + '/gnssSNR.e'
+        f,orbdir,foundit=getsp3file_flex(year,month,day,'igr') # use default
         warn_and_exit(snrexe)
     if orbtype == 'gbm':
         # this uses GFZ multi-GNSS
         f,orbdir,foundit=getsp3file_mgex(year,month,day,'gbm')
-        snrexe = exedir + '/gnssSNR.e'
+        snrexe = gnssSNR_version()
         warn_and_exit(snrexe)
     if orbtype == 'nav':
-        f,orbdir,foundit=getnavfile(year, month, day)
-        snrexe = exedir  + '/gpsSNR.e'
+        f,orbdir,foundit=getnavfile(year, month, day) # use default version, which is gps only
         warn_and_exit(snrexe)
 
     return foundit, f, orbdir, snrexe
@@ -3365,7 +3362,7 @@ def quick_rinex_snrC(year, doy, station, option, orbtype,receiverrate,dec_rate):
     if (snre == True):
         print('snrfile already exists:', snrname_full)
     else:
-        print('the snrfile does not exist so pick up orbits and rinex')
+        print('the snrfile does not exist ')
         d = doy2ymd(year,doy); 
         month = d.month; day = d.day
         # new function to do the whole orbit thing
@@ -3387,7 +3384,7 @@ def quick_rinex_snrC(year, doy, station, option, orbtype,receiverrate,dec_rate):
                     print('teqc executable exists, so let us use it')
                     foutname = 'tmp.' + rinexfile
                     fout = open(foutname,'w')
-                    subprocess.call([exc, '-O.obs','S1+S2+S5+S6+S7+S8', '-n_GLONASS', '26', rinexfile],stdout=fout)
+                    subprocess.call([exc, '-O.obs','S1+S2+S5+S6+S7+S8', '-n_GLONASS', '27', rinexfile],stdout=fout)
                     fout.close()
                 # store it in the original rinex filename
                     subprocess.call(['rm','-f',rinexfile])
@@ -3463,7 +3460,7 @@ def go_get_rinex(station,year,month,day,receiverrate):
                 if not os.path.isfile(rinexfile):
                     print('no RINEX')
 #
-def cddis_rinex3(station9ch, year, doy,srate):
+def cddis_rinex3(station9ch, year, doy,srate,orbtype):
     """
     feeble attempt to download Rinex3 files from CDDIS
     and then translate them to something useful (Rinex 2.11)
@@ -3471,11 +3468,14 @@ def cddis_rinex3(station9ch, year, doy,srate):
     year, day of year (doy) and sample rate (in seconds)
     station9ch can be lower or upper case - code changes it to upper case
 
+    sending orbit type so that if nav file is used, no point writing out the non-GPS data
+
     returns file existence boolean and name of the RINEX 3 file (so it can be cleaned up)
     author: kristine larson
     """
 #    https://cddis.nasa.gov/Data_and_Derived_Products/GNSS/RINEX_Version_3.html
     fexists = False 
+    print(orbtype)
     ftp = 'ftp://cddis.nasa.gov/gnss/data/daily/'
     cdoy = '{:03d}'.format(doy)
     cyy = '{:02d}'.format(year-2000)
@@ -3484,19 +3484,24 @@ def cddis_rinex3(station9ch, year, doy,srate):
     f = cyyyy + '/' + cdoy + '/' + cyy + 'd'  + '/'
     ff = station9ch.upper() +   '_R_' + cyyyy + cdoy + '0000_01D_' + str(srate) + 'S_MO'
     smallff = station9ch[0:4].lower() + cdoy + '0.' + cyy + 'o'
-    print(smallff)
-    ending = '.crx'
-    rending = '.rnx'
+    ending = '.crx' # compressed rinex3 ending
+    rending = '.rnx' # rinex3 ending
     gzfilename = ff+ending + '.gz' # the crx.gz file
     filename = ff+ending  # the crx file
     rfilename = ff+rending # the rnx file
     url = ftp + f + gzfilename  
     print(url)
+    # not sure i still neeed this
     exedir = os.environ['EXE']
-    crnxpath = exedir + '/CRX2RNX'
-    gexe = exedir + '/gfzrnx' # gfzrnx executable location
+    gexe = gfz_version()
+    crnxpath = hatanaka_version()
+    if orbtype == 'nav':
+        # added this bevcause weird Glonass data were making teqc unhappy
+        gobblygook = 'G:S1C,S2X,S2L,S2S,S5'
+    else:
     # I hate S2W 
-    gobblygook = 'G:S1C,S2X,S2L,S2S,S5+R:S1P,S1C,S2P,S2C+E:S1,S5,S6,S7,S8'
+        gobblygook = 'G:S1C,S2X,S2L,S2S,S5+R:S1P,S1C,S2P,S2C+E:S1,S5,S6,S7,S8'
+    print(gobblygook)
     if os.path.isfile(rfilename):
         print('rinex3 file already exists')
     else:
@@ -3533,20 +3538,18 @@ def bkg_rinex3(station9ch, year, doy,srate):
     csrate = '{:02d}'.format(srate)
     cyyyy = str(year)
     url = 'ftp://igs.bkg.bund.de/EUREF/obs/' + cyyyy + '/' + cdoy + '/'
-    #f = cyyyy + '/' + cdoy + '/' + cyy + 'd'  + '/'
     ff = station9ch.upper() +   '_R_' + cyyyy + cdoy + '0000_01D_' + csrate + 'S_MO' + '.crx.gz'
-    #smallff = station9ch[0:4].lower() + cdoy + '0.' + cyy + 'o'
     url = url + ff
-    print(url)
     try:
         wget.download(url,ff)
     except:
-        print('problem')
+        print('problem with bkg download')
 
 def rinex3_rinex2(gzfilename,v2_filename):
     """
     input gzfile name
     gunzip, de-hatanaka, then convert to 2.11
+    this doesn't work yet
     """
     fexists = False
     gexe = gfz_version()
@@ -3608,4 +3611,46 @@ def gpsSNR_version():
     if not os.path.exists(gpse):
         gpse = './gpsSNR.e'
     return gpse
+
+def gnssSNR_version():
+    """
+    return string with location of gnssSNR exectuable
+    """
+    gpse = '/Users/kristine/bin/gnssSNR.e'
+    # heroku version should be in the main area
+    if not os.path.exists(gpse):
+        gpse = './gnssSNR.e'
+    return gpse
+
+def teqc_version():
+    """
+    return string with location of teqcexectuable
+    """
+    gpse = '/Users/kristine/bin/teqc'
+    # heroku version should be in the main area
+    if not os.path.exists(gpse):
+        gpse = './teqc'
+    return gpse
+
+def snr_exist(station,year,doy,snrEnd):
+    """
+    given station name, year, doy, snr type
+    returns whether snr file exists  online
+    author: Kristine Larson
+
+    """
+    xdir = os.environ['REFL_CODE']
+    cdoy = '{:03d}'.format(doy)
+    cyy = '{:02d}'.format(year-2000)
+    f= station + cdoy + '0.' + cyy + '.snr' + snrEnd
+    fname = xdir + '/' + str(year) + '/snr/' + station + '/' + f
+    fname2 = xdir + '/' + str(year) + '/snr/' + station + '/' + f  + '.xz'
+    snre = False
+    # check for both
+    if os.path.isfile(fname):
+        snre = True
+    if os.path.isfile(fname2):
+        snre = True
+
+    return snre 
 
