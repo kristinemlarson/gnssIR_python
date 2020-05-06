@@ -114,16 +114,17 @@ for year in year_list:
             else:
                 print('will look locally and externally')
                 if version == 3:
-                    print('rinex 3 search')
-                    # will look for version 3 at CDDIS and convert to version 2
-                    srate = 30 # for now
-                    print('orbtype',orbtype)
+                    print('rinex 3 search with orbtype ', orbtype)
+                    srate = 30 # rate supported by CDDIS 
                     rinex2exists, rinex3name = g.cddis_rinex3(station9ch, year, doy,srate,orbtype)
+                    if not rinex2exists:
+                        # try again - unavco has 15 sec I believe
+                        rinex2exists, rinex3name = g.unavco_rinex3(station9ch, year, doy,15,orbtype)
                     subprocess.call(['rm', rinex3name]) # remove rinex3 file
                     if rinex2exists:
                         g.quick_rinex_snrC(year, doy, station, snrt, orbtype,rate, dec_rate)
                     else:
-                        print('Either rinex file does not exist for ', year, doy)
+                        print('rinex file does not exist for ', year, doy)
                 else:
                     print('rinex 2.11 search')
                     g.quick_rinex_snrC(year, doy, station, snrt, orbtype,rate, dec_rate)

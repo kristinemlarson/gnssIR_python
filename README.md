@@ -19,12 +19,15 @@ This doesn't matter much for snow applications.  When I get a chance, I will be
 adding a RH dot correction which is also needed for tides.
 Again, this effect can be ignored for snow/ice reflections.
 
-A simple refraction error correction has been added to gnssIR_lomb.py. You can turn
+A simple refraction error correction is available. You can turn
 it on/off by setting the RefractionCorrection variable
 
 # Recent Updates
 
 April 2020
+
+A boolean (wantCompression) has been added that will xz compress snr files.  Just an option 
+in case you have limited disk space.
 
 Added the ability to analyze RINEX 3 files. Either you provide the files or it looks at CDDIS.
 Those are the only allowed options.
@@ -34,15 +37,15 @@ works the same way as doy_end.
 
 Changed the source of the nav messages. It checks CDDIS, SOPAC, and the NGS.
 
-July 2, 2019
-
 
 September 13, 2019
+
 If you set seekRinex = True, gnssIR_lomb.py will now attempt to make a SNR 
 file for you if one does not exist on your machine.
 This will be GPS satellites only. The default is seekRinex =False
 
 September 22, 2019
+
 I have added a lot of error checking to make sure you are using proper inputs 
 and that you have put the required files in the correct place (i.e. executables
 and inputs).
@@ -114,6 +117,10 @@ python3 rinex2snr.py at01 2019 75 66 gbm
 * 66 is the snr option type (see the translator code for more information).  
 * The last input is the orbit type.
 
+If your station name has 9 characters, the code assumes you are looking for a 
+RINEX 3 file. It will store the data as the 4 character name.  Only CDDIS and UNAVCO
+archives are searched.
+
 The snr options are always two digit numbers.  Choices are:
 
 * 99 is elevation angles of 5-30 degrees  (most applications)
@@ -138,9 +145,10 @@ to pick them up for you. They are then stored in the ORBITS directory.
 Unless the RINEX data are sitting in your working directory, I believe the code attempts to 
 pick up your RINEX file from UNAVCO, SOPAC, and SONEL, but only low-rate data are accessed.
 
-There is a high-rate option, but it only works for UNAVCO. 
+There is a high-rate option, but it only works for UNAVCO. Use -rate 1 to get 1 second data.
 
 There is also a decimator, but it uses teqc to do that decimation. So if you don't install teqc, it will not work.
+e.g. -dec 30 will decimate to 30 seconds.
 
 The SNR files created by this code are stored in REFL_CODE/YYYY/snr in a subdirectory with your station name on it.
 

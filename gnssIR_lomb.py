@@ -100,7 +100,7 @@ parser.add_argument("-year_end", "--year_end", default=None, type=int, help="yea
 parser.add_argument("-azim1", "--azim1", default=None, type=int, help="lower limit azimuth")
 parser.add_argument("-azim2", "--azim2", default=None, type=int, help="upper limit azimuth")
 parser.add_argument("-nooverwrite", "--nooverwrite", default=None, type=int, help="use any integer to not overwrite")
-parser.add_argument("-extension", "--extension", default=None, type=str, help="extension for result file ")
+parser.add_argument("-extension", "--extension", default=None, type=str, help="extension for result file, useful for testing strategies")
 args = parser.parse_args()
 #
 # rename the user inputs as variables
@@ -186,6 +186,7 @@ dmjd, fracS = g.mjd(year,month,day,0,0,0)
 # retrieve the inputs needed to window the data and compute Lomb Scargle Periodograms 
 # changed long to lon
 lat,lon, ht,elval,azval,freqs,reqAmp,polyV,desiredP,Hlimits,ediff,pele,NReg = g.read_inputs(station) 
+print(reqAmp)
 
 # You can have peaks in two regions, and you may only be interested in one of them.
 # You can refine the region you care about here.
@@ -290,7 +291,7 @@ for year in year_list:
                 g.open_plot(plt_screen)
                 rj = 0
                 gj = 0
-                print('**** looking at frequency ', f, ' ReqAmp', reqAmp[ct], ' doy ', doy)
+                print('**** looking at frequency ', f, ' ReqAmp', reqAmp[ct], ' doy ', doy, ct)
 #   get the list of satellites for this frequency
                 if onesat == None:
                     satlist = g.find_satlist(f,snrE)
@@ -322,11 +323,11 @@ for year in year_list:
                                     print('useless tiny arc')
                                 else:
                                     print('failed QC for Azimuth {0:.1f} Satellite {1:2.0f} '.format( iAzim,satNu))
-                                    #g.write_QC_fails(delT,delTmax,eminObs,emaxObs,e1,e2,ediff,maxAmp, Noise,PkNoise,reqAmp[ct])
+                                    g.write_QC_fails(delT,delTmax,eminObs,emaxObs,e1,e2,ediff,maxAmp, Noise,PkNoise,reqAmp[ct])
                                     #print(delT,delTmax,eminObs,emaxObs,e1,e2,ediff,maxAmp, Noise,PkNoise,reqAmp[ct])
-                                    print(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} \
-{8:6.2f} {9:4.0f} {10:3.0f} {11:2.0f} {12:8.5f} {13:6.2f} {14:7.2f} {15:12.6f} \n".format(year,doy,maxF,satNu, UTCtime,\
-                      avgAzim,maxAmp,eminObs,emaxObs,Nv, f,riseSet, Edot2,maxAmp/Noise,delT, MJD))
+                                    #print(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} \
+#{8:6.2f} {9:4.0f} {10:3.0f} {11:2.0f} {12:8.5f} {13:6.2f} {14:7.2f} {15:12.6f} \n".format(year,doy,maxF,satNu, UTCtime,\
+#                      avgAzim,maxAmp,eminObs,emaxObs,Nv, f,riseSet, Edot2,maxAmp/Noise,delT, MJD))
                                     rj +=1
                 print('     good arcs:', gj, ' rejected arcs:', rj)
                 ct += 1

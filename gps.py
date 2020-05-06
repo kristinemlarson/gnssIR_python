@@ -3654,3 +3654,73 @@ def snr_exist(station,year,doy,snrEnd):
 
     return snre 
 
+
+def unavco_rinex3(station9ch, year, doy,srate,orbtype):
+    """
+    feeble attempt to download Rinex3 files from CDDIS
+    and then translate them to something useful (Rinex 2.11)
+    inputs: 9 character station name (should be all capitals)
+    year, day of year (doy) and sample rate (in seconds)
+    station9ch can be lower or upper case - code changes it to upper case
+
+    sending orbit type so that if nav file is used, no point writing out the non-GPS data
+
+    returns file existence boolean and name of the RINEX 3 file (so it can be cleaned up)
+    author: kristine larson
+    """
+    fexists = False 
+    print(orbtype)
+    cdoy = '{:03d}'.format(doy)
+    cyy = '{:02d}'.format(year-2000)
+    csrate = '{:02d}'.format(srate)
+    cyyyy = str(year)
+    ftp = 'ftp://data-out.unavco.org/pub/rinex3/obs/' 
+    #ftp = 'ftp://cddis.nasa.gov/gnss/data/daily/'
+
+    f = cyyyy + '/' + cdoy + '/' 
+    ff = station9ch.upper() +   '_R_' + cyyyy + cdoy + '0000_01D_' + csrate + 'S_MO'
+    smallff = station9ch[0:4].lower() + cdoy + '0.' + cyy + 'o'
+    ending = '.crx' # compressed rinex3 ending
+    rending = '.rnx' # rinex3 ending
+    gzfilename = ff+ending + '.gz' # the crx.gz file
+    filename = ff+ending  # the crx file
+    rfilename = ff+rending # the rnx file
+    url = ftp + f + gzfilename  
+    print(url)
+    # not sure i still neeed this
+    exedir = os.environ['EXE']
+    gexe = gfz_version()
+    crnxpath = hatanaka_version()
+    if orbtype == 'nav':
+        # added this bevcause weird Glonass data were making teqc unhappy
+        gobblygook = 'G:S1C,S2X,S2L,S2S,S5'
+    else:
+    # I hate S2W 
+        gobblygook = 'G:S1C,S2X,S2L,S2S,S5+R:S1P,S1C,S2P,S2C+E:S1,S5,S6,S7,S8'
+    print(gobblygook)
+    if os.path.isfile(rfilename):
+        print('rinex3 file already exists')
+    else:
+        try:
+            wget.download(url,gzfilename)
+            # unzip and Hatanaka decompress
+            subprocess.call(['gunzip',gzfilename])
+            subprocess.call([crnxpath,filename])
+            # remove the crx file
+            subprocess.call(['rm',filename])
+        except:
+            print('no file at CDDIS')
+
+    if os.path.isfile(rfilename) and os.path.isfile(gexe):
+        print('making rinex 2.11')
+        try:
+            subprocess.call([gexe,'-finp', rfilename, '-fout', smallff, '-vo','2','-ot', gobblygook, '-f'])
+            print('woohoo!')
+            print('look for the rinex 2.11 file here: ', smallff)
+            fexists = True
+        except:
+            print('some kind of problem in translation to 2.11')
+    else:
+        print('either the rinex3 file does not exist OR the gfzrnx executable does not exist')
+
+    return fexists, rfilename
