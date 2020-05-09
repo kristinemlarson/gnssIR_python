@@ -3,21 +3,30 @@
 # lat long (degrees) ellipsoidal ht (in meters)
 72.572900 -38.470200 3267.0
 # elmin elmax and emin/emax for polyfit to remove direct signal
+# In this example I am only using 5-15 degrees but for normal 2-3 meter
+# tall sites, I would recommend using 5-25 or 5-30. The polynomial fit is usually
+# 5-30
 5 15 5 30
 # azimuth ranges you will examine (begin and end) 
+# they are read in pairs - so 45-90 and then 90-135 etc etc
 45 90 90 135  135 180 180 225 225 270  270 315
 # frequency followed by amplitude required to be reported as significant
+# 1 is GPS L1
+# 5 is GPS L5
+# 2 is generic GPS L2, which for some receivers can be problematic.
 # 20 means L2C signal for the current satellite list
 # 101 and 102 are glonass 
 # 201 ... for galileo
 # 302 etc ... beidou
 # # these values are quite large- appropriate for ice.  you can go smaller.
 # # depends on the site and the surface
-1 18 20 18  
+1 15 20 15  
 # seven values given here, which are:
 # 1. polynomial value for the DC fit. 3-4 is usually good enough
 # 2. precision of the periodogram(m) 
 # 3-4. window of periodogram, minimum minH(m) 
 # 5. ediff - how much the min/max elevation angles should vary from window (degrees)
 # 6-7. noise values of periodogram (min value, meters)
+# Note that in this example we had to extend the default RH region because this 
+# site is in fact 16 meters tall.
 3 0.01 5 35 1  13 19

@@ -7,7 +7,7 @@ rinex2snr.py translates the RINEX files into SNR files, which are fed into gnssI
 quickLook.py will try to give you a quick (visual) assessment of a file without dealing
 with the details associated with gnssIR_lomb.py.
 
-Other things to know: I only support python3. The library dependencies 
+This code requires python3. The library dependencies 
 are provided in the pyproject.toml file (I am using a package 
 manager called poetry). 
 
@@ -29,13 +29,15 @@ April 2020
 A boolean (wantCompression) has been added that will xz compress snr files.  Just an option 
 in case you have limited disk space.
 
-Added the ability to analyze RINEX 3 files. Either you provide the files or it looks at CDDIS.
-Those are the only allowed options.
+I recently added the ability to analyze RINEX 3 files. Either you provide the files or 
+it looks for them at CDDIS.  Those are the only allowed options. Since the RINEX translators
+require RINEX 2.11, the version 3 files will be translated to 2.11 using the gfzrnx 
+program.
 
-Added an optional year_end option so you can process multiple years with one command.
+I added an optional year_end option so you can process multiple years with one command.
 works the same way as doy_end.
 
-Changed the source of the nav messages. It checks CDDIS, SOPAC, and the NGS.
+I changed the preferred source of the nav messages. It checks CDDIS, SOPAC, and then the NGS.
 
 
 September 13, 2019
@@ -57,10 +59,7 @@ WARNING: These codes do not calculate soil moisture.
 
 You need to define (at least) three environment variables:
 
-* EXE = where the Fortran translator executables will live. Also the code that
-translates certain kinds of RINEX files is needed and will be stored in this directory.  
-I do not control these codes - but they are very important
-modules in the GPS/GNSS communities.
+* EXE = where various RINEX executables will live.  See below for details.
 
 * ORBITS = where the GPS/GNSS orbits will be stored (nav directory for GPS only and 
 sp3 subdirectory for multi GNSS). These files are only 
@@ -79,20 +78,13 @@ with the source code.  If this file does not exist, it does not matter.
 
 Make sure you have installed all the required python libraries. 
 
-Unless you already have codes to make my SNR files, you will need to 
-install RINEX translators.  I have two of them. One is for people that only have 
-GPS data - and thus uses the nav file for the orbits. 
-The other translates all GNSS signals and uses a sp3 file. Both 
-codes are hosted at <a href=https://github.com/kristinemlarson>GitHub.</a>
-
 # Non-Python Code 
 
 All executables must be stored in the EXE directory
 
-* RINEX translator for multi-GNSS, which must be called gnssSNR.e, https://github.com/kristinemlarson/gnssSNR 
-If the executable from this code is not gnssSNR.e, please change it and move it to the EXE directory
+* RINEX Translator for GPS, the executable must be called gpsSNR.e, https://github.com/kristinemlarson/gpsonlySNR
 
-* RINEX Translator for GPS, which must be called gpsSNR.e, https://github.com/kristinemlarson/gpsonlySNR
+* RINEX translator for multi-GNSS, the executable must be called gnssSNR.e, https://github.com/kristinemlarson/gnssSNR 
 
 * CRX2RNX, Compressed to Uncompressed RINEX, http://terras.gsi.go.jp/ja/crx2rnx.html 
 
@@ -103,7 +95,7 @@ bottom of <a href=http://www.unavco.org/software/data-processing/teqc/teqc.html>
 * gfzrnx is only required if you plan to use the RINEX 3 option.  http://dx.doi.org/10.5880/GFZ.1.1.2016.002
 
 
-# Making SNR files from RINEX
+# Making SNR files from RINEX files
 
 The python driver is called rinex2snr.py. 
 
@@ -118,8 +110,8 @@ python3 rinex2snr.py at01 2019 75 66 gbm
 * The last input is the orbit type.
 
 If your station name has 9 characters, the code assumes you are looking for a 
-RINEX 3 file. It will store the data as the 4 character name.  Only CDDIS and UNAVCO
-archives are searched.
+RINEX 3 file. However, it will store the SNR data using the normal 
+4 character name.  Only CDDIS and UNAVCO archives are currently searched for RINEX 3.
 
 The snr options are always two digit numbers.  Choices are:
 
@@ -130,34 +122,31 @@ The snr options are always two digit numbers.  Choices are:
 
 Legal orbit types:
 
-1. nav - is using the GPS nav message. The main plus is that it is available in near 
+* nav - is using the GPS nav message. The main plus is that it is available in near 
 real-time.  A nav file only has GPS orbits in it, so you should not use this 
 option if you want to do true multi-GNSS reflectometry. 
-2. sp3 - is using the IGS sp3 file, so again, your RINEX file does not have to be be GPS only, but
+* sp3 - is using the IGS sp3 file, so again, your RINEX file does not have to be be GPS only, but
 you won't get any non-GPS data because it doesn't have the orbit.
-3. gbm - is currently my only option for getting a multi-GNSS orbit file.  This is also 
+* gbm - is currently my only option for getting a multi-GNSS orbit file.  This is also 
 in sp3 format. The gbm file comes from the group at GFZ.  
-
 
 If the orbit files don't already exist on your system, the rinex2snr.py code attempts 
 to pick them up for you. They are then stored in the ORBITS directory.
 
 Unless the RINEX data are sitting in your working directory, I believe the code attempts to 
 pick up your RINEX file from UNAVCO, SOPAC, and SONEL, but only low-rate data are accessed.
+There are some other download functions in gps.py - but I do have not implemented them all. 
 
 There is a high-rate option, but it only works for UNAVCO. Use -rate 1 to get 1 second data.
 
-There is also a decimator, but it uses teqc to do that decimation. So if you don't install teqc, it will not work.
-e.g. -dec 30 will decimate to 30 seconds.
+There is also a decimator, but it uses teqc to do that decimation. So if you have not 
+installed teqc, it will not work.  Example call:  -dec 30 will decimate to 30 seconds.
 
-The SNR files created by this code are stored in REFL_CODE/YYYY/snr in a subdirectory with your station name on it.
-
-
-# Running the reflector height (gnssIR_lomb.py) code
+The SNR files created by this code are stored in REFL_CODE/YYYY/snr in a subdirectory 
+with your station name on it.
 
 
-* It needs a SNR file. It can try to make it for you if it does not exist. But if you do this, it will assume 
-you only have GPS data.
+# Running the Reflector Height Code (gnssIR_lomb.py) 
 
 
 * The code assumes you are going to have a working directory for input and outputfiles.  
@@ -178,34 +167,26 @@ yy is two character year
 nn is a specific kind of snr file (99, 77, and 50 are the most commonly used)
 ```
 
-* User inputs for the Lomb Scargle Periodogram calculation  
+* User inputs for the Reflector Height calculation  
 
-This should be stored in a file called REFL_CODE/input/aaaa 
-See sample file called input_smm3_example. I also have a python script that will make
+This information should be stored in a file called REFL_CODE/input/aaaa 
+See the annotated sample file called input_smm3_example. I also have a python script that will make
 this file for you: make_input_file.py
 
 It requires several inputs, so use the help option. 
-It requires lat/lon/height does not need to be very precise.  This 
+It requires lat/lon/height - but this does not need to be very precise.  This 
 is only used for the refraction correction, so you can enter 0,0,0 if you aren't using that.
 
+
 * Output: Your output files will go in REFL_CODE/YYYY/results/aaaa 
-This is basically a text listing of individual arc reflector heights. 
+This is basically a text listing of each satellite arc's reflector height. 
 
-```sh
-maxF is the reflector height in meters
-sat is satellite number, where 1-32 is for GPS, 
-101-199 is for Glonass, 201-299 is for Galileo, 301-399 for Beidou
-Azim is average azimuth over a given track, in degrees.
-Amp is the peak spectral amplitude in volts/volts
-eminO and emaxO are the observed min and max elevation angles in the track
-Nv: number of observations used in the Lomb Scargle Periodogram (LSP)
-```
+* I use the following to define the different frequencies:
 
-freq is the frequency used. There is no industry standard here - so I am defining them as follows:
 ```sh
 1 GPS L1
 2 GPS L2
-20 GPS L2C (using current list of L2C transmitting satellites)
+20 GPS L2C (using the list of L2C transmitting satellites from 2019)
 5 GPS L5
 101 Glonass L1
 102 Glonass L2
@@ -213,50 +194,49 @@ freq is the frequency used. There is no industry standard here - so I am definin
 302, 306, 307 : Beidou  
  ```
 
-rise is an integer value to tell you whether a satellite arc is rising (1) or setting (-1)
-
-PkNoise is the spectral amplitude divided by an average noise value calculated
-for a reflector height range you prescribe in the code.
-
-DelT is the arc length in minutes
-
-MJD is modified julian date  
-
-refr-appl is 1 if refraction correction applied and otherwise 0
-
 
 # Usage- some examples
 
-
-* Compute reflector heights based entirely on your input instructions
+* Compute RH based entirely on your input instructions  for station p041, year 2020, day of year 105, and SNR format type 99
   ```sh
-  python gnssIR_lomb.py aaaa YYYY doy nn plt
+  python gnssIR_lomb.py p041 2020 105 99 1 
   ```
-plt is 1 for a plot and 0 for not. nn is the snr type again (e.g. 99)
+The last input says to make plots.  If you set it to zero, it won't make plots.
 
-* I also made an option that is meant to let you look at a particular frequency, rather than
-all frequencies.  Such an example would be:
+* Let's say you want to override your instructions and only look at one frequency:
   ```sh
-  python gnssIR_lomb.py aaaa YYYY doy nn plt -fr 20 -amp 15
+  python gnssIR_lomb.py p041 2020 105 99 1  -fr 20 -amp 10
   ```
-which would mean only show L2C frequency (which I call 20) and use 15 as the amplitude requirement
+which would mean only show L2C frequency and use 10 as the amplitude requirement
 
-As an example, I'm providing an snr98 file for smm3 on doy 253 and year 2018. Only one arc
-of satellite 1 is stored here, so as to reduce the size of the file.
+* Let's say you only want to look at satellite 15
+  ```sh
+  python gnssIR_lomb.py p041 2020 105 99 1  -sat 15 
+  ```
+* Once you have the instruction sets up, most people want to analyze an entire dataset. If you wanted
+to analyze an entire year:
+  ```sh
+  python gnssIR_lomb.py p041 2019 1 99 0 -doy_end 365
+  ```
 
-There is also the ability to look at the results for a single satellite. 
+  Note that I have turned off the plots with the zero after the 99 and I 
+  am using the optional doy_end flag. There is also an optional
+  year_end flag that you could use if you had multiple years of data.
+
 
 # Usage of quickLook Code
+
 The gnssIR_lomb.py code requires you have set up some instructions for analyzing your data, i.e.
-which frequencies you want to use, the lat/long/ht for the refraction correction.
+which frequencies you want to use, which azimuths, the lat/long/ht for the refraction correction, etc.
 If you don't want to bother with all of that - and just want a quick look to see if it is even worth
 your time to analyze the data at a site, you can try quickLook.py.  You just give 
-it the station name, year, doy of year, and SNR format (99 is usually a good start). It will go pick up 
-the RINEX data and translate it for you.  There are stored defaults for analyzing the spectral characteristics of 
-the data.  If you want to override those
-run quickLook.py -h 
+it the station name, year, doy of year, and SNR format (99 is usually a good start). It 
+will go pick up the RINEX data and translate it for you into the correct SNR format.  
+There are stored defaults for analyzing the spectral characteristics of 
+the data.  If you want to override those run quickLook.py -h 
 
-This code needs the environment variables to exist, i.e. ORBITS and REFL_CODE and EXE. 
+ALthough the code is simpler than gnssIR_lomb.py, it still needs the environment variables 
+to exist, i.e. ORBITS and REFL_CODE and EXE. 
 
 Examples:
 
@@ -265,6 +245,13 @@ ice/snow reflections)
 * python quickLook.py rec1 2008 271 99  (this is an example where the system fails to find this file at UNAVCO)
 * python quickLook.py smm3 2019 100 99 -h1 10 -h2 20 -e1 5 -e2 15  (example for overriding the defaults because this is a tall site)
 
+# Plotting Periodogram Results
+
+Try out plot_results.py
+
+# Results
+
+I will add a description of the output files.
 
 # Publications
 * There are A LOT of publications about GPS/GNSS interferometric reflectometry.

@@ -3194,6 +3194,38 @@ def back2thefuture(iyear, idoy):
 
     return badDay
 
+def rinex_ga_lowrate(station,year,doy):
+    """
+    pick up lowrate data from Geoscience Australia
+    only Rinex 2.11 for now
+    """
+    fexists = False
+    exedir = os.environ['EXE']
+    crnxpath = exedir + '/CRX2RNX'
+    cdoy = '{:03d}'.format(doy)
+    cyyyy = '{:04d}'.format(year)
+    cyy = '{:02d}'.format(year-2000)
+    ftpg = 'ftp://ftp.ga.gov.au/geodesy-outgoing/gnss/data/daily/' + cyyyy + '/' + cyy + cdoy  + '/'
+    dnameZ = station + cdoy + '0.' + cyy + 'd.Z' 
+    dname = station + cdoy + '0.' + cyy + 'd'
+    rname = station + cdoy + '0.' + cyy + 'o'
+    url = ftpg + dname + '.Z'
+    print(url)
+    print(dname,rname)
+    try:
+        wget.download(url,dnameZ)
+        if os.path.isfile(dnameZ):
+            status = subprocess.call(['uncompress', dnameZ])
+            status = subprocess.call([crnxpath, dname])
+            status = subprocess.call(['rm', '-f', dname])
+    except:
+        print('download from GA did not work')
+
+    if os.path.isfile(rname):
+        print('file found')
+        fexists = True
+
+    return fexists
 
 def rinex_ga_highrate(station, year, month, day):
     """
