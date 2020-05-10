@@ -1,10 +1,13 @@
-# gnssIR_lomb.py, rinex2snr.py, and quickLook.py
+# Overview Comments on this Repository
 
-gnssIR_lomb.py computes reflector heights (RH) from GNSS data.
+The goal of this repository is to help you compute (and evaluate) GNSS 
+based reflectometry parameters. There are three main codes:
 
-rinex2snr.py translates the RINEX files into SNR files, which are fed into gnssIR_lomb.py
+* rinex2snr.py translates RINEX files into SNR files needed for analysis.
 
-quickLook.py will try to give you a quick (visual) assessment of a file without dealing
+* gnssIR_lomb.py computes reflector heights (RH) from GNSS data.
+
+* quickLook.py gives you a quick (visual) assessment of a file without dealing
 with the details associated with gnssIR_lomb.py.
 
 This code requires python3. The library dependencies 
@@ -30,7 +33,7 @@ A boolean (wantCompression) has been added that will xz compress snr files.  Jus
 in case you have limited disk space.
 
 I recently added the ability to analyze RINEX 3 files. Either you provide the files or 
-it looks for them at CDDIS.  Those are the only allowed options. Since the RINEX translators
+it looks for them at CDDIS and UNAVCO.  Those are the only allowed options. Since the RINEX translators
 require RINEX 2.11, the version 3 files will be translated to 2.11 using the gfzrnx 
 program.
 
@@ -38,7 +41,6 @@ I added an optional year_end option so you can process multiple years with one c
 works the same way as doy_end.
 
 I changed the preferred source of the nav messages. It checks CDDIS, SOPAC, and then the NGS.
-
 
 September 13, 2019
 
@@ -53,7 +55,7 @@ and that you have put the required files in the correct place (i.e. executables
 and inputs).
 
 
-WARNING: These codes do not calculate soil moisture.
+These codes do not calculate soil moisture.
 
 # Installing the code
 
@@ -76,7 +78,8 @@ This is only used in the fortran conversion code - and samples are given
 with the source code.  If this file does not exist, it does not matter. 
 
 
-Make sure you have installed all the required python libraries. 
+# Python libraries
+python 3.7, numpy, matplotlib, scipy, and wget 
 
 # Non-Python Code 
 
@@ -92,7 +95,8 @@ All executables must be stored in the EXE directory
 RINEX rabbit hole. There is a list of static executables at the 
 bottom of <a href=http://www.unavco.org/software/data-processing/teqc/teqc.html>this page.</a>
 
-* gfzrnx is only required if you plan to use the RINEX 3 option.  http://dx.doi.org/10.5880/GFZ.1.1.2016.002
+* gfzrnx is only required if you plan to use the RINEX 3 option. Executables available from the GFZ,
+http://dx.doi.org/10.5880/GFZ.1.1.2016.002
 
 
 # Making SNR files from RINEX files
@@ -101,7 +105,7 @@ The python driver is called rinex2snr.py.
 
 A sample call of of the python driver rinex2snr.py would be:
 
-python3 rinex2snr.py at01 2019 75 66 gbm
+python rinex2snr.py at01 2019 75 66 gbm
 
 * at01 is the station name 
 * 2019 is the year 
@@ -111,7 +115,7 @@ python3 rinex2snr.py at01 2019 75 66 gbm
 
 If your station name has 9 characters, the code assumes you are looking for a 
 RINEX 3 file. However, it will store the SNR data using the normal 
-4 character name.  Only CDDIS and UNAVCO archives are currently searched for RINEX 3.
+4 character name.
 
 The snr options are always two digit numbers.  Choices are:
 
@@ -145,6 +149,29 @@ installed teqc, it will not work.  Example call:  -dec 30 will decimate to 30 se
 The SNR files created by this code are stored in REFL_CODE/YYYY/snr in a subdirectory 
 with your station name on it.
 
+# Usage of quickLook Code
+
+Before using the gnssIR_lomb.py code, I recommend you try quickLook first. This allows you
+to quickly test various options (elevation angles, frequencies, azimuths) before spending
+the time needed to set up the required inputs for the gnssIR_lomb.py code.
+
+your time to analyze the data at a site, you can try quickLook.py.  
+Required inputs are station name, year, doy of year, and SNR format (99 is usually a good start). 
+If the SNR file does not exist, you can provide a properly named RINEX file 
+(lowercase only) in your code directory. If it doesn't find it either of these places, it 
+will try to pick up the RINEX data from various archives and translate it for 
+you into the correct SNR format.  There are stored defaults for analyzing the 
+spectral characteristics of the SNR data.  If you want to override those run quickLook.py -h 
+
+ALthough the quickLook.py code is simpler than gnssIR_lomb.py, it still needs the environment variables 
+to exist, i.e. ORBITS and REFL_CODE and EXE. 
+
+Examples:
+
+*  python quickLook.py gls1 2011 271 99  (this uses defaults, which are usually ok for cryosphere)
+ice/snow reflections)
+* python quickLook.py rec1 2008 271 99  (this is an example where the system fails to find this file at UNAVCO)
+* python quickLook.py smm3 2019 100 99 -h1 10 -h2 20 -e1 5 -e2 15  (example for overriding the defaults because this is a tall site)
 
 # Running the Reflector Height Code (gnssIR_lomb.py) 
 
@@ -164,22 +191,21 @@ where aaaa is a 4 character station name
 DDD is day of year
 yy is two character year
 0 is always zero (it comes from the RINEX spec)
-nn is a specific kind of snr file (99, 77, and 50 are the most commonly used)
+nn is a specific kind of snr file (99, 66, and 50 are the most commonly used)
 ```
 
 * User inputs for the Reflector Height calculation  
 
 This information should be stored in a file called REFL_CODE/input/aaaa 
 See the annotated sample file called input_smm3_example. I also have a python script that will make
-this file for you: make_input_file.py
-
-It requires several inputs, so use the help option. 
-It requires lat/lon/height - but this does not need to be very precise.  This 
+this file for you: make_input_file.py It requires several inputs, so use the help option. 
+It asks for the lat/lon/height - but this does not need to be very precise.  This 
 is only used for the refraction correction, so you can enter 0,0,0 if you aren't using that.
 
 
 * Output: Your output files will go in REFL_CODE/YYYY/results/aaaa 
 This is basically a text listing of each satellite arc's reflector height. 
+I will be adding a sample output file soon. 
 
 * I use the following to define the different frequencies:
 
@@ -194,8 +220,7 @@ This is basically a text listing of each satellite arc's reflector height.
 302, 306, 307 : Beidou  
  ```
 
-
-# Usage- some examples
+# gnssIR_lomb.py examples
 
 * Compute RH based entirely on your input instructions  for station p041, year 2020, day of year 105, and SNR format type 99
   ```sh
@@ -224,34 +249,12 @@ to analyze an entire year:
   year_end flag that you could use if you had multiple years of data.
 
 
-# Usage of quickLook Code
-
-The gnssIR_lomb.py code requires you have set up some instructions for analyzing your data, i.e.
-which frequencies you want to use, which azimuths, the lat/long/ht for the refraction correction, etc.
-If you don't want to bother with all of that - and just want a quick look to see if it is even worth
-your time to analyze the data at a site, you can try quickLook.py.  You just give 
-it the station name, year, doy of year, and SNR format (99 is usually a good start). It 
-will go pick up the RINEX data and translate it for you into the correct SNR format.  
-There are stored defaults for analyzing the spectral characteristics of 
-the data.  If you want to override those run quickLook.py -h 
-
-ALthough the code is simpler than gnssIR_lomb.py, it still needs the environment variables 
-to exist, i.e. ORBITS and REFL_CODE and EXE. 
-
-Examples:
-
-*  python quickLook.py gls1 2011 271 99  (this uses defaults, which are usually ok for cryosphere)
-ice/snow reflections)
-* python quickLook.py rec1 2008 271 99  (this is an example where the system fails to find this file at UNAVCO)
-* python quickLook.py smm3 2019 100 99 -h1 10 -h2 20 -e1 5 -e2 15  (example for overriding the defaults because this is a tall site)
 
 # Plotting Periodogram Results
 
 Try out plot_results.py
 
-# Results
-
-I will add a description of the output files.
+I will upload some samples soon.
 
 # Publications
 * There are A LOT of publications about GPS/GNSS interferometric reflectometry.
