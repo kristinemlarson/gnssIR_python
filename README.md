@@ -263,8 +263,8 @@ LORG is a very nice example of GNSS-IR. It was installed on the Ross Ice Shelf i
 removed the following year. It is pretty clear in all directions, so there is little to no azimuth restrictions
 needed. It is flat - so I would suggest using most low elevation angles. Steps to follow:
 
-The data are archived at <a href=https://www.unavco.org/data/gps-gnss/data-access-methods/dai2/app/dai2.html#4Char=lorg;scope=Station;sampleRate=both;4CharMod=contains>unavco</a>. Pick out the start and end date. Convert the month and day to
-day of year using ymd.py
+[The data are archived at unavco] (href=https://www.unavco.org/data/gps-gnss/data-access-methods/dai2/app/dai2.html#4Char=lorg;scope=Station;sampleRate=both;4CharMod=contains>unavco). 
+Pick out the start and end date. Convert the month and day to day of year using ymd.py
 
 
 * Make SNR files for lorg using, e.g.:
