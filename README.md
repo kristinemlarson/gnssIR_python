@@ -93,7 +93,7 @@ All executables must be stored in the EXE directory
 
 * teqc is not required, but highly recommended if you are going down the 
 RINEX rabbit hole. There is a list of static executables at the 
-bottom of <a href=http://www.unavco.org/software/data-processing/teqc/teqc.html>this page.</a>
+bottom of [this page](http://www.unavco.org/software/data-processing/teqc/teqc.html)
 
 * gfzrnx is only required if you plan to use the RINEX 3 option. Executables available from the GFZ,
 http://dx.doi.org/10.5880/GFZ.1.1.2016.002
@@ -263,11 +263,9 @@ LORG is a very nice example of GNSS-IR. It was installed on the Ross Ice Shelf i
 removed the following year. It is pretty clear in all directions, so there is little to no azimuth restrictions
 needed. It is flat - so I would suggest using most low elevation angles. Steps to follow:
 
-[The data are archived at unavco](https://www.unavco.org/data/gps-gnss/data-access-methods/dai2/app/dai2.html#4Char=LORG)  
-Pick out the start and end date. Convert the month and day to day of year using ymd.py
-
-
-* Make SNR files for lorg using, e.g.:
+* [The data are archived at unavco](https://www.unavco.org/data/gps-gnss/data-access-methods/dai2/app/dai2.html#4Char=LORG)  
+From the link, check out the start and end date. Convert the month and day to day of year using ymd.py
+Then use rinex2snr.py to pick up the files and convert them.  For 2018, it would be:
 
 ```sh
 python rinex2snr.py lorg 2018 332 99 nav -doy_end 365
@@ -276,7 +274,7 @@ python rinex2snr.py lorg 2018 332 99 nav -doy_end 365
 
 Do the same for the 2019 data.
 
-* Look  at the spectral characteristics of one day,  e.g.
+* Now look  at the spectral characteristics of one day,  e.g.
 
 ```sh
 python quickLook.py lorg 2018 350 99 
@@ -287,7 +285,6 @@ python quickLook.py lorg 2018 350 99
 
 # Publications
 * There are A LOT of publications about GPS/GNSS interferometric reflectometry.
-If you want something with a how-to flavor, try this, which is open option: 
-https://link.springer.com/article/10.1007/s10291-018-0744-8
+If you want something with a how-to flavor, try this, which is [open option](https://link.springer.com/article/10.1007/s10291-018-0744-8)
 
-Also look to the publications page on my <a href=https://kristinelarson.net>website</a>
+Also look to the publications page on my  [website](href=https://kristinelarson.net)
