@@ -205,7 +205,7 @@ is only used for the refraction correction, so you can enter 0,0,0 if you aren't
 
 * Output: Your output files will go in REFL_CODE/YYYY/results/aaaa 
 This is basically a text listing of each satellite arc's reflector height. 
-I will be adding a sample output file soon. 
+<a href=p038_001.txt>Here is a sample output file, with some comments on top</a> 
 
 * I use the following to define the different frequencies:
 
@@ -249,12 +249,11 @@ to analyze an entire year:
   year_end flag that you could use if you had multiple years of data.
 
 
-
 # Plotting Periodogram Results
 
 Try out plot_results.py
 
-I will upload some samples soon.
+I will upload some sample plots soon.
 
 # Publications
 * There are A LOT of publications about GPS/GNSS interferometric reflectometry.
