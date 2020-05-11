@@ -44,6 +44,7 @@ parser.add_argument("-e2", "--e2", default=None, type=int, help="upper limit ele
 parser.add_argument("-h1", "--h1", default=None, type=float, help="lower limit reflector height (m)")
 parser.add_argument("-h2", "--h2", default=None, type=float, help="upper limit reflector height (m)")
 parser.add_argument("-sat", "--sat", default=None, type=float, help="satellite")
+parser.add_argument("-peak2noise", "--peak2noise", default=None, type=float, help="peak2noise")
 args = parser.parse_args()
 #
 # rename the user inputs as variables
@@ -61,15 +62,11 @@ if exitS:
 InputFromScreen = True
 
 
-# peak to noise value is one way of defining that significance (not the only way).
-# I often use 3, but here I am using much less stringent requirement
-PkNoise = 2.7
 
-# get the month and day and the modified julian day, 
-# currently using fake date since we are not using
-# time varying refraction yet
-#d = g.doy2ymd(year,doy); month = d.month; day = d.day
-#dmjd, fracS = g.mjd(year,month,day,0,0,0)
+# peak to noise value is one way of defining that significance (not the only way).
+# For snow and ice, 3.5 or greater, tides can be tricky if the water is rough (and thus
+# you might go below 3 a bit.
+PkNoise = 3.0
 
 
 # set some reasonable default values for LSP (Reflector Height calculation). 
@@ -101,6 +98,9 @@ print('you can change with e1 and e2 if you like')
 print('Refraction correction is not used by quickLook code')
 
 
+if (args.peak2noise != None):
+    PkNoise = args.peak2noise
+
 if (args.h1 != None):
     Hlimits[0] = args.h1
 if (args.h2 != None):
@@ -126,5 +126,5 @@ print('Using reflector height limits (m) : ', Hlimits[0], ' and ', Hlimits[1], '
 f=freqs[0]
 webapp = False
 print('calling the function that does everything')
-quick.quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pele,webapp,sat)
+quick.quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pele,webapp,sat,PkNoise)
 

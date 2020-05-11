@@ -258,6 +258,33 @@ Try out plot_results.py
 
 I will upload some sample plots soon.
 
+# Cryosphere Example (under development)
+LORG is a very nice example of GNSS-IR. It was installed on the Ross Ice Shelf in November 2018 and was
+removed the following year. It is pretty clear in all directions, so there is little to no azimuth restrictions
+needed. It is flat - so I would suggest using most low elevation angles. Steps to follow:
+
+The data are archived at <a href=https://www.unavco.org/data/gps-gnss/data-access-methods/dai2/app/dai2.html#4Char=lorg;scope=Station;sampleRate=both;4CharMod=contains>unavco</a>. Pick out the start and end date. Convert the month and day to
+day of year using ymd.py
+
+
+* Make SNR files for lorg using, e.g.:
+
+  ```sh
+python rinex2snr.py lorg 2018 332 99 nav -doy_end 365
+
+```
+
+Do the same for the 2019 data.
+
+* Look  at the spectral characteristics of one day,  e.g.
+
+  ```sh
+python quickLook.py lorg 2018 350 99 
+```
+(I will post some sample plots)
+
+
+
 # Publications
 * There are A LOT of publications about GPS/GNSS interferometric reflectometry.
 If you want something with a how-to flavor, try this, which is open option: 

@@ -15,7 +15,7 @@ import quick_read_snr as q
 from matplotlib.figure import Figure
 
 
-def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pele,webapp,satsel):
+def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pele,webapp,satsel,PkNoise):
     """
     inputs:
     station name (4 char), year, day of year
@@ -25,6 +25,7 @@ def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pel
     minH and maxH are the allowed LSP limits in meters
     reqAmp is LSP amplitude significance criterion
     pele is the elevation angle limits for the polynomial removal.  units: degrees
+    KL 20may10 pk2noise value is now sent from main function, which can be set online
     """
     # orbit directories
     ann = g.make_nav_dirs(year)
@@ -42,9 +43,9 @@ def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pel
     ediff = 2 # this is a QC value, eliminates small arcs
     #four_in_one = True # put the plots together
     # this is pretty loose
-    PkNoise = 2.7
+    #PkNoise = 2.7
     minNumPts = 20 
-    NReg = [0.35, 6] # noise region for LSP QC. these are meters
+    #NReg = [0.35, 6] # noise region for LSP QC. these are meters
     NReg = [minH, maxH]
     print('noise region', NReg)
     # change noise region to the reflector height region
