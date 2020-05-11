@@ -151,27 +151,26 @@ with your station name on it.
 
 # Usage of quickLook Code
 
-Before using the gnssIR_lomb.py code, I recommend you try quickLook first. This allows you
+Before using the gnssIR_lomb.py code, I recommend you try quickLook.py first. This allows you
 to quickly test various options (elevation angles, frequencies, azimuths) before spending
 the time needed to set up the required inputs for the gnssIR_lomb.py code.
 
-your time to analyze the data at a site, you can try quickLook.py.  
-Required inputs are station name, year, doy of year, and SNR format (99 is usually a good start). 
+The required inputs are station name, year, doy of year, and SNR format (99 is usually a good start). 
 If the SNR file does not exist, you can provide a properly named RINEX file 
 (lowercase only) in your code directory. If it doesn't find it either of these places, it 
 will try to pick up the RINEX data from various archives and translate it for 
 you into the correct SNR format.  There are stored defaults for analyzing the 
-spectral characteristics of the SNR data.  If you want to override those run quickLook.py -h 
+spectral characteristics of the SNR data.  If you want to override those, run quickLook.py -h 
 
 ALthough the quickLook.py code is simpler than gnssIR_lomb.py, it still needs the environment variables 
 to exist, i.e. ORBITS and REFL_CODE and EXE. 
 
 Examples:
 
-*  python quickLook.py gls1 2011 271 99  (this uses defaults, which are usually ok for cryosphere)
-ice/snow reflections)
+* python quickLook.py gls1 2011 271 99  (this uses defaults, which are usually ok for the cryosphere)
 * python quickLook.py rec1 2008 271 99  (this is an example where the system fails to find this file at UNAVCO)
-* python quickLook.py smm3 2019 100 99 -h1 10 -h2 20 -e1 5 -e2 15  (example for overriding the defaults because this is a tall site)
+* python quickLook.py smm3 2019 100 99 -h1 10 -h2 20 -e1 5 -e2 15  (example for overriding the defaults because 
+this site is much taller than the default, ~16 meters)
 
 # Running the Reflector Height Code (gnssIR_lomb.py) 
 
@@ -194,18 +193,22 @@ yy is two character year
 nn is a specific kind of snr file (99, 66, and 50 are the most commonly used)
 ```
 
-* User inputs for the Reflector Height calculation  
+* Inputs 
 
 This information should be stored in a file called REFL_CODE/input/aaaa 
-See the annotated sample file called input_smm3_example. I also have a python script that will make
-this file for you: make_input_file.py It requires several inputs, so use the help option. 
-It asks for the lat/lon/height - but this does not need to be very precise.  This 
+See this annotated file <a href=input_smm3_example> for more information</a>. 
+
+I have a python script that will make
+this file for you: make_input_file.py. It requires several inputs, so use the help option. 
+It will need the lat/lon/height - but this does not need to be very precise.  This 
 is only used for the refraction correction, so you can enter 0,0,0 if you aren't using that.
 
+* Outputs 
 
-* Output: Your output files will go in REFL_CODE/YYYY/results/aaaa 
+Your output files will go in REFL_CODE/YYYY/results/aaaa 
+
 This is basically a text listing of each satellite arc's reflector height. 
-<a href=p038_001.txt>Here is a sample output file, with some comments on top</a> 
+<a href=p038_001.txt>Here is a sample output file, with some comments on top.</a> 
 
 * I use the following to define the different frequencies:
 
