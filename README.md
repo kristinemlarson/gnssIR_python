@@ -269,7 +269,7 @@ day of year using ymd.py
 
 * Make SNR files for lorg using, e.g.:
 
-  ```sh
+```sh
 python rinex2snr.py lorg 2018 332 99 nav -doy_end 365
 
 ```
@@ -278,11 +278,11 @@ Do the same for the 2019 data.
 
 * Look  at the spectral characteristics of one day,  e.g.
 
-  ```sh
+```sh
 python quickLook.py lorg 2018 350 99 
 ```
-(I will post some sample plots)
 
+(I will post some sample plots)
 
 
 # Publications
