@@ -2132,7 +2132,9 @@ def open_outputfile(station,year,doy,extension):
     try:
         fout=open(filepath1,'w+')
 #       put a header in the output file
-        fout.write("%year, doy, maxF,sat,UTCtime, Azim, Amp,  eminO, emaxO,  Nv,freq,rise,EdotF, PkNoise  DelT     MJD   refr-appl\n")
+        fout.write("% gnssIR_python, https://github.com/kristinemlarson \n")
+        fout.write("% Phase Center corrections have NOT been applied \n")
+        fout.write("% year, doy, maxF,sat,UTCtime, Azim, Amp,  eminO, emaxO,  Nv,freq,rise,EdotF, PkNoise  DelT     MJD   refr-appl\n")
         fout.write("% (1)  (2)   (3) (4)  (5)     (6)   (7)    (8)    (9)   (10) (11) (12) (13)  (14)     (15)     (16)   (17)\n")
         fout.write("%            m         hrs    deg   v/v    deg    deg                  hrs            min             1 is yes  \n")
     except:
@@ -3044,18 +3046,18 @@ def navfile_retrieve(navfile,cyyyy,cyy,cdoy):
     url_cddis = cddis + '/gps/data/daily/' + cyyyy + '/' + cdoy + '/' +cyy + 'n/' + navfile_cddis
     print(url_cddis)
     try:
-        print('try cddis')
+        print('try cddis first')
         wget.download(url_cddis,navfile_compressed)
         subprocess.call(['uncompress',navfile_compressed])
         print('success at cddis')
     except:
         print('no success at cddis')
         try:
-            print('try to download compressed nav file from SOPAC')
+            print('try SOPAC next')
             wget.download(url_sopac1,navfile_sopac1)
             subprocess.call(['uncompress',navfile_sopac1])
         except:
-            print('no success at sopac')
+            print('no success at SOPAC')
             if not os.path.exists(navname):
                 print('get rid of corrupted SOPAC file, if any')
                 subprocess.call(['rm','-f',navfile_sopac1])
@@ -3756,3 +3758,27 @@ def unavco_rinex3(station9ch, year, doy,srate,orbtype):
         print('either the rinex3 file does not exist OR the gfzrnx executable does not exist')
 
     return fexists, rfilename
+
+def get_cddis_navfile(navfile,cyyyy,cyy,cdoy):
+    """
+    kristine larson
+    inputs navfile name with character string verisons of year, 2ch year and doy
+    """
+    # just in case you sent it the navfile with auto instead of brdc
+    cddisfile = 'brdc' + navfile[4:] + '.Z'
+    cddis = 'ftp://cddis.nasa.gov'
+    # navfile will continue to be called auto
+    navfile_compressed = cddisfile
+    url_cddis = cddis + '/gps/data/daily/' + cyyyy + '/' + cdoy + '/' +cyy + 'n/' + navfile_compressed
+    print(url_cddis)
+    try:
+        print('try cddis for navfile')
+        wget.download(url_cddis,navfile_compressed)
+        subprocess.call(['uncompress',navfile_compressed])
+        print('success at cddis')
+    except:
+        print('no success ')
+    navname = navfile
+    return navname
+
+
