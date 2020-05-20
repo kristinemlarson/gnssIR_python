@@ -1942,6 +1942,9 @@ def window_data(s1,s2,s5,s6,s7,s8, sat,ele,azi,seconds,edot,f,az1,az2,e1,e2,satN
     else:
         outFact1 = cunit/(avgEdot*3600) 
     outFact2 = cunit/(avgEdot_fit*3600) 
+    # was debugging
+    #if (satNu == 25) and (f == 20):
+    #    print('Edot,cunit,az', avgEdot_fit, cunit,  avgAzim, outFact2)
     return x,y,Nvv,cf,meanTime,avgAzim,outFact1, outFact2, delT
 
 def arc_scaleF(f,satNu):
