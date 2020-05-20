@@ -64,7 +64,7 @@ and that you have put the required files in the correct place (i.e. executables
 and inputs).
 
 
-These codes do not calculate soil moisture.
+**These codes do not calculate soil moisture.**
 
 # Installing the code
 
@@ -110,18 +110,17 @@ http://dx.doi.org/10.5880/GFZ.1.1.2016.002
 
 # Making SNR files from RINEX files
 
-The python driver is called rinex2snr.py. 
+The python driver is called **rinex2snr.py**. A sample call would be:
 
-A sample call of of the python driver rinex2snr.py would be:
 
 python rinex2snr.py at01 2019 75 66 gbm
 
-required inputs: 
+where: 
 
 * at01 is the station name
 * 2019 is the year 
 * 75 is the day of year (doy)
-* 66 is the snr option type (see the translator code for more information).  
+* 66 is the snr option type (see below for more information).  
 * The last input is the orbit type.
 
 If your station name has 9 characters, the code assumes you are looking for a 
@@ -170,9 +169,9 @@ installed teqc, it will not work.  Example call:  -dec 30 will decimate to 30 se
 The SNR files created by this code are stored in REFL_CODE/YYYY/snr in a subdirectory 
 with your station name on it.
 
-# Usage of quickLook Code
+# Usage of quickLook.py Code
 
-Before using the gnssIR_lomb.py code, I recommend you try quickLook.py first. This allows you
+Before using the **gnssIR_lomb.py** code, I recommend you try **quickLook.py** first. This allows you
 to quickly test various options (elevation angles, frequencies, azimuths) before spending
 the time needed to set up the required inputs for the gnssIR_lomb.py code.
 
@@ -189,10 +188,10 @@ will try to pick up the RINEX data from various archives and translate it for
 you into the correct SNR format. There are stored defaults for analyzing the 
 spectral characteristics of the SNR data.  If you want to override those, run quickLook.py -h 
 
-ALthough the quickLook.py code is simpler than gnssIR_lomb.py, it still needs the environment variables 
-to exist, i.e. ORBITS and REFL_CODE and EXE. 
+ALthough the quickLook.py code is simpler than **gnssIR_lomb.py**, it still needs the environment variables 
+to exist, i.e. ORBITS, REFL_CODE, and EXE. 
 
-Examples:
+**Examples:**
 
 * python quickLook.py gls1 2011 271 99  (this uses defaults, which are usually ok for the cryosphere)
 * python quickLook.py rec1 2008 271 99  (this is an example where the system fails to find this file at UNAVCO)
@@ -201,9 +200,11 @@ this site is much taller than the default, ~16 meters)
 
 # Running the Reflector Height Code (gnssIR_lomb.py) 
 
-* put the gpt_1wa.pickle file in the REFL_CODE/input area. This file is used for the refraction correction.
+put the gpt_1wa.pickle file in the REFL_CODE/input area. This file is used for the refraction correction.
 
-* Input: your snr files need to live in REFL_CODE/YYYY/snr/aaaa, where YYYY is 4 character
+**Inputs**
+
+Your snr files need to live in REFL_CODE/YYYY/snr/aaaa, where YYYY is 4 character
 year and aaaa is station name. The SNR files must use my naming conventions: 
 
   aaaaDDD0.yy.snrnn
@@ -216,17 +217,15 @@ yy is two character year
 nn is a specific kind of snr file (99, 66, and 50 are the most commonly used)
 ```
 
-**Inputs**
-
-This information should be stored in a file called REFL_CODE/input/aaaa, where aaaa is the station name.
+Your analysis strategy should be stored in a file called REFL_CODE/input/aaaa, where aaaa is the station name.
 See [this annotated file](input_smm3_example) for more information.
 
 I have a python script that will make this file for you: 
 
 make_input_file.py  
 
-It requires several inputs, so use the help option. 
-The lat/lon/height does not need to be very precise, as this is only used for the refraction 
+It requires several inputs, so use the help option. The lat/lon/height values do 
+not need to be very precise, as this is only used for the refraction 
 correction. You can enter 0,0,0 if you aren't using that.
 
 **Outputs**
@@ -249,9 +248,10 @@ I use the following conventions to define the different GNSS frequencies:
 302, 306, 307 : Beidou  
  ```
 
-# gnssIR_lomb.py examples
+# gnssIR_lomb.py Examples
 
-Compute RH based entirely on your input instructions  for station p041, year 2020, day of year 105, and SNR format type 99
+Compute RH based entirely on your input instructions for station p041, 
+year 2020, day of year 105, and SNR format type 99
 
   ```sh
   python gnssIR_lomb.py p041 2020 105 99 1 
@@ -286,17 +286,16 @@ nice attribute that the engineers that set up the site tracked **modern** GPS si
 and L5. The signals are in the RINEX files, so you do not have to make a special request. (Warning: This is not
 always the case). Steps to follow to analyze the data from this site:
 
-[The data for LORG are archived at unavco.](https://www.unavco.org/data/gps-gnss/data-access-methods/dai2/app/dai2.html#4Char=LORG) From the UNAVCO site, figure out the start and end date for the data. Convert the month and day to day of year using ymd.py
-Then use rinex2snr.py to pick up the files and convert them.  For 2018, it would be:
+[The data for LORG are archived at unavco.](https://www.unavco.org/data/gps-gnss/data-access-methods/dai2/app/dai2.html#4Char=LORG) From the UNAVCO site, figure out the start and end date for the data. Convert the month and day to day of year using **ymd.py**.  Then use **rinex2snr.py** to pick up the files and convert them.  For 2018, it would be:
 
 ```sh
 python rinex2snr.py lorg 2018 332 99 nav -doy_end 365
 
 ```
 
-Make SNR files for the 2019 data.
+Then go ahead and make SNR files for the 2019 data.
 
-Now look  at the spectral characteristics of one day. [The default for quickLook.py is to look at L1.](LORG/Figure_1.png) 
+Now look at the spectral characteristics of one day. [The default for quickLook.py is to look at L1.](LORG/Figure_1.png) 
 
 ```sh
 python quickLook.py lorg 2018 350 99 
@@ -343,7 +342,7 @@ The second peak is expactly where the L2 peak should be multiplied by F1/F2.
 
 [The L5 signal is pretty nice too.](LORG/Figure_5.png)
 
-Why are the peaks not perfectly alined on the x-axis? Because the ice sheet is not a perfectly flat
+Why are the peaks not perfectly aligned on the x-axis? Because the ice sheet is not a perfectly flat
 reflector. If you want to see what flat really looks like, [find an airport. This is my own personal 
 favorite airport.](LORG/Figure_2_p038.png)
 
@@ -361,7 +360,7 @@ python gnssIR_lomb.py lorg 2018 1 99 0 -doy_end 365
 ```
 
 You can compile and look at the RH results yourself (in REFL_CODE/2018/results/lorg and REFL_CODE/2019/results/lorg)
-plot_results.py compiles the individual RH values and outputs a single RH each day. It uses a median filter
+**plot_results.py** compiles the individual RH values and outputs a single RH each day. It uses a median filter
 to eliminate gross outliers and requires a minimum number of tracks to compute a daily average.
 You choose the value of both of these parameters. For the lorg example, I used this command:
 
