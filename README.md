@@ -290,7 +290,7 @@ nice attribute that the engineers that set up the site tracked **modern** GPS si
 and L5. The signals are in the RINEX files, so you do not have to make a special request. (Warning: This is not
 always the case). Steps to follow to analyze the data from this site:
 
-[The data for LORG are archived at unavco](https://www.unavco.org/data/gps-gnss/data-access-methods/dai2/app/dai2.html#4Char=LORG)  From the link, check out the start and end date. Convert the month and day to day of year using ymd.py
+[The data for LORG are archived at unavco.](https://www.unavco.org/data/gps-gnss/data-access-methods/dai2/app/dai2.html#4Char=LORG) From the UNAVCO site, figure out the start and end date for the data. Convert the month and day to day of year using ymd.py
 Then use rinex2snr.py to pick up the files and convert them.  For 2018, it would be:
 
 ```sh
@@ -300,21 +300,33 @@ python rinex2snr.py lorg 2018 332 99 nav -doy_end 365
 
 Make SNR files for the 2019 data.
 
-Now look  at the spectral characteristics of one day,  e.g.
+Now look  at the spectral characteristics of one day. [The default for quickLook.py is to look at L1.](LORG/Figure_1.png) 
 
 ```sh
 python quickLook.py lorg 2018 350 99 
 ```
-[The default for quickLook.py is to look at L1.](LORG/Figure_1.png) the four quadrants are for the northwest, northeast, 
-southwest, and southeast quadrants around the GPS antenna. All quadrants look reasonable (strong peaks), although
-there is some residual noise at hte low RH values in the NW quadrant. You can eliminate that noise by setting
-[the minimum h1 value explicitly](Figure_1excludeLowRH.png), i.e.
+
+Reflector height is plotted on the x-axis. If you have a nice strong peak 
+in the periodogram (y-axis), that means you have a good RH estimation.  The main ways this code
+decides a peak is good is by requiring a minimum amplitude for the periodogram
+(which you can set). The other was is to set a peak to noise ratio, which is the 
+peak amplitude divided by the mean amplitude over a given region, which for most
+sites is 0.5-6 meters. Why don't we include zero? You cannot reliably measure RH 
+below 0.5.
+
+
+The four quadrants shown are for the northwest, northeast, 
+southwest, and southeast quadrants around the GPS antenna. All quadrants look reasonable (strong peaks in 
+many different satellites), although
+there is some residual noise at hte low RH values in the NW quadrant. 
+You can eliminate that noise by setting
+[the minimum h1 value explicitly](LORG/Figure_1excludeLowRH.png), i.e.
 
 ```sh
 python quickLook.py lorg 2018 350 99  -h1 0.75 
 ```
 
-You can also look at the [L2C satellites](LORG/Figure_2.png)
+You can also look at just the [L2C satellites](LORG/Figure_2.png)
 
 
 ```sh
@@ -322,8 +334,8 @@ python quickLook.py lorg 2018 350 99  -fr 20
 ```
 
 If you are curious what a ["L2P" signal](LORG/Figure_2_nosonice.png)
-looks like for this receiver, specify a non-L2C transmitting satellite
-and set a very low required amplitude such as 1, i.e. 
+looks like for this receiver, and why I do not like it, specify a non-L2C transmitting satellite
+(in this case satellite 2) and set a very low required amplitude such as 1, i.e. 
 
 ```sh
 python quickLook.py lorg 2018 350 99  -fr 2 -sat 2 -amp 1
@@ -334,6 +346,11 @@ the receiver is using both frequencies to retrieve your data, and that shows up 
 The second peak is expactly where the L2 peak should be multiplied by F1/F2.
 
 [The L5 signal is pretty nice too.](LORG/Figure_5.png)
+
+Why are the peaks not perfectly alined on the x-axis? Because the ice sheet is not a perfectly flat
+reflector. If you want to see what flat really looks like, [find an airport. This is my own personal 
+favorite airport.](LORG/Figure_2_p038.png)
+
 
 # Publications
 * There are A LOT of publications about GPS/GNSS interferometric reflectometry.
