@@ -1,7 +1,8 @@
 # Overview Comments on this Repository
 
 The goal of this repository is to help you compute (and evaluate) GNSS 
-based reflectometry parameters. There are three main codes:
+based reflectometry parameters. This method is often called GNSS-IR, or 
+GNSS Interferometric Reflectometry. There are three main codes:
 
 * rinex2snr.py translates RINEX files into SNR files needed for analysis.
 
@@ -225,14 +226,14 @@ It requires several inputs, so use the help option.
 The lat/lon/height does not need to be very precise, as this is only used for the refraction 
 correction. You can enter 0,0,0 if you aren't using that.
 
-* Outputs 
+**Outputs**
 
-Your output files will go in REFL_CODE/YYYY/results/aaaa 
+Your output files will be stored in REFL_CODE/YYYY/results/aaaa 
 
 This is basically a text listing of each satellite arc's reflector height. 
 [Here is a sample output file, with some comments on top](p038_001.txt)
 
-* I use the following conventions to define the different GNSS frequencies:
+I use the following conventions to define the different GNSS frequencies:
 
 ```sh
 1 GPS L1
@@ -247,31 +248,32 @@ This is basically a text listing of each satellite arc's reflector height.
 
 # gnssIR_lomb.py examples
 
-* Compute RH based entirely on your input instructions  for station p041, year 2020, day of year 105, and SNR format type 99
+Compute RH based entirely on your input instructions  for station p041, year 2020, day of year 105, and SNR format type 99
+
   ```sh
   python gnssIR_lomb.py p041 2020 105 99 1 
   ```
 The last input says to make plots.  If you set it to zero, it won't make plots.
 
-* Let's say you want to override your instructions and only look at one frequency:
+Let's say you want to override your instructions and only look at one frequency:
   ```sh
   python gnssIR_lomb.py p041 2020 105 99 1  -fr 20 -amp 10
   ```
 This means only show L2C frequency and use 10 as the amplitude requirement
 
-* Let's say you only want to look at satellite 15
+Let's say you only want to look at satellite 15
   ```sh
   python gnssIR_lomb.py p041 2020 105 99 1  -sat 15 
   ```
-* Once you have the instruction sets up, most people want to analyze an entire dataset. If you wanted
+Once you have the instruction sets up, most people want to analyze an entire dataset. If you wanted
 to analyze an entire year:
   ```sh
   python gnssIR_lomb.py p041 2019 1 99 0 -doy_end 365
   ```
 
-  Note that I have turned off the plots with the zero after the 99 and I 
-  am using the optional doy_end flag. There is also an optional
-  year_end flag that you could use if you had multiple years of data.
+Note that I have turned off the plots with the zero after the 99 and I am using the optional 
+doy_end flag. There is also an optional
+year_end flag that you could use if you had multiple years of data.
 
 
 # Plotting Periodogram Results
@@ -281,12 +283,14 @@ Try out plot_results.py
 I will upload some sample plots soon.
 
 # Cryosphere Example (under development)
-LORG is a very nice example of GNSS-IR. It was installed on the Ross Ice Shelf in November 2018 and was
+LORG is a very nice example for GNSS-IR. It was installed on the Ross Ice Shelf in November 2018 and was
 removed the following year. It is pretty clear in all directions, so there is little to no azimuth restrictions
-needed. It is flat - so I would suggest using most low elevation angles. Steps to follow:
+needed. It is flat - so I would suggest using most low elevation angles. It also has the 
+nice attribute that the engineers that set up the site tracked **modern** GPS signals such as L2C 
+and L5. The signals are in the RINEX files, so you do not have to make a special request. (Warning: This is not
+always the case). Steps to follow to analyze the data from this site:
 
-* [The data are archived at unavco](https://www.unavco.org/data/gps-gnss/data-access-methods/dai2/app/dai2.html#4Char=LORG)  
-From the link, check out the start and end date. Convert the month and day to day of year using ymd.py
+[The data for LORG are archived at unavco](https://www.unavco.org/data/gps-gnss/data-access-methods/dai2/app/dai2.html#4Char=LORG)  From the link, check out the start and end date. Convert the month and day to day of year using ymd.py
 Then use rinex2snr.py to pick up the files and convert them.  For 2018, it would be:
 
 ```sh
@@ -294,16 +298,42 @@ python rinex2snr.py lorg 2018 332 99 nav -doy_end 365
 
 ```
 
-Do the same for the 2019 data.
+Make SNR files for the 2019 data.
 
-* Now look  at the spectral characteristics of one day,  e.g.
+Now look  at the spectral characteristics of one day,  e.g.
 
 ```sh
 python quickLook.py lorg 2018 350 99 
 ```
+[The default for quickLook.py is to look at L1.](LORG/Figure_1.png) the four quadrants are for the northwest, northeast, 
+southwest, and southeast quadrants around the GPS antenna. All quadrants look reasonable (strong peaks), although
+there is some residual noise at hte low RH values in the NW quadrant. You can eliminate that noise by setting
+[the minimum h1 value explicitly](Figure_1excludeLowRH.png), i.e.
 
-(I will post some sample plots)
+```sh
+python quickLook.py lorg 2018 350 99  -h1 0.75 
+```
 
+You can also look at the [L2C satellites](LORG/Figure_2.png)
+
+
+```sh
+python quickLook.py lorg 2018 350 99  -fr 20
+```
+
+If you are curious what a ["L2P" signal](LORG/Figure_2_nosonice.png)
+looks like for this receiver, specify a non-L2C transmitting satellite
+and set a very low required amplitude such as 1, i.e. 
+
+```sh
+python quickLook.py lorg 2018 350 99  -fr 2 -sat 2 -amp 1
+```
+
+Note that there are two peaks - and this does not mean there are really two reflectors. It means
+the receiver is using both frequencies to retrieve your data, and that shows up in the SNR data.
+The second peak is expactly where the L2 peak should be multiplied by F1/F2.
+
+[The L5 signal is pretty nice too.](LORG/Figure_5.png)
 
 # Publications
 * There are A LOT of publications about GPS/GNSS interferometric reflectometry.
