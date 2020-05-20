@@ -167,10 +167,6 @@ else:
     print('results will not be overwritten')
 
 
-# You should not use the peak periodogram value unless it is significant. Using a 
-# peak to noise value is one way of defining that significance (not the only way).
-# I often use 3, but for now it is set to 2.7. For snow, I would suggest 3.5
-PkNoise = 2.7
 # this defines the minimum number of points in an arc.  This depends entirely on the sampling
 # rate for the receiver, so you should not assume this value is relevant to your case.
 minNumPts = 20 
@@ -185,8 +181,15 @@ dmjd, fracS = g.mjd(year,month,day,0,0,0)
 
 # retrieve the inputs needed to window the data and compute Lomb Scargle Periodograms 
 # changed long to lon
-lat,lon, ht,elval,azval,freqs,reqAmp,polyV,desiredP,Hlimits,ediff,pele,NReg = g.read_inputs(station) 
-print(reqAmp)
+lat,lon, ht,elval,azval,freqs,reqAmp,polyV,desiredP,Hlimits,ediff,pele,NReg,PkNoise = g.read_inputs(station) 
+
+# You should not use the peak periodogram value unless it is significant. Using a 
+# peak to noise value is one way of defining that significance (not the only way).
+# I often use 3, but for now it is set to 2.7. For snow, I would suggest 3.5
+if PkNoise == 0:
+    PkNoise = 2.7
+    print('You have not set a peak 2 noise ratio in the input file for station ', station)
+    print('Default value being used: ', PkNoise)
 
 # You can have peaks in two regions, and you may only be interested in one of them.
 # You can refine the region you care about here.
@@ -315,7 +318,7 @@ for year in year_list:
                             iAzim = int(avgAzim)
                             if (delT < delTmax) & (eminObs < (e1 + ediff)) & (emaxObs > (e2 - ediff)) & (maxAmp > reqAmp[ct]) & (maxAmp/Noise > PkNoise):
                                 fout.write(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} {8:6.2f} {9:4.0f} {10:3.0f} {11:2.0f} {12:8.5f} {13:6.2f} {14:7.2f} {15:12.6f} {16:1.0f} \n".format(year,doy,maxF,satNu, UTCtime, avgAzim,maxAmp,eminObs,emaxObs,Nv, f,riseSet, Edot2, maxAmp/Noise, delT, MJD,irefr))
-                                print('SUCCESS Azimuth {0:3.0f} Satellite {1:3.0f} RH {2:7.3f} meters PkNoise {3:6.1f} '.format( iAzim,satNu,maxF,maxAmp/Noise))
+                                print('SUCCESS Azimuth {0:3.0f} Sat {1:3.0f} RH {2:7.3f} m PkNoise {3:4.1f} Fr{4:3.0f}'.format(iAzim,satNu,maxF,maxAmp/Noise,f))
                                 gj +=1
                                 g.update_plot(plt_screen,x,y,px,pz)
                             else:

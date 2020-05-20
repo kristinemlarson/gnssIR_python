@@ -4,11 +4,11 @@ The goal of this repository is to help you compute (and evaluate) GNSS
 based reflectometry parameters. This method is often called GNSS-IR, or 
 GNSS Interferometric Reflectometry. There are three main codes:
 
-* rinex2snr.py translates RINEX files into SNR files needed for analysis.
+* **rinex2snr.py** translates RINEX files into SNR files needed for analysis.
 
-* gnssIR_lomb.py computes reflector heights (RH) from GNSS data.
+* **gnssIR_lomb.py** computes reflector heights (RH) from GNSS data.
 
-* quickLook.py gives you a quick (visual) assessment of a file without dealing
+* **quickLook.py** gives you a quick (visual) assessment of a file without dealing
 with the details associated with gnssIR_lomb.py.
 
 This code requires python3. The library dependencies 
@@ -32,6 +32,9 @@ For many applications the antenna offsets do not matter. For users who want to u
 GPS signals as an ITRF-defined tide gauge, the antenna calibrations will be needed.
 
 # Recent Updates
+
+May 2020
+Added more documentation and examples. Allow peak2noise as standard input for gnssIR_lomb.py
 
 April 2020
 
@@ -275,15 +278,8 @@ Note that I have turned off the plots with the zero after the 99 and I am using 
 doy_end flag. There is also an optional
 year_end flag that you could use if you had multiple years of data.
 
-
-# Plotting Periodogram Results
-
-Try out plot_results.py
-
-I will upload some sample plots soon.
-
-# Cryosphere Example (under development)
-LORG is a very nice example for GNSS-IR. It was installed on the Ross Ice Shelf in November 2018 and was
+# Cryosphere Example
+LORG is a very good site for GNSS-IR. The GPS equipment was installed on the Ross Ice Shelf in November 2018 and was
 removed the following year. It is pretty clear in all directions, so there is little to no azimuth restrictions
 needed. It is flat - so I would suggest using most low elevation angles. It also has the 
 nice attribute that the engineers that set up the site tracked **modern** GPS signals such as L2C 
@@ -350,6 +346,31 @@ The second peak is expactly where the L2 peak should be multiplied by F1/F2.
 Why are the peaks not perfectly alined on the x-axis? Because the ice sheet is not a perfectly flat
 reflector. If you want to see what flat really looks like, [find an airport. This is my own personal 
 favorite airport.](LORG/Figure_2_p038.png)
+
+To retrieve all the results for LORG you would use **gnssIR_lomb.py**. You typically will not be looking
+at figures when you do that. And you need to have picked an analysis strategy, i.e. which frequencies,
+which elevation angles, and RH restrictions. You can start out using mine, which should be stored
+in the input directory in the filename [lorg](LORG/lorg)
+
+```sh
+python gnssIR_lomb.py lorg 2019 1 99 0 -doy_end 365 
+
+```
+```sh
+python gnssIR_lomb.py lorg 2018 1 99 0 -doy_end 365 
+```
+
+You can compile and look at the RH results yourself (in REFL_CODE/2018/results/lorg and REFL_CODE/2019/results/lorg)
+plot_results.py compiles the individual RH values and outputs a single RH each day. It uses a median filter
+to eliminate gross outliers and requires a minimum number of tracks to compute a daily average.
+You choose the value of both of these parameters. For the lorg example, I used this command:
+
+```sh
+python plot_results.py lorg 2018 2019 0.3 50 -txtfile lorg.txt
+```
+
+Which means 50 tracks are required each day and the median filter value was 0.3 meters.  It makes  
+[a RH plot](LORG/lorg_RH.png) and if requested, [a text file](LORG/lorg.txt).
 
 
 # Publications

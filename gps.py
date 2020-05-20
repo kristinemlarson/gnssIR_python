@@ -141,9 +141,12 @@ def read_inputs(station):
     given station name, read LSP parameters for strip_snrfile.py
     author: Kristine M Larson
     19sep22 change name of longitude variable, add error messages
+    20may20 add peak to noise as an returned variable
 
     """
 #   directory name is currently defined using REFL_CODE
+    peak2noise = 0 # assume it is not set here but in the main code,
+    # which is how it used to be
     xdir = os.environ['REFL_CODE']
     fname = xdir + '/input/' + station
     print('default inputs should be in this file: ', fname)
@@ -219,6 +222,9 @@ def read_inputs(station):
                         ns1 = float(nfo[5])
                         ns2 = float(nfo[6])
                         noiseRegion = [ns1,ns2]
+                        # this means peak to noise is on the line too
+                        if np > 7:
+                            peak2noise = float(nfo[7])
                         
         f.close
     except:
@@ -230,7 +236,7 @@ def read_inputs(station):
         print('your site requires RH > 6 meters, please adjust using -h1 and -h2. Exiting now.')
         sys.exit()
 
-    return lat,lon,h,elang, azval, freqs, reqAmp,polyFit, desiredP, Hlimits, ediff, pele,noiseRegion
+    return lat,lon,h,elang, azval, freqs, reqAmp,polyFit, desiredP, Hlimits, ediff, pele,noiseRegion, peak2noise
 
 def satclock(week, epoch, prn, closest_ephem):
     """

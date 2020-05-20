@@ -1,0 +1,17 @@
+# comment lines start with a #
+# inputs to lomb scargle code
+# lat long (degrees) ellipsoidal ht (in meters)
+# LORNE APS - using a new receiver never heard of.
+-78.1823 170.0342 -7.50
+# elmin elmax and optionally emin/emax for polyfit
+5 25 5 30
+# azimuth ranges - this basically takes everything
+0 45 45 90 90 135  135 180 180 225 225 270  270 315 315 360
+# Use frquencies 1, 20, and 5 which means L1, L2C, and L5
+# the minimum amplitudes for those frequencies are 15 for each
+1 15  20 15 5 15
+# default polynomial value for DC component, precision(5mm), 
+#  minH, maxH  (0.5 to 6 meters)
+# ediff (2 degrees) noise region (1-6 meters)
+# peak2noise is set to 3.5 
+4 0.005 0.5 6 2 1 6  3.5
