@@ -13,7 +13,8 @@ with the details associated with gnssIR_lomb.py.
 This code requires python3. The library dependencies 
 are provided in the pyproject.toml file (I am using a package manager called poetry). 
 
-RH estimation depends on satellite elevation angle, not time. This can
+The primary output of the code is Reflector Height (RH). RH estimation 
+depends on the satellite elevation angle, not time. This can
 cause complications for tides where large RH changes occur and time matters.
 Data arcs should not cross midnite because you can end up using data that are 
 as much as 24 hours apart to compute a single RH.
@@ -24,10 +25,10 @@ Again, this effect can be ignored for snow/ice reflections.
 A simple refraction error correction is available. You can turn
 it on/off by setting the RefractionCorrection variable.
 
-This code does not correct for antenna phase centers. This is certainly part
+This code does not correct for antenna phase centers. This is part
 of the reason that L1 will give a different answer than L2, for some sites. 
-For many applications this really does not matter.  For the ITRF tide gauge, the 
-antenna calibration will be needed.
+For many applications the antenna offsets do not matter. For users who want to use 
+GPS signals as an ITRF-defined tide gauge, the antenna calibrations will be needed.
 
 # Recent Updates
 
@@ -211,14 +212,14 @@ yy is two character year
 nn is a specific kind of snr file (99, 66, and 50 are the most commonly used)
 ```
 
-* Inputs 
+**Inputs**
 
 This information should be stored in a file called REFL_CODE/input/aaaa, where aaaa is the station name.
 See [this annotated file](input_smm3_example) for more information.
 
 I have a python script that will make this file for you: 
 
-make_input_file.py. 
+make_input_file.py  
 
 It requires several inputs, so use the help option. 
 The lat/lon/height does not need to be very precise, as this is only used for the refraction 
