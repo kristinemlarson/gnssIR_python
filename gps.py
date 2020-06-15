@@ -19,8 +19,8 @@ import wget
 
 import read_snr_files as snr
 
-# i think these should be in a class ...
 # various numbers you need in the GNSS world
+# mostly frequencies and wavelengths
 class constants:
     c= 299792458 # m/sec
 #   GPS frequencies and wavelengths
@@ -52,7 +52,7 @@ class constants:
     wbL7 = c/(bei_L7*1e6)
     wbL6 = c/(bei_L6*1e6)
 
-#   Earth rotation rate used in Nav message
+#   Earth rotation rate used in GPS Nav message
     omegaEarth = 7.2921151467E-5 #	%rad/sec
     mu = 3.986005e14 # Earth GM value
 
@@ -611,17 +611,32 @@ def rinex_cddis(station, year, month, day):
     author: kristine larson
     inputs: station name, year, month, day
     picks up a hatanaka RINEX file from CDDIS - converts to o
+
+    June 2020, changed  to use secure ftp
+    if day is zero, then month is assumed to be doy
+    
     """
     exedir = os.environ['EXE']
     crnxpath = exedir + '/CRX2RNX'
-    doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
+    if (day == 0):
+        doy = month
+        year, month, day, cyyyy,cdoy, YMD = ydoy2useful(year,doy)
+        cyy = cyyyy[2:4]
+    else:
+        doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
+
     cddis = 'ftp://ftp.cddis.eosdis.nasa.gov'
     oname,fname = rinex_name(station, year, month, day)
     file1 = oname + '.Z'
     url = cddis + '/pub/gnss/data/daily/' + cyyyy + '/' + cdoy + '/' + cyy + 'o/' + file1
 
+    # try new way using secure ftp
+    dir_secure = '/pub/gnss/data/daily/' + cyyyy + '/' + cdoy + '/' + cyy + 'o/'
+    file_secure = file1
+
     try:
-        wget.download(url,file1)
+        #wget.download(url,file1)
+        cddis_download(file_secure,dir_secure)
         subprocess.call(['uncompress', file1])
         print('successful download from CDDIS')
     except:
@@ -740,10 +755,18 @@ def getsp3file(year,month,day):
     inputs are year, month, and day 
     modified in 2019 to use wget 
     returns the name of the file and its directory
+
+    20jun14 - add CDDIS secure ftp
     """
     name, fdir = sp3_name(year,month,day,'igs') 
     print(name,fdir)
     cddis = 'ftp://cddis.nasa.gov'
+
+
+    # try new way using secure ftp
+    #dir_secure = '/pub/gnss/data/daily/' + cyyyy + '/' + cdoy + '/' + cyy + 'o/'
+    #file_secure = file1
+
     if (os.path.isfile(fdir + '/' + name ) == True):
         print('sp3file already exists')
     else:
@@ -751,9 +774,12 @@ def getsp3file(year,month,day):
         file1 = name + '.Z'
         filename1 = '/gnss/products/' + str(gps_week) + '/' + file1
         url = cddis + filename1 
-        print(url)
+        # new secure ftp way
+        sec_dir = '/gnss/products/' + str(gps_week) + '/'
+        sec_file = file1
         try:
-            wget.download(url,file1)
+            #wget.download(url,file1)
+            cddis_download(sec_file, sec_dir) 
             subprocess.call(['uncompress',file1])
             store_orbitfile(name,year,'sp3') 
         except:
@@ -771,6 +797,8 @@ def getsp3file_flex(year,month,day,pCtr):
     pCtr, the processing center  (3 characters)
     returns the name of the file and its directory
     20apr15 check for xz compression
+
+    20jun14 add CDDIS secure ftp
     """
     # returns name and the directory
     name, fdir = sp3_name(year,month,day,pCtr) 
@@ -780,6 +808,10 @@ def getsp3file_flex(year,month,day,pCtr):
     name = pCtr + name[3:8] + '.sp3'
     foundit = False
     ofile = fdir + '/' + name
+    # new CDDIS way
+    sec_dir = '/gnss/products/' + str(gps_week) + '/'
+    sec_file = file1
+
     if (os.path.isfile(ofile ) == True):
         print('sp3file already exists online')
         foundit = True
@@ -791,9 +823,9 @@ def getsp3file_flex(year,month,day,pCtr):
         filename1 = '/gnss/products/' + str(gps_week) + '/' + file1
         cddis = 'ftp://cddis.nasa.gov'
         url = cddis + filename1 
-        print(url)
         try:
-            wget.download(url,file1)
+            cddis_download(sec_file, sec_dir) 
+            #wget.download(url,file1)
             subprocess.call(['uncompress',file1])
             store_orbitfile(name,year,'sp3') 
             foundit = True
@@ -812,7 +844,10 @@ def getsp3file_mgex(year,month,day,pCtr):
     right now it checks for the "new" name, but in reality, it 
     assumes you are going to use the GFZ product
     20apr15  check for xz compression
+
+    20jun14 add CDDIS secure ftp. what a nightmare
     """
+    foundit = False
     # this returns sp3 orbit product name
     name, fdir = sp3_name(year,month,day,pCtr) 
     gps_week = name[3:7]
@@ -821,15 +856,14 @@ def getsp3file_mgex(year,month,day,pCtr):
     # get the sp3 filename for the new format, and GFZ
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     file2 = 'GFZ0MGXRAP_' + cyyyy + cdoy + '0000_01D_05M_ORB.SP3.gz'
-    #print(file2)
     name2 = file2[:-3] 
-    foundit = False
 
-    # where the files live at CDDIS
+    # where the files used to live at CDDIS
     cddis = 'ftp://cddis.nasa.gov'
     dirlocation = '/gps/products/mgex/' + str(gps_week) + '/'
-    url = cddis + dirlocation  + file1; print(url)
-    url2 = cddis + dirlocation + file2; print(url2)
+    url = cddis + dirlocation  + file1; 
+    url2 = cddis + dirlocation + file2; 
+    # this is the default setting - no file exists
     mgex = 0
     n1 = os.path.isfile(fdir + '/' + name)
     n1c = os.path.isfile(fdir + '/' + name + '.xz')
@@ -855,34 +889,44 @@ def getsp3file_mgex(year,month,day,pCtr):
         fx =  fdir + '/' + name2 + '.xz'
         subprocess.call(['unxz', fx])
 
-# there has to be a better way ... but for now  this works
-# only try to download if neither exists
     if (mgex == 2):
         name = name2
     if (mgex == 1):
         name = file1[:-2]
+# there has to be a better way ... but for now  this works
+# only try to download if neither exists
+
+# new using secure ftp
+# this is the directory
+    secure_dir = '/gps/products/mgex/' + str(gps_week) + '/'
+    print(secure_dir,mgex,file1)
     if (mgex == 0):
+        secure_file = file1
+        name = file1[:-2]
+        print('first file input',secure_file)
         try:
-            wget.download(url,file1)
-            subprocess.call(['uncompress', file1])
-            name = file1[:-2]
-        # store the file in its proper place
-            store_orbitfile(name,year,'sp3') 
-            foundit = True
-        except:
-            subprocess.call(['rm', '-f',file1])
-            name = file2[:-3]
-        # try the second file
-            try:
-                wget.download(url2,file2)
-                subprocess.call(['gunzip', file2])
-                # name to return
-                name = file2[:-3]
-            # store the file in its proper place
+            # secure filename
+            cddis_download(secure_file, secure_dir)
+            if os.path.isfile(file1):
+                subprocess.call(['uncompress', file1])
                 store_orbitfile(name,year,'sp3') 
                 foundit = True
+        except:
+            print('did not find', file1)
+        if not foundit:
+            name = file2[:-3]
+            # new secure filename 
+            secure_file = file2
+            print('next secure file to check',secure_file)
+            try:
+                cddis_download(secure_file, secure_dir)
+                if os.path.isfile(secure_file):
+                    subprocess.call(['gunzip', file2])
+                    store_orbitfile(name,year,'sp3') 
+                    foundit = True
             except:
-                print('some kind of problem downloading MGEX sp3 file')
+                print('did not find',file2)
+
 
     return name, fdir, foundit
 
@@ -2870,6 +2914,8 @@ def codclock(year,month,day):
     """
     author: kristine lasron
     pick up 5 second clocks from the bernese group...
+
+    not using this - so have not added CDDIS secure ftp
     """
     n,nn=igsname(year,month,day)
     gps_week = n[3:7]
@@ -3035,6 +3081,8 @@ def navfile_retrieve(navfile,cyyyy,cyy,cdoy):
     choice. Now will use CDDIS first, then SOPAC, 
     I have removed unavco as they do not seem to provide global nav files
     If they do, I do not know where they are kept.
+
+    20jun14 added secure ftp for CDDIS
     """
     FileExists = True
     unavco= 'ftp://data-out.unavco.org'
@@ -3055,9 +3103,11 @@ def navfile_retrieve(navfile,cyyyy,cyy,cdoy):
     url_cddis = cddis + '/gps/data/daily/' + cyyyy + '/' + cdoy + '/' +cyy + 'n/' + navfile_cddis
     print(url_cddis)
     try:
-        print('try cddis first')
-        wget.download(url_cddis,navfile_compressed)
-        subprocess.call(['uncompress',navfile_compressed])
+        # use a function instead
+        get_cddis_navfile(navfile,cyyyy,cyy,cdoy) 
+        #print('try cddis first')
+        #wget.download(url_cddis,navfile_compressed)
+        #subprocess.call(['uncompress',navfile_compressed])
         print('success at cddis')
     except:
         print('no success at cddis')
@@ -3505,8 +3555,9 @@ def go_get_rinex(station,year,month,day,receiverrate):
 #
 def cddis_rinex3(station9ch, year, doy,srate,orbtype):
     """
-    feeble attempt to download Rinex3 files from CDDIS
+    attempt to download Rinex3 files from CDDIS
     and then translate them to something useful (Rinex 2.11)
+
     inputs: 9 character station name (should be all capitals)
     year, day of year (doy) and sample rate (in seconds)
     station9ch can be lower or upper case - code changes it to upper case
@@ -3525,6 +3576,7 @@ def cddis_rinex3(station9ch, year, doy,srate,orbtype):
     cyyyy = str(year)
 
     f = cyyyy + '/' + cdoy + '/' + cyy + 'd'  + '/'
+    new_way_f = '/gnss/data/daily/' + f
     ff = station9ch.upper() +   '_R_' + cyyyy + cdoy + '0000_01D_' + str(srate) + 'S_MO'
     smallff = station9ch[0:4].lower() + cdoy + '0.' + cyy + 'o'
     ending = '.crx' # compressed rinex3 ending
@@ -3549,6 +3601,9 @@ def cddis_rinex3(station9ch, year, doy,srate,orbtype):
         print('rinex3 file already exists')
     else:
         try:
+            #wget.download(url,gzfilename)
+            # using new protocol
+            cddis_download(gzfilename,new_way_f)
             wget.download(url,gzfilename)
             # unzip and Hatanaka decompress
             subprocess.call(['gunzip',gzfilename])
@@ -3574,7 +3629,9 @@ def cddis_rinex3(station9ch, year, doy,srate,orbtype):
 def bkg_rinex3(station9ch, year, doy,srate):
     """
     download rinex 3 from BKG
-    srate is sample rate
+    inputs: 9 character station name, year, day of year and srate  
+    is sample rate in seconds
+    note: not sure this works
     """
     cdoy = '{:03d}'.format(doy)
     cyy = '{:02d}'.format(year-2000)
@@ -3591,8 +3648,8 @@ def bkg_rinex3(station9ch, year, doy,srate):
 def rinex3_rinex2(gzfilename,v2_filename):
     """
     input gzfile name
-    gunzip, de-hatanaka, then convert to 2.11
-    this doesn't work yet
+    gunzip, de-hatanaka, then convert to RINEX 2.11
+    WARNING: this doesn't work yet
     """
     fexists = False
     gexe = gfz_version()
@@ -3647,7 +3704,7 @@ def gfz_version():
 
 def gpsSNR_version():
     """
-    return string with location of gpsSNR exectuable
+    return string with location of gpsSNR executable
     """
     gpse = '/Users/kristine/bin/gpsSNR.e'
     # heroku version should be in the main area
@@ -3657,7 +3714,7 @@ def gpsSNR_version():
 
 def gnssSNR_version():
     """
-    return string with location of gnssSNR exectuable
+    return string with location of gnssSNR executable
     """
     gpse = '/Users/kristine/bin/gnssSNR.e'
     # heroku version should be in the main area
@@ -3667,7 +3724,8 @@ def gnssSNR_version():
 
 def teqc_version():
     """
-    return string with location of teqcexectuable
+    return string with location of teqcexecutable
+    author: kristine larson
     """
     gpse = '/Users/kristine/bin/teqc'
     # heroku version should be in the main area
@@ -3678,7 +3736,7 @@ def teqc_version():
 def snr_exist(station,year,doy,snrEnd):
     """
     given station name, year, doy, snr type
-    returns whether snr file exists  online
+    returns whether snr file exists on your machine
     author: Kristine Larson
 
     """
@@ -3700,15 +3758,22 @@ def snr_exist(station,year,doy,snrEnd):
 
 def unavco_rinex3(station9ch, year, doy,srate,orbtype):
     """
-    feeble attempt to download Rinex3 files from CDDIS
+    attempt to download Rinex3 files from UNAVCO
     and then translate them to something useful (Rinex 2.11)
-    inputs: 9 character station name (should be all capitals)
-    year, day of year (doy) and sample rate (in seconds)
-    station9ch can be lower or upper case - code changes it to upper case
+    inputs: 9 character station name (can be upper or lower, as code will change to all 
+    uppercase)
 
-    sending orbit type so that if nav file is used, no point writing out the non-GPS data
+    year, day of year (doy) and sample rate (in seconds)
+
+    orbtype - nav, sp3 etc
+
+    if nav file orbtype is used, no point writing out the non-GPS data
 
     returns file existence boolean and name of the RINEX 3 file (so it can be cleaned up)
+
+
+    warning - i do not write out the L2P data - only the good L2C signals.
+
     author: kristine larson
     """
     fexists = False 
@@ -3738,7 +3803,7 @@ def unavco_rinex3(station9ch, year, doy,srate,orbtype):
         # added this bevcause weird Glonass data were making teqc unhappy
         gobblygook = 'G:S1C,S2X,S2L,S2S,S5'
     else:
-    # I hate S2W 
+    # I hate S2W  - so it is not written out
         gobblygook = 'G:S1C,S2X,S2L,S2S,S5+R:S1P,S1C,S2P,S2C+E:S1,S5,S6,S7,S8'
     print(gobblygook)
     if os.path.isfile(rfilename):
@@ -3772,22 +3837,53 @@ def get_cddis_navfile(navfile,cyyyy,cyy,cdoy):
     """
     kristine larson
     inputs navfile name with character string verisons of year, 2ch year and doy
+    tries to download from CDDIS archive
+
+    20jun11, implemented new CDDIS security requirements
     """
+    # ths old way
     # just in case you sent it the navfile with auto instead of brdc
     cddisfile = 'brdc' + navfile[4:] + '.Z'
     cddis = 'ftp://cddis.nasa.gov'
     # navfile will continue to be called auto
     navfile_compressed = cddisfile
     url_cddis = cddis + '/gps/data/daily/' + cyyyy + '/' + cdoy + '/' +cyy + 'n/' + navfile_compressed
-    print(url_cddis)
+    #print(url_cddis)
+
+    # new way
+    cddisfile = 'brdc' + cdoy + '0.' +cyy  +'n'
+    navfile_compressed = cddisfile + '.Z'
+    # where the file should be at CDDIS ....
+    mdir = '/gps/data/daily/' + cyyyy + '/' + cdoy + '/' +cyy + 'n/'
+
     try:
-        print('try cddis for navfile')
-        wget.download(url_cddis,navfile_compressed)
+        #wget.download(url_cddis,navfile_compressed)
+        cddis_download(navfile_compressed,mdir)
         subprocess.call(['uncompress',navfile_compressed])
         print('success at cddis')
+        subprocess.call(['mv',cddisfile,navfile])
     except:
-        print('no success ')
-    navname = navfile
-    return navname
+        print('no success at cddis')
+    return navfile
 
 
+
+def cddis_download(filename, directory):
+    """
+    https://cddis.nasa.gov/Data_and_Derived_Products/CDDIS_Archive_Access.html
+    attempt to use more secure download protocol that is CDDIS compliant
+
+    input: filename and directory (without leading location)
+
+    this will replace using wget.download when CDDIS turns off anonymous ftp
+
+    was supposed to returns whether file was created but now it just returns true
+
+
+    """
+    filename = 'ftps://gdc.cddis.eosdis.nasa.gov' + directory + filename 
+    callit = ['wget', '--ftp-user','anonymous','--ftp-password', 'kristine@colorado.edu', filename]
+    print(callit,filename)
+    #print(filename)
+    subprocess.call(callit)
+    return True 

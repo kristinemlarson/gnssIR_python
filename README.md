@@ -1,8 +1,8 @@
 # Overview Comments on this Repository
 
 The goal of this repository is to help you compute (and evaluate) GNSS 
-based reflectometry parameters. This method is often called GNSS-IR, or 
-GNSS Interferometric Reflectometry. There are three main codes:
+based reflectometry parameters using geodetic data. This method is often 
+called GNSS-IR, or GNSS Interferometric Reflectometry. There are three main codes:
 
 * **rinex2snr.py** translates RINEX files into SNR files needed for analysis.
 
@@ -32,6 +32,10 @@ For many applications the antenna offsets do not matter. For users who want to u
 GPS signals as an ITRF-defined tide gauge, the antenna calibrations will be needed.
 
 # Recent Updates
+
+June 2020
+Changed access to CDDIS archive to be secure ftp capable, per their instructions
+https://cddis.nasa.gov/Data_and_Derived_Products/CDDIS_Archive_Access.html
 
 May 2020
 Added more documentation and examples. Allow peak2noise as standard input for gnssIR_lomb.py
@@ -369,7 +373,11 @@ python plot_results.py lorg 2018 2019 0.3 50 -txtfile lorg.txt
 ```
 
 Which means 50 tracks are required each day and the median filter value was 0.3 meters.  It makes  
-[a RH plot](LORG/lorg_RH.png) and if requested, [a text file](LORG/lorg.txt).
+[a RH plot](LORG/lorg_RH.png) and if requested, [a text file](LORG/lorg.txt). If you look at the output
+file of results you will see that many more than 50 values are made per day - so I could have been 
+a little more retrict.  Similarly with 0.3 meters. I certainly do not discourage you from looking at the 
+results for your site and making site-specific decisions. At this site I was able to use multiple frequencies.
+The observation restriction would definitely depend on how many frequencies you had available.
 
 
 # Publications
