@@ -3686,7 +3686,8 @@ def hatanaka_version():
     """
     return string with location of hatanaka executable
     """
-    hatanakav = '/Users/kristine/bin/CRX2RNX'
+    exedir = os.environ['EXE']
+    hatanakav = exedir + '/CRX2RNX'
     # heroku version should be in the main area
     if not os.path.exists(hatanakav):
         hatanakav = './CRX2RNX'
@@ -3696,7 +3697,8 @@ def gfz_version():
     """
     return string with location of gfzrnx executable
     """
-    gfzv = '/Users/kristine/bin/gfzrnx'
+    exedir = os.environ['EXE']
+    gfzv = exedir + '/gfzrnx'
     # heroku version should be in the main area
     if not os.path.exists(gfzv):
         gfzv = './gfzrnx'
@@ -3706,7 +3708,8 @@ def gpsSNR_version():
     """
     return string with location of gpsSNR executable
     """
-    gpse = '/Users/kristine/bin/gpsSNR.e'
+    exedir = os.environ['EXE']
+    gpse = exedir + '/gpsSNR.e'
     # heroku version should be in the main area
     if not os.path.exists(gpse):
         gpse = './gpsSNR.e'
@@ -3716,7 +3719,8 @@ def gnssSNR_version():
     """
     return string with location of gnssSNR executable
     """
-    gpse = '/Users/kristine/bin/gnssSNR.e'
+    exedir = os.environ['EXE']
+    gpse = exedir + '/gnssSNR.e'
     # heroku version should be in the main area
     if not os.path.exists(gpse):
         gpse = './gnssSNR.e'
@@ -3727,7 +3731,8 @@ def teqc_version():
     return string with location of teqcexecutable
     author: kristine larson
     """
-    gpse = '/Users/kristine/bin/teqc'
+    exedir = os.environ['EXE']
+    gpse = exedir + '/teqc'
     # heroku version should be in the main area
     if not os.path.exists(gpse):
         gpse = './teqc'
