@@ -638,10 +638,13 @@ def rinex_cddis(station, year, month, day):
         #wget.download(url,file1)
         cddis_download(file_secure,dir_secure)
         subprocess.call(['uncompress', file1])
-        print('successful download from CDDIS')
     except:
-        print('file not found at CDDIS',file1)
+        print('some issue at CDDIS',file1)
         subprocess.call(['rm', '-f',file1])
+    if os.path.exists(oname):
+        print('successful RINEX 2.11 download from CDDIS')
+    else:
+        print('unsuccessful RINEX 2.11 download from CDDIS')
 
 def rinex_nz(station, year, month, day):
     """
@@ -846,16 +849,28 @@ def getsp3file_mgex(year,month,day,pCtr):
     20apr15  check for xz compression
 
     20jun14 add CDDIS secure ftp. what a nightmare
+    20jun25 add Shanghai GNSS orbits - as they are available sooner than GFZ
+    20jun25 added French and JAXA orbits
     """
     foundit = False
     # this returns sp3 orbit product name
     name, fdir = sp3_name(year,month,day,pCtr) 
     gps_week = name[3:7]
+    print('GPS week', gps_week)
     file1 = name + '.Z'
 
     # get the sp3 filename for the new format, and GFZ
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
-    file2 = 'GFZ0MGXRAP_' + cyyyy + cdoy + '0000_01D_05M_ORB.SP3.gz'
+    if pCtr == 'gbm':
+        file2 = 'GFZ0MGXRAP_' + cyyyy + cdoy + '0000_01D_05M_ORB.SP3.gz'
+        # french
+    if pCtr == 'grg':
+        file2 = 'GRG0MGXFIN_' + cyyyy + cdoy + '0000_01D_15M_ORB.SP3.gz'
+    if pCtr == 'sha':
+        file2 = 'SHA0MGXRAP_' + cyyyy + cdoy + '0000_01D_15M_ORB.SP3.gz'
+    # try out JAXA - should have GPS and glonass
+    if pCtr == 'jax':
+        file2 = 'JAX0MGXFIN_' + cyyyy + cdoy + '0000_01D_05M_ORB.SP3.gz'
     name2 = file2[:-3] 
 
     # where the files used to live at CDDIS
@@ -899,20 +914,25 @@ def getsp3file_mgex(year,month,day,pCtr):
 # new using secure ftp
 # this is the directory
     secure_dir = '/gps/products/mgex/' + str(gps_week) + '/'
-    print(secure_dir,mgex,file1)
+    #print(secure_dir,mgex,file1)
     if (mgex == 0):
         secure_file = file1
         name = file1[:-2]
         print('first file input',secure_file)
-        try:
+        
+#https://cddis.nasa.gov/Data_and_Derived_Products/GNSS/gnss_mgex_products.html
+# CDDIS claims the old way stopped at GPS week 1945
+        if (int(gps_week) > 1944):
+            try:
             # secure filename
-            cddis_download(secure_file, secure_dir)
-            if os.path.isfile(file1):
-                subprocess.call(['uncompress', file1])
-                store_orbitfile(name,year,'sp3') 
-                foundit = True
-        except:
-            print('did not find', file1)
+                cddis_download(secure_file, secure_dir)
+                if os.path.isfile(file1):
+                    subprocess.call(['uncompress', file1])
+                    store_orbitfile(name,year,'sp3') ; foundit = True
+            except:
+                print('did not find', file1)
+        else:
+            print('will only use the long orbit name')
         if not foundit:
             name = file2[:-3]
             # new secure filename 
@@ -3401,28 +3421,45 @@ def get_orbits_setexe(year,month,day,orbtype):
         f,orbdir,foundit=getsp3file_mgex(year,month,day,'gbm')
         snrexe = gnssSNR_version()
         warn_and_exit(snrexe)
-    if orbtype == 'sp3':
+    elif (orbtype == 'sha'):
+        # SHANGHAI multi gnss
+        f,orbdir,foundit=getsp3file_mgex(year,month,day,'sha')
+        snrexe = gnssSNR_version()
+        warn_and_exit(snrexe)
+    elif (orbtype == 'grg'):
+        # French multi gnss, but not Beidou
+        f,orbdir,foundit=getsp3file_mgex(year,month,day,'grg')
+        snrexe = gnssSNR_version()
+        warn_and_exit(snrexe)
+    elif (orbtype == 'sp3'):
         print('uses default IGS orbits, so only GPS ?')
         f,orbdir,foundit=getsp3file_flex(year,month,day,'igs')
         snrexe = gnssSNR_version()
         warn_and_exit(snrexe)
-    if orbtype == 'gfz':
+    elif (orbtype == 'gfz'):
         print('using gfz sp3 file, GPS and GLONASS')
         f,orbdir,foundit=getsp3file_flex(year,month,day,'gfz')
         snrexe = gnssSNR_version()
         warn_and_exit(snrexe)
-    if orbtype == 'igr':
+    elif (orbtype == 'igr'):
         print('using rapid orbits, so only GPS')
         f,orbdir,foundit=getsp3file_flex(year,month,day,'igr') # use default
         warn_and_exit(snrexe)
-    if orbtype == 'gbm':
-        # this uses GFZ multi-GNSS
+    elif (orbtype == 'gbm'):
+        # this uses GFZ multi-GNSS and is rapid, but not super rapid
         f,orbdir,foundit=getsp3file_mgex(year,month,day,'gbm')
         snrexe = gnssSNR_version()
         warn_and_exit(snrexe)
-    if orbtype == 'nav':
+    elif orbtype == 'jax':
+        # this uses JAXA, has GPS and GLONASS and appears to be quick and reliable
+        f,orbdir,foundit=getsp3file_mgex(year,month,day,'jax')
+        snrexe = gnssSNR_version()
+        warn_and_exit(snrexe)
+    elif orbtype == 'nav':
         f,orbdir,foundit=getnavfile(year, month, day) # use default version, which is gps only
         warn_and_exit(snrexe)
+    else:
+        print('I do not recognize the orbit type you provided', orbtype)
 
     return foundit, f, orbdir, snrexe
 
@@ -3600,11 +3637,13 @@ def cddis_rinex3(station9ch, year, doy,srate,orbtype):
     if os.path.isfile(rfilename):
         print('rinex3 file already exists')
     else:
+        print(gzfilename)
+        print(new_way_f)
         try:
             #wget.download(url,gzfilename)
             # using new protocol
             cddis_download(gzfilename,new_way_f)
-            wget.download(url,gzfilename)
+            #wget.download(url,gzfilename)
             # unzip and Hatanaka decompress
             subprocess.call(['gunzip',gzfilename])
             subprocess.call([crnxpath,filename])
@@ -3888,7 +3927,25 @@ def cddis_download(filename, directory):
     """
     filename = 'ftps://gdc.cddis.eosdis.nasa.gov' + directory + filename 
     callit = ['wget', '--ftp-user','anonymous','--ftp-password', 'kristine@colorado.edu', filename]
-    print(callit,filename)
+    #print(callit)
+    #print(filename)
     #print(filename)
     subprocess.call(callit)
     return True 
+
+def pickup_pbay(year,doy):
+    """
+    jeff freymueller's site. L2C, but GPS only.
+    """
+    station = 'pbay'
+    cdoy = '{:03d}'.format(doy)
+    cyyyy = '{:04d}'.format(year)
+    url = 'ftp://gps.alaska.edu/pub/gpsdata/permanent/C2/' + cyyyy + '/' + cdoy + '/'
+    fname = station + cdoy + '0.' + cyyyy[2:4] + 'o.gz'
+    url = url + fname
+    try:
+        wget.download(url,fname)
+    except:
+        print('problems')
+
+    return True
