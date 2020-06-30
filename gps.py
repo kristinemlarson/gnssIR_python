@@ -3416,12 +3416,11 @@ def get_orbits_setexe(year,month,day,orbtype):
     # define directory for the conversion executables
     exedir = os.environ['EXE']
     snrexe = gpsSNR_version()
-    if orbtype == 'mgex':
         # this means you are using multi-GNSS and GFZ
-        f,orbdir,foundit=getsp3file_mgex(year,month,day,'gbm')
-        snrexe = gnssSNR_version()
-        warn_and_exit(snrexe)
-    elif (orbtype == 'sha'):
+        #f,orbdir,foundit=getsp3file_mgex(year,month,day,'gbm')
+        #snrexe = gnssSNR_version()
+        #warn_and_exit(snrexe)
+    if orbtype == 'sha':
         # SHANGHAI multi gnss
         f,orbdir,foundit=getsp3file_mgex(year,month,day,'sha')
         snrexe = gnssSNR_version()
@@ -3459,7 +3458,7 @@ def get_orbits_setexe(year,month,day,orbtype):
         f,orbdir,foundit=getnavfile(year, month, day) # use default version, which is gps only
         warn_and_exit(snrexe)
     else:
-        print('I do not recognize the orbit type you provided', orbtype)
+        print('I do not recognize the orbit type you tried to use: ', orbtype)
 
     return foundit, f, orbdir, snrexe
 
@@ -3492,7 +3491,7 @@ def quick_rinex_snrC(year, doy, station, option, orbtype,receiverrate,dec_rate):
     if (snre == True):
         print('snrfile already exists:', snrname_full)
     else:
-        print('the snrfile does not exist ')
+        print('the snrfile does not exist ', snrname_full)
         d = doy2ymd(year,doy); 
         month = d.month; day = d.day
         # new function to do the whole orbit thing
