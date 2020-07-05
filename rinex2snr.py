@@ -127,5 +127,6 @@ for year in year_list:
                         print('rinex file does not exist for ', year, doy)
                 else:
                     print('rinex 2.11 search')
+                    print(snrt, dec_rate,rate)
                     g.quick_rinex_snrC(year, doy, station, snrt, orbtype,rate, dec_rate)
 

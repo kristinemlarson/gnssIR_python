@@ -68,7 +68,8 @@ class wgs84:
 def define_filename(station,year,doy,snr):
     """
     given station name, year, doy, snr type
-    returns snr filename
+    year doy and snr are integers
+    returns snr filenames (both uncompressed and compressed)
     author: Kristine Larson
     19mar25: return compressed filename too
     20apr12: fixed typo in xz name!
@@ -851,12 +852,18 @@ def getsp3file_mgex(year,month,day,pCtr):
     20jun14 add CDDIS secure ftp. what a nightmare
     20jun25 add Shanghai GNSS orbits - as they are available sooner than GFZ
     20jun25 added French and JAXA orbits
+    20jul01 allow year, doy as input instead of year, month, day
     """
     foundit = False
     # this returns sp3 orbit product name
+    if day == 0:
+        print('assume you were given doy in the month input')
+        doy = month
+        year,month,day= ydoy2ymd(year,doy)
     name, fdir = sp3_name(year,month,day,pCtr) 
     gps_week = name[3:7]
-    print('GPS week', gps_week)
+    igps_week = int(gps_week)
+    print('GPS week', gps_week,igps_week)
     file1 = name + '.Z'
 
     # get the sp3 filename for the new format, and GFZ
@@ -874,10 +881,10 @@ def getsp3file_mgex(year,month,day,pCtr):
     name2 = file2[:-3] 
 
     # where the files used to live at CDDIS
-    cddis = 'ftp://cddis.nasa.gov'
+    #cddis = 'ftp://cddis.nasa.gov'
     dirlocation = '/gps/products/mgex/' + str(gps_week) + '/'
-    url = cddis + dirlocation  + file1; 
-    url2 = cddis + dirlocation + file2; 
+    #url = cddis + dirlocation  + file1; 
+    #url2 = cddis + dirlocation + file2; 
     # this is the default setting - no file exists
     mgex = 0
     n1 = os.path.isfile(fdir + '/' + name)
@@ -914,7 +921,6 @@ def getsp3file_mgex(year,month,day,pCtr):
 # new using secure ftp
 # this is the directory
     secure_dir = '/gps/products/mgex/' + str(gps_week) + '/'
-    #print(secure_dir,mgex,file1)
     if (mgex == 0):
         secure_file = file1
         name = file1[:-2]
@@ -922,9 +928,10 @@ def getsp3file_mgex(year,month,day,pCtr):
         
 #https://cddis.nasa.gov/Data_and_Derived_Products/GNSS/gnss_mgex_products.html
 # CDDIS claims the old way stopped at GPS week 1945
-        if (int(gps_week) > 1944):
+
+        if (igps_week < 1944):
             try:
-            # secure filename
+            # secure filename # 1??
                 cddis_download(secure_file, secure_dir)
                 if os.path.isfile(file1):
                     subprocess.call(['uncompress', file1])
@@ -932,7 +939,7 @@ def getsp3file_mgex(year,month,day,pCtr):
             except:
                 print('did not find', file1)
         else:
-            print('will only use the long orbit name')
+            print('will only use the long orbit name for weeks after 1944')
         if not foundit:
             name = file2[:-3]
             # new secure filename 
@@ -2673,24 +2680,16 @@ def big_Disk_in_DC(station, year, month, day):
     except:
         print('some problem in download - maybe the site does not exist on this archive')
 
-def ydoy2useful(year, doy):
+def ydoy2ymd(year, doy):
     """
     inputs: year and day of year (doy)
     returns: useful stuff
     """
 
     d = datetime.datetime(year, 1, 1) + datetime.timedelta(days=(doy-1))
-#    print('ymd',d)
-#   not sure you need to do this int step
     month = int(d.month)
     day = int(d.day)
-    cdoy = '{:03d}'.format(doy)
-    cyyyy = '{:04d}'.format(year)
-    cyy = '{:02d}'.format(year-2000)
-    cdd = '{:02d}'.format(day)
-    cmonth = char_month_converter(month)
-    YMD = cyy + cmonth + cdd
-    return year, month, day, cyyyy,cdoy, YMD
+    return year, month, day
 
 def rewrite_UNR_highrate(fname,station,year,doy):
     """
@@ -3473,9 +3472,10 @@ def warn_and_exit(snrexe):
 def quick_rinex_snrC(year, doy, station, option, orbtype,receiverrate,dec_rate):
     """
     inputs: year and day of year (integers) and station name
-    option is for the snr creation
+    option is for the snr creation ??? integer or character?
     orbtype can be nav or sp3.  if the former, then gpsSNR is used.
     if the later, then gnssSNR
+    what are receiverrate and dec_rate defaults?
     this assumes you follow my definitions for where things go,
     i.e. REFL_CODE and ORBITS
     it currently checks Unavco, SOPAC, and SONEL. I should add CDDIS
@@ -3486,6 +3486,8 @@ def quick_rinex_snrC(year, doy, station, option, orbtype,receiverrate,dec_rate):
 
     """
     # define directory for the conversion executables
+    print('receiver rate:',receiverrate)
+    print('decimation:', dec_rate)
     exedir = os.environ['EXE']
     snrname_full, snrname_compressed, snre = define_and_xz_snr(station,year,doy,option)
     if (snre == True):
@@ -3555,8 +3557,9 @@ def go_get_rinex(station,year,month,day,receiverrate):
     function to do the dirty work of getting a rinex file
     inputs station name, year, month, day
     """
+    print('seeking ', receiverrate)
     rinexfile,rinexfiled = rinex_name(station, year, month, day)
-    print('rinexfile should be ', rinexfile)
+    print('Name of the rinexfile should be:', rinexfile)
     if (os.path.isfile(rinexfile) == True):
         print('rinex file exists')
     else:
@@ -3780,6 +3783,8 @@ def snr_exist(station,year,doy,snrEnd):
     """
     given station name, year, doy, snr type
     returns whether snr file exists on your machine
+    bizarrely snrEnd is a character string
+    year and doy are integers, which makes sense!
     author: Kristine Larson
 
     """
@@ -3948,3 +3953,24 @@ def pickup_pbay(year,doy):
         print('problems')
 
     return True
+
+def ydoy2useful(year, doy):
+    """
+    inputs: year and day of year (doy), integers
+    returns: useful stuff, like month and day and character 
+    strings for year and doy and YMD as character string ....
+    """
+
+    d = datetime.datetime(year, 1, 1) + datetime.timedelta(days=(doy-1))
+#    print('ymd',d)
+#   not sure you need to do this int step
+    month = int(d.month)
+    day = int(d.day)
+    cdoy = '{:03d}'.format(doy)
+    cyyyy = '{:04d}'.format(year)
+    cyy = '{:02d}'.format(year-2000)
+    cdd = '{:02d}'.format(day)
+    cmonth = char_month_converter(month)
+    YMD = cyy + cmonth + cdd
+    return year, month, day, cyyyy,cdoy, YMD
+
