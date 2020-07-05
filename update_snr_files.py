@@ -3,7 +3,7 @@ import numpy as np
 import os
 import subprocess
 
-import check_gnss as cg
+import check_gnss as cgps
 import gps as g
 
 # user inputs the observation file information
@@ -16,6 +16,8 @@ parser.add_argument("snrEnd", help="snr file ending", type=int)
 parser.add_argument("goal", help="which constellations(0,100,200,300)", type=int)
 parser.add_argument("dec_rate", help="decimation for RINEX", type=int)
 parser.add_argument("sample_rate", help="low or high", type=str)
+
+args = parser.parse_args()
 
 # rename the user inputs as variables
 #
