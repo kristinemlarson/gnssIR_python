@@ -94,8 +94,7 @@ def check_gnss(station,year,doy,snrEnd,goal,dec_rate,receiverrate):
                     g.quick_rinex_snrC(year, doy, station, snrEnd, orbtype,receiverrate,dec_rate)
                     subprocess.call(['poetry','run','python', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
                 else:
-                    print('No German orbits. No French orbits. There never were American orbits, so I give up')
-                                        print('No German orbits. No French orbits. There never were American orbits, so I give up')
+                    print('No German orbits. No French orbits. There never were American orbits, so I give up.')
         if (satstat == 200) and (goal == 200 ):
             print('you have what you wanted', satstat,goal)
         if (satstat == 100) and (goal == 100 ):
