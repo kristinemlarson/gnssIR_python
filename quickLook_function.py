@@ -61,7 +61,7 @@ def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pel
     obsfile = g.define_quick_filename(station,year,doy,snr_type)
     print('the SNR filename is', obsfile)
     if os.path.isfile(obsfile):
-        print('>>>> WOOHOOO - THE SNR FILE EXISTS ',obsfile)
+        print('>>>> WOOHOOO - THE SNR FILE EXISTS ONLINE ',obsfile)
     else:
         if True:
             print('look for the SNR file elsewhere')
@@ -73,8 +73,9 @@ def quickLook_function(station, year, doy, snr_type,f,e1,e2,minH,maxH,reqAmp,pel
                 print('>>>> Sigh, - SNR the file does not exist ',obsfile)
                 print('I will try to pick up a RINEX file ')
                 print('and translate it for you. This will be GPS only.')
-                rate = 'low'; dec_rate = 0
-                g.quick_rinex_snrC(year, doy, station, snr_type, 'nav',rate, dec_rate)
+                print('For now I will check all the official archives for you.')
+                rate = 'low'; dec_rate = 0; archive = 'all'
+                g.quick_rinex_snrC(year, doy, station, snr_type, 'nav',rate, dec_rate,archive)
                 if os.path.isfile(obsfile):
                     print('the SNR file now exists')  
                 else:

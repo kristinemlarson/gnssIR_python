@@ -34,11 +34,13 @@ parser.add_argument("year", help="year", type=int)
 parser.add_argument("doy1", help="start day of year", type=int)
 parser.add_argument("snrEnd", help="snr ending", type=str)
 parser.add_argument("orbType", help="orbit type, nav or sp3", type=str)
+# optional
 parser.add_argument("-rate", default=None, type=int, help="sampling rate(not req)")
 parser.add_argument("-dec", default=0, type=int, help="decimate (seconds) requires teqc be installed")
 parser.add_argument("-doy_end", default=None, help="end day of year", type=int)
 parser.add_argument("-year_end", default=None, help="end year", type=int)
 parser.add_argument("-nolook", default='False', type=str, help="True means only use RINEX files on local machine")
+parser.add_argument("-archive", default=None, help="archive (unavco,sopac,cddis,sonel,nz,ga)", type=str)
 
 args = parser.parse_args()
 #
@@ -82,6 +84,20 @@ if args.doy_end == None:
 else:
     doy2 = args.doy_end
 
+
+# currently allowed archives 
+archive_list = ['sopac', 'unavco','sonel','cddis','nz','ga','bkg','jeff']
+if args.archive == None:
+    archive = 'all'
+    #print('no archive set, so will check the big 4')
+else:
+    # should probably check that the input is legitimate
+    archive = args.archive.lower()
+    if archive not in archive_list:
+        print('You picked an archive that does not exist, so I am going to check the main ones (unavco,sopac,sonel,cddis)')
+        print('For future reference: I allow these archives:') 
+        print(archive_list)
+
 year1=year
 if args.year_end == None:
     year2 = year 
@@ -122,11 +138,11 @@ for year in year_list:
                         rinex2exists, rinex3name = g.unavco_rinex3(station9ch, year, doy,15,orbtype)
                     subprocess.call(['rm', rinex3name]) # remove rinex3 file
                     if rinex2exists:
-                        g.quick_rinex_snrC(year, doy, station, snrt, orbtype,rate, dec_rate)
+                        g.quick_rinex_snrC(year, doy, station, snrt, orbtype,rate, dec_rate,archive)
                     else:
                         print('rinex file does not exist for ', year, doy)
                 else:
                     print('rinex 2.11 search')
                     print(snrt, dec_rate,rate)
-                    g.quick_rinex_snrC(year, doy, station, snrt, orbtype,rate, dec_rate)
+                    g.quick_rinex_snrC(year, doy, station, snrt, orbtype,rate, dec_rate,archive)
 

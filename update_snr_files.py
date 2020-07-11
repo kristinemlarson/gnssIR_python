@@ -28,7 +28,6 @@ snrEnd = args.snrEnd
 goal = args.goal
 dec_rate = args.dec_rate
 sample_rate = args.sample_rate
-
 cgps.check_gnss(station, year, doy, snrEnd, goal, dec_rate,sample_rate)
 
 

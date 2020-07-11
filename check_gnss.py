@@ -36,6 +36,11 @@ def check_gnss(station,year,doy,snrEnd,goal,dec_rate,receiverrate):
     goal (as describedd in gnss_Stats), dec_rate (0 for nothing)
     and receiverrate ('low' or 'high')
     """
+    exedir = os.environ['EXE']
+    mac = False
+    if exedir == '/Users/kristine/bin':
+        mac = True
+
     fname,fname_xz = g.define_filename(station,year,doy,snrEnd)
     yy,month,day, cyyyy, cdoy, YMD = g.ydoy2useful(year,doy)
     f=fname
@@ -61,18 +66,24 @@ def check_gnss(station,year,doy,snrEnd,goal,dec_rate,receiverrate):
             f,orbdir,foundit=g.getsp3file_mgex(year,month,day,orbtype)
             if foundit:
                 subprocess.call(['rm',fname]) # remove old file and make a new one
-                g.quick_rinex_snrC(year, doy, station, snrEnd, orbtype,receiverrate,dec_rate)
+                g.quick_rinex_snrC(year, doy, station, snrEnd, orbtype,receiverrate,dec_rate,'all')
                 # maybe this will work-and maybe it won't
-                subprocess.call(['poetry','run','python', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
+                if mac == True:
+                    subprocess.call(['poetry','run','python', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
+                else:
+                    subprocess.call(['python3', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
             else:
                 print('bummer,no JAXA, I guess, try GFZ')
                 orbtype = 'gbm'
                 f,orbdir,foundit=g.getsp3file_mgex(year,month,day,orbtype)
                 if foundit:
                     print('found GFZ orbit - make file')
-                    g.quick_rinex_snrC(year, doy, station, snrEnd, orbtype,receiverrate,dec_rate)
+                    g.quick_rinex_snrC(year, doy, station, snrEnd, orbtype,receiverrate,dec_rate,'all')
                     # rerun lomb scargle
-                    subprocess.call(['poetry','run','python', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
+                    if mac == True:
+                        subprocess.call(['poetry','run','python', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
+                    else:
+                        subprocess.call(['python3', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
                 else:
                     print('no GFZ, will have to try GRG?')
         if (satstat < 200) and (goal == 200 ):
@@ -81,7 +92,7 @@ def check_gnss(station,year,doy,snrEnd,goal,dec_rate,receiverrate):
             f,orbdir,foundit=g.getsp3file_mgex(year,month,day,orbtype)
             if foundit:
                 subprocess.call(['rm',fname]) # remove old file and make a new one
-                g.quick_rinex_snrC(year, doy, station, snrEnd, orbtype,receiverrate,dec_rate)
+                g.quick_rinex_snrC(year, doy, station, snrEnd, orbtype,receiverrate,dec_rate,'all')
                 # rerun LSP
                 subprocess.call(['poetry','run','python', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
             else:
@@ -91,8 +102,11 @@ def check_gnss(station,year,doy,snrEnd,goal,dec_rate,receiverrate):
                 if foundit:
                     subprocess.call(['rm',fname]) # remove old file and make a new one
                     print('found French orbit - make snr file')
-                    g.quick_rinex_snrC(year, doy, station, snrEnd, orbtype,receiverrate,dec_rate)
-                    subprocess.call(['poetry','run','python', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
+                    g.quick_rinex_snrC(year, doy, station, snrEnd, orbtype,receiverrate,dec_rate,'all')
+                    if mac == True:
+                        subprocess.call(['poetry','run','python', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
+                    else:
+                        subprocess.call(['python3', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
                 else:
                     print('No German orbits. No French orbits. There never were American orbits, so I give up.')
         if (satstat == 200) and (goal == 200 ):
@@ -116,8 +130,11 @@ def check_gnss(station,year,doy,snrEnd,goal,dec_rate,receiverrate):
             orbtype = 'grg'
             f,orbdir,foundit=g.getsp3file_mgex(year,month,day,orbtype)
         if foundit:
-            g.quick_rinex_snrC(year, doy, station, snrEnd, orbtype,receiverrate,dec_rate)
-            subprocess.call(['poetry','run','python', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
+            g.quick_rinex_snrC(year, doy, station, snrEnd, orbtype,receiverrate,dec_rate,'all')
+            if mac == True:
+                subprocess.call(['poetry','run','python', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
+            else:
+                subprocess.call(['python3', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
 
 
 def rerun_lsp(station, year, doy, snrEnd):

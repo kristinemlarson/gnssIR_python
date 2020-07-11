@@ -68,6 +68,7 @@ else:
     print('The directory for analysis instruction exists.')
  
 # if you want the SNR files to be xv compressed after using them.
+# this is now an optional input
 wantCompression = False
 #wantCompression = True 
 
@@ -101,6 +102,7 @@ parser.add_argument("-azim1", "--azim1", default=None, type=int, help="lower lim
 parser.add_argument("-azim2", "--azim2", default=None, type=int, help="upper limit azimuth")
 parser.add_argument("-nooverwrite", "--nooverwrite", default=None, type=int, help="use any integer to not overwrite")
 parser.add_argument("-extension", "--extension", default=None, type=str, help="extension for result file, useful for testing strategies")
+parser.add_argument("-compress", "--compress", default=None, type=str, help="xz compress SNR files after use")
 args = parser.parse_args()
 #
 # rename the user inputs as variables
@@ -117,7 +119,13 @@ exitS = g.check_inputs(station,year,doy,snr_type)
 if exitS:
     sys.exit()
 
-#
+# though I would think not many people would do this ... 
+if (args.compress != None):
+    if args.compress == 'True':
+        wantCompression = True
+    else:
+        wantCompression = False
+
 # make sure directories are there for orbits
 ann = g.make_nav_dirs(year)
 

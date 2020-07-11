@@ -587,7 +587,7 @@ def rinex_sonel(station, year, month, day):
     hatanaka exe hardwired  for my machine
     """
     exedir = os.environ['EXE']
-    crnxpath = exedir + '/CRX2RNX'
+    crnxpath = hatanaka_version()
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     sonel = 'ftp://ftp.sonel.org'
     oname,fname = rinex_name(station, year, month, day) 
@@ -617,8 +617,8 @@ def rinex_cddis(station, year, month, day):
     if day is zero, then month is assumed to be doy
     
     """
-    exedir = os.environ['EXE']
-    crnxpath = exedir + '/CRX2RNX'
+    exedir = os.environ['EXE'] # do not need this?
+    crnxpath = hatanaka_version()
     if (day == 0):
         doy = month
         year, month, day, cyyyy,cdoy, YMD = ydoy2useful(year,doy)
@@ -653,9 +653,8 @@ def rinex_nz(station, year, month, day):
     inputs: station name, year, month, day
     picks up a RINEX file from GNS New zealand
     you can input day =0 and it will assume month is day of year
+    20jul10 - changed access point and ending
     """
-    exedir = os.environ['EXE']
-    crnxpath = exedir + '/CRX2RNX'
     # if doy is input 
     if day == 0:
         doy=month
@@ -676,12 +675,47 @@ def rinex_nz(station, year, month, day):
         print('some kind of problem with download',file1)
         subprocess.call(['rm', '-f',file1])
 
+def rinex_bkg(station, year, month, day):
+    """
+    author: kristine larson
+    inputs: station name, year, month, day
+    picks up a lowrate RINEX file BKG
+    you can input day =0 and it will assume month is day of year
+    """
+    crnxpath = hatanaka_version()
+    # if doy is input 
+    if day == 0:
+        doy=month
+        d = doy2ymd(year,doy);
+        month = d.month; day = d.day
+    doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
+    gns = 'ftp://igs.bkg.bund.de/EUREF/obs/'
+    oname,fname = rinex_name(station, year, month, day)
+    # they store hatanaka and normal unix compression
+    file1 = fname + '.Z'
+    url = gns +  cyyyy + '/' + cdoy +  '/' + file1
+    print(url)
+
+    try:
+        wget.download(url,file1)
+        subprocess.call(['uncompress', file1])
+        print('successful download from BKG')
+        subprocess.call([crnxpath, fname])
+        subprocess.call(['rm', '-f',fname])
+        print('successful Hatanaka download and translation from BKG')
+    except:
+        print('some kind of problem with download',file1)
+        subprocess.call(['rm', '-f',file1])
+
 def rinex_nrcan(station, year, month, day):
     """
     author: kristine larson
     inputs: station name, year, month, day
     picks up a RINEX file from GNS New zealand
     you can input day =0 and it will assume month is day of year
+
+    Note: this code does not work - let me know if you have a way
+    to access NRCAN anonymously
     """
     exedir = os.environ['EXE']
     crnxpath = exedir + '/CRX2RNX'
@@ -691,7 +725,11 @@ def rinex_nrcan(station, year, month, day):
         d = doy2ymd(year,doy);
         month = d.month; day = d.day
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
+    # was using this ...
     gns = 'ftp://gauss.geod.nrcan.gc.ca/data/ftp/naref/pub/rinex/'
+    gns = 'ftp://gauss.geod.nrcan.gc.ca/data/ftp/naref/pub/data/rinex/'
+    # user narefftp
+    # password 4NAREF2use
     oname,fname = rinex_name(station, year, month, day)
     # only hatanaka in canada and normal compression
     file1 = fname + '.Z'
@@ -853,6 +891,7 @@ def getsp3file_mgex(year,month,day,pCtr):
     20jun25 add Shanghai GNSS orbits - as they are available sooner than GFZ
     20jun25 added French and JAXA orbits
     20jul01 allow year, doy as input instead of year, month, day
+    20jul10 allow Wuhan, but only one of them.
     """
     foundit = False
     # this returns sp3 orbit product name
@@ -868,13 +907,14 @@ def getsp3file_mgex(year,month,day,pCtr):
 
     # get the sp3 filename for the new format, and GFZ
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
-    if pCtr == 'gbm':
+    if pCtr == 'gbm': # GFZ
         file2 = 'GFZ0MGXRAP_' + cyyyy + cdoy + '0000_01D_05M_ORB.SP3.gz'
-        # french
-    if pCtr == 'grg':
+    if pCtr == 'wum': # Wuhan, but only one per day (they are updated more frequently)
+        file2 = 'WUM0MGXULA_' + cyyyy + cdoy + '0000_01D_05M_ORB.SP3.gz'
+    if pCtr == 'grg': # french group
         file2 = 'GRG0MGXFIN_' + cyyyy + cdoy + '0000_01D_15M_ORB.SP3.gz'
-    if pCtr == 'sha':
-        file2 = 'SHA0MGXRAP_' + cyyyy + cdoy + '0000_01D_15M_ORB.SP3.gz'
+    if pCtr == 'sha': # shanghai observatory
+        file2 = 'SHA0MGXRAP_' + cyyyy + cdoy + '0000_01D_05M_ORB.SP3.gz'
     # try out JAXA - should have GPS and glonass
     if pCtr == 'jax':
         file2 = 'JAX0MGXFIN_' + cyyyy + cdoy + '0000_01D_05M_ORB.SP3.gz'
@@ -3274,24 +3314,28 @@ def back2thefuture(iyear, idoy):
 
     return badDay
 
-def rinex_ga_lowrate(station,year,doy):
+def rinex_ga_lowrate(station,year,month,day):
     """
     pick up lowrate data from Geoscience Australia
     only Rinex 2.11 for now
+    kristine larson
+    20jul10: change from year doy to year month day, because that is what the others are
     """
     fexists = False
     exedir = os.environ['EXE']
     crnxpath = exedir + '/CRX2RNX'
-    cdoy = '{:03d}'.format(doy)
-    cyyyy = '{:04d}'.format(year)
-    cyy = '{:02d}'.format(year-2000)
+    if day == 0:
+        doy=month
+        d = doy2ymd(year,doy);
+        month = d.month; day = d.day
+    doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     ftpg = 'ftp://ftp.ga.gov.au/geodesy-outgoing/gnss/data/daily/' + cyyyy + '/' + cyy + cdoy  + '/'
     dnameZ = station + cdoy + '0.' + cyy + 'd.Z' 
     dname = station + cdoy + '0.' + cyy + 'd'
     rname = station + cdoy + '0.' + cyy + 'o'
     url = ftpg + dname + '.Z'
     print(url)
-    print(dname,rname)
+    #print(dname,rname)
     try:
         wget.download(url,dnameZ)
         if os.path.isfile(dnameZ):
@@ -3448,6 +3492,12 @@ def get_orbits_setexe(year,month,day,orbtype):
         f,orbdir,foundit=getsp3file_mgex(year,month,day,'gbm')
         snrexe = gnssSNR_version()
         warn_and_exit(snrexe)
+    elif (orbtype == 'wum'):
+        # this uses WUHAN multi-GNSS which is ultra, but is not rapid ??
+        # but only hour 00:00
+        f,orbdir,foundit=getsp3file_mgex(year,month,day,'wuh')
+        snrexe = gnssSNR_version()
+        warn_and_exit(snrexe)
     elif orbtype == 'jax':
         # this uses JAXA, has GPS and GLONASS and appears to be quick and reliable
         f,orbdir,foundit=getsp3file_mgex(year,month,day,'jax')
@@ -3469,7 +3519,7 @@ def warn_and_exit(snrexe):
         print('The translation executable does not exist:' + snrexe + ' Exiting ')
         sys.exit()
 
-def quick_rinex_snrC(year, doy, station, option, orbtype,receiverrate,dec_rate):
+def quick_rinex_snrC(year, doy, station, option, orbtype,receiverrate,dec_rate,archive):
     """
     inputs: year and day of year (integers) and station name
     option is for the snr creation ??? integer or character?
@@ -3483,11 +3533,13 @@ def quick_rinex_snrC(year, doy, station, option, orbtype,receiverrate,dec_rate):
     19may20, added decimation
     19sep12, I got tired of code crashing for files > 20 observables.  I am thus using teqc
     20apr15, xz compression added but also try to streamline it.
+    20jul10, added arvchive setting. default is 'all'
 
     """
     # define directory for the conversion executables
     print('receiver rate:',receiverrate)
-    print('decimation:', dec_rate)
+    print('decimation: ', dec_rate)
+    print('archive: ', archive)
     exedir = os.environ['EXE']
     snrname_full, snrname_compressed, snre = define_and_xz_snr(station,year,doy,option)
     if (snre == True):
@@ -3502,7 +3554,10 @@ def quick_rinex_snrC(year, doy, station, option, orbtype,receiverrate,dec_rate):
         if foundit:
             # now you can look for a rinex file
             rinexfile,rinexfiled = rinex_name(station, year, month, day)
-            go_get_rinex(station,year,month,day,receiverrate)
+            # This goes to find the rinex file. I am changing it to allow 
+            # an archive preference 
+             
+            go_get_rinex_flex(station,year,month,day,receiverrate,archive)
 # define booleans
             oexist = os.path.isfile(orbdir + '/' + f) == True
             rexist = os.path.isfile(rinexfile) == True
@@ -3592,6 +3647,59 @@ def go_get_rinex(station,year,month,day,receiverrate):
                 if not os.path.isfile(rinexfile):
                     print('no RINEX')
 #
+def go_get_rinex_flex(station,year,month,day,receiverrate,archive):
+    """
+    function to do the dirty work of getting a rinex file
+    inputs station name, year, month, day
+    20jul10 preferred RINEX archive can be set (all is everything)
+    added nrcan and nz archives
+    """
+    print('requested data rate: ', receiverrate)
+    rinexfile,rinexfiled = rinex_name(station, year, month, day)
+    print('Name of the rinexfile should be:', rinexfile)
+
+    if (os.path.isfile(rinexfile) == True):
+        print('RINEX file exists')
+    else:
+        print('go get the RINEX file')
+        if archive == 'all':
+        # use the old code
+            go_get_rinex(station,year,month,day,receiverrate) 
+        else:
+            if archive == 'unavco':
+                if receiverrate == 'low':
+                    print('seeking low rate at unavco')
+                    rinex_unavco(station, year, month, day)
+                else:
+                    print('seeking high rate at unavco')
+                    rinex_unavco_highrate(station, year, month, day)
+          # only keep looking if you are seeking lowrate data
+            elif (archive == 'sopac'):
+                print('try sopac')
+                rinex_sopac(station, year, month, day)
+            elif (archive == 'cddis'):
+                print('try cddis')
+                rinex_cddis(station, year, month, day)
+            elif (archive == 'sonel'):
+                print('try sonel')
+                rinex_sonel(station, year, month, day)
+            elif (archive == 'nrcan'):
+                print('no anonymous access to NRCAN, try sopac')
+                rinex_sopac(station, year, month, day)
+            elif (archive == 'nz'):
+                print('try new zealand')
+                rinex_nz(station, year, month, day)
+            elif (archive == 'ga'):
+                print('try geoscience australia, low rate')
+                rinex_ga_lowrate(station,year,month,day)
+            elif (archive == 'bkg'):
+                print('try BKG, low rate')
+                rinex_bkg(station,year,month,day)
+            elif (archive == 'jeff'):
+                pickup_pbay(year,month,day)
+            else:
+                print('eek - I have run out of archives')
+
 def cddis_rinex3(station9ch, year, doy,srate,orbtype):
     """
     attempt to download Rinex3 files from CDDIS
@@ -3634,6 +3742,7 @@ def cddis_rinex3(station9ch, year, doy,srate,orbtype):
         gobblygook = 'G:S1C,S2X,S2L,S2S,S5'
     else:
     # I hate S2W 
+    # should add beidou here???
         gobblygook = 'G:S1C,S2X,S2L,S2S,S5+R:S1P,S1C,S2P,S2C+E:S1,S5,S6,S7,S8'
     print(gobblygook)
     if os.path.isfile(rfilename):
@@ -3937,20 +4046,28 @@ def cddis_download(filename, directory):
     subprocess.call(callit)
     return True 
 
-def pickup_pbay(year,doy):
+def pickup_pbay(year,month, day):
     """
     jeff freymueller's site. L2C, but GPS only.
+    changed to year,month,day to be consistent with other
     """
+    print('downloading highrate PBAY')
     station = 'pbay'
-    cdoy = '{:03d}'.format(doy)
-    cyyyy = '{:04d}'.format(year)
+    if (day == 0):
+        doy = month
+        year, month, day, cyyyy,cdoy, YMD = ydoy2useful(year,doy)
+        cyy = cyyyy[2:4]
+    else:
+        doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
+
     url = 'ftp://gps.alaska.edu/pub/gpsdata/permanent/C2/' + cyyyy + '/' + cdoy + '/'
     fname = station + cdoy + '0.' + cyyyy[2:4] + 'o.gz'
     url = url + fname
     try:
         wget.download(url,fname)
+        subprocess.call(['gunzip', fname])
     except:
-        print('problems')
+        print('problems downloading pbay')
 
     return True
 
