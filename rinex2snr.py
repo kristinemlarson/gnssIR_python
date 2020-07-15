@@ -136,7 +136,7 @@ for year in year_list:
                     if not rinex2exists:
                         # try again - unavco has 15 sec I believe
                         rinex2exists, rinex3name = g.unavco_rinex3(station9ch, year, doy,15,orbtype)
-                    subprocess.call(['rm', rinex3name]) # remove rinex3 file
+                    subprocess.call(['rm', '-f', rinex3name]) # remove rinex3 file
                     if rinex2exists:
                         g.quick_rinex_snrC(year, doy, station, snrt, orbtype,rate, dec_rate,archive)
                     else:

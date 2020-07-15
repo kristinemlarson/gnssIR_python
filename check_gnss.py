@@ -3,6 +3,20 @@ import os
 import subprocess
 import gps as g
 
+
+def rerun_lsp(station, year, doy, snrEnd, mac):
+    """
+    if an SNR file has been remade, this allows you to rerun the LSP code
+    should change that code to a callable function, but hey, not there yet.
+    kristine larson
+    """
+    if (mac == True):
+# use poetry package manager
+        subprocess.call(['poetry','run', 'python','gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
+    else:
+# use digital ocean setup
+        subprocess.call(['python3', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
+
 def gnss_stats(ffull):
     """
     send the filename and return the status, whihc is 0
@@ -67,11 +81,7 @@ def check_gnss(station,year,doy,snrEnd,goal,dec_rate,receiverrate):
             if foundit:
                 subprocess.call(['rm',fname]) # remove old file and make a new one
                 g.quick_rinex_snrC(year, doy, station, snrEnd, orbtype,receiverrate,dec_rate,'all')
-                # maybe this will work-and maybe it won't
-                if mac == True:
-                    subprocess.call(['poetry','run','python', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
-                else:
-                    subprocess.call(['python3', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
+                rerun_lsp(station, year, doy, snrEnd, mac)
             else:
                 print('bummer,no JAXA, I guess, try GFZ')
                 orbtype = 'gbm'
@@ -79,11 +89,7 @@ def check_gnss(station,year,doy,snrEnd,goal,dec_rate,receiverrate):
                 if foundit:
                     print('found GFZ orbit - make file')
                     g.quick_rinex_snrC(year, doy, station, snrEnd, orbtype,receiverrate,dec_rate,'all')
-                    # rerun lomb scargle
-                    if mac == True:
-                        subprocess.call(['poetry','run','python', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
-                    else:
-                        subprocess.call(['python3', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
+                    rerun_lsp(station, year, doy, snrEnd, mac)
                 else:
                     print('no GFZ, will have to try GRG?')
         if (satstat < 200) and (goal == 200 ):
@@ -93,8 +99,7 @@ def check_gnss(station,year,doy,snrEnd,goal,dec_rate,receiverrate):
             if foundit:
                 subprocess.call(['rm',fname]) # remove old file and make a new one
                 g.quick_rinex_snrC(year, doy, station, snrEnd, orbtype,receiverrate,dec_rate,'all')
-                # rerun LSP
-                subprocess.call(['poetry','run','python', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
+                rerun_lsp(station, year, doy, snrEnd, mac)
             else:
                 print('bummer,no GFZ orbit, I guess, try GRG')
                 orbtype = 'grg'
@@ -103,10 +108,7 @@ def check_gnss(station,year,doy,snrEnd,goal,dec_rate,receiverrate):
                     subprocess.call(['rm',fname]) # remove old file and make a new one
                     print('found French orbit - make snr file')
                     g.quick_rinex_snrC(year, doy, station, snrEnd, orbtype,receiverrate,dec_rate,'all')
-                    if mac == True:
-                        subprocess.call(['poetry','run','python', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
-                    else:
-                        subprocess.call(['python3', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
+                    rerun_lsp(station, year, doy, snrEnd, mac)
                 else:
                     print('No German orbits. No French orbits. There never were American orbits, so I give up.')
         if (satstat == 200) and (goal == 200 ):
@@ -120,34 +122,22 @@ def check_gnss(station,year,doy,snrEnd,goal,dec_rate,receiverrate):
         if (goal == 100):
             orbtype = 'jax'
             f,orbdir,foundit=g.getsp3file_mgex(year,month,day,orbtype)
+            if foundit:
+                g.quick_rinex_snrC(year, doy, station, snrEnd, orbtype,receiverrate,dec_rate,'all')
+                rerun_lsp(station, year, doy, snrEnd, mac)
         # otherwise, use the other orbit sources because they should have galileo
-        if (not foundit):
-            orbtype = 'gbm'
-            print('try GFZ')
-            f,orbdir,foundit=g.getsp3file_mgex(year,month,day,orbtype)
-        if (not foundit):
-            print('using French orbit')
-            orbtype = 'grg'
-            f,orbdir,foundit=g.getsp3file_mgex(year,month,day,orbtype)
-        if foundit:
-            g.quick_rinex_snrC(year, doy, station, snrEnd, orbtype,receiverrate,dec_rate,'all')
-            if mac == True:
-                subprocess.call(['poetry','run','python', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
             else:
-                subprocess.call(['python3', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
+                orbtype = 'gbm' ; print('try GFZ')
+                f,orbdir,foundit=g.getsp3file_mgex(year,month,day,orbtype)
+                if foundit:
+                    g.quick_rinex_snrC(year, doy, station, snrEnd, orbtype,receiverrate,dec_rate,'all')
+                    rerun_lsp(station, year, doy, snrEnd, mac)
+                else:
+                    print('using French orbit'); orbtype = 'grg'
+                    f,orbdir,foundit=g.getsp3file_mgex(year,month,day,orbtype)
+                    if foundit:
+                        g.quick_rinex_snrC(year, doy, station, snrEnd, orbtype,receiverrate,dec_rate,'all')
+                        rerun_lsp(station, year, doy, snrEnd, mac)
 
-
-def rerun_lsp(station, year, doy, snrEnd):
-    """
-    if an SNR file has been remade, this allows you to rerun the LSP code
-    should change that code to a callable function, but hey, not there yet.
-    kristine larson
-    """
-    if os.path.exists('/home/kristine/exe'):
-        # i am in the cloud
-        subprocess.call(['python3', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
-    else:
-        # i am not in the cloud
-        subprocess.call(['poetry','run','python', 'gnssIR_lomb.py', station, str(year), str(doy), str(snrEnd), '0'])
 
     return True

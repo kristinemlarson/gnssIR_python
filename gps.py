@@ -909,7 +909,7 @@ def getsp3file_mgex(year,month,day,pCtr):
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     if pCtr == 'gbm': # GFZ
         file2 = 'GFZ0MGXRAP_' + cyyyy + cdoy + '0000_01D_05M_ORB.SP3.gz'
-    if pCtr == 'wum': # Wuhan, but only one per day (they are updated more frequently)
+    if pCtr == 'wum': # Wuhan, but only the one at midnite(they are updated more frequently)
         file2 = 'WUM0MGXULA_' + cyyyy + cdoy + '0000_01D_05M_ORB.SP3.gz'
     if pCtr == 'grg': # french group
         file2 = 'GRG0MGXFIN_' + cyyyy + cdoy + '0000_01D_15M_ORB.SP3.gz'
@@ -2145,10 +2145,12 @@ def find_satlist(f,snrExist):
     """
 # set list of GPS satellites for now
 # 
+# Block III will be 4, 18, 23
 #   these are the only L2C satellites as of 18oct10
     l2c_sat = [1, 3, 5, 6, 7, 8, 9, 10, 12, 15, 17, 24, 25, 26, 27, 29, 30, 31, 32]
-    # added PRN 4 recently, new Block III - was gonna, but it is not healthy yet
-    # l2c_sat = [1, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 17, 24, 25, 26, 27, 29, 30, 31, 32]
+    # updated on 20 jul 15 - really should make this time dependent ....
+    l2c_sat = [1, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 17, 23, 24, 25, 26, 27, 29, 30, 31, 32]
+
 #   only L5 satellites thus far
     l5_sat = [1, 3,  6,  8, 9, 10, 24, 25, 26, 27, 30,  32]
     # l5_sat = [1, 3,  4, 6,  8, 9, 10, 24, 25, 26, 27, 30,  32]
