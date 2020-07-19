@@ -841,6 +841,8 @@ def getsp3file_flex(year,month,day,pCtr):
     20apr15 check for xz compression
 
     20jun14 add CDDIS secure ftp
+
+    unfortunately this won't work with the long sp3 file names. use mgex instead
     """
     # returns name and the directory
     name, fdir = sp3_name(year,month,day,pCtr) 
@@ -905,12 +907,15 @@ def getsp3file_mgex(year,month,day,pCtr):
     print('GPS week', gps_week,igps_week)
     file1 = name + '.Z'
 
-    # get the sp3 filename for the new format, and GFZ
+    # get the sp3 filename for the new format
     doy,cdoy,cyyyy,cyy = ymd2doy(year,month,day)
     if pCtr == 'gbm': # GFZ
         file2 = 'GFZ0MGXRAP_' + cyyyy + cdoy + '0000_01D_05M_ORB.SP3.gz'
     if pCtr == 'wum': # Wuhan, but only the one at midnite(they are updated more frequently)
-        file2 = 'WUM0MGXULA_' + cyyyy + cdoy + '0000_01D_05M_ORB.SP3.gz'
+        print('use previous day for Wuhan ultra products since gnssSNR does not allow two day files')
+        nyear, ndoy = nextdoy(year,doy)
+        cndoy = '{:03d}'.format(ndoy); cnyear = '{:03d}'.format(nyear)
+        file2 = 'WUM0MGXULA_' + cnyear + cndoy + '0000_01D_05M_ORB.SP3.gz'
     if pCtr == 'grg': # french group
         file2 = 'GRG0MGXFIN_' + cyyyy + cdoy + '0000_01D_15M_ORB.SP3.gz'
     if pCtr == 'sha': # shanghai observatory
@@ -3461,10 +3466,10 @@ def get_orbits_setexe(year,month,day,orbtype):
     # define directory for the conversion executables
     exedir = os.environ['EXE']
     snrexe = gpsSNR_version()
-        # this means you are using multi-GNSS and GFZ
-        #f,orbdir,foundit=getsp3file_mgex(year,month,day,'gbm')
-        #snrexe = gnssSNR_version()
-        #warn_and_exit(snrexe)
+    # this means you are using multi-GNSS and GFZ
+    #f,orbdir,foundit=getsp3file_mgex(year,month,day,'gbm')
+    #snrexe = gnssSNR_version()
+    #warn_and_exit(snrexe)
     if orbtype == 'sha':
         # SHANGHAI multi gnss
         f,orbdir,foundit=getsp3file_mgex(year,month,day,'sha')
@@ -3481,13 +3486,19 @@ def get_orbits_setexe(year,month,day,orbtype):
         snrexe = gnssSNR_version()
         warn_and_exit(snrexe)
     elif (orbtype == 'gfz'):
-        print('using gfz sp3 file, GPS and GLONASS')
+        print('using gfz sp3 file, GPS and GLONASS') # though I advocate gbm
         f,orbdir,foundit=getsp3file_flex(year,month,day,'gfz')
         snrexe = gnssSNR_version()
         warn_and_exit(snrexe)
     elif (orbtype == 'igr'):
         print('using rapid orbits, so only GPS')
         f,orbdir,foundit=getsp3file_flex(year,month,day,'igr') # use default
+        snrexe = gnssSNR_version()
+        warn_and_exit(snrexe)
+    elif (orbtype == 'igs'):
+        print('using IGS final orbits, so only GPS')
+        f,orbdir,foundit=getsp3file_flex(year,month,day,'igs') # use default
+        snrexe = gnssSNR_version()
         warn_and_exit(snrexe)
     elif (orbtype == 'gbm'):
         # this uses GFZ multi-GNSS and is rapid, but not super rapid
@@ -3497,7 +3508,7 @@ def get_orbits_setexe(year,month,day,orbtype):
     elif (orbtype == 'wum'):
         # this uses WUHAN multi-GNSS which is ultra, but is not rapid ??
         # but only hour 00:00
-        f,orbdir,foundit=getsp3file_mgex(year,month,day,'wuh')
+        f,orbdir,foundit=getsp3file_mgex(year,month,day,'wum')
         snrexe = gnssSNR_version()
         warn_and_exit(snrexe)
     elif orbtype == 'jax':
@@ -3654,7 +3665,7 @@ def go_get_rinex_flex(station,year,month,day,receiverrate,archive):
     function to do the dirty work of getting a rinex file
     inputs station name, year, month, day
     20jul10 preferred RINEX archive can be set (all is everything)
-    added nrcan and nz archives
+    added geoscience australia and nz archives
     """
     print('requested data rate: ', receiverrate)
     rinexfile,rinexfiled = rinex_name(station, year, month, day)
@@ -3685,9 +3696,6 @@ def go_get_rinex_flex(station,year,month,day,receiverrate,archive):
             elif (archive == 'sonel'):
                 print('try sonel')
                 rinex_sonel(station, year, month, day)
-            elif (archive == 'nrcan'):
-                print('no anonymous access to NRCAN, try sopac')
-                rinex_sopac(station, year, month, day)
             elif (archive == 'nz'):
                 print('try new zealand')
                 rinex_nz(station, year, month, day)
@@ -4093,3 +4101,31 @@ def ydoy2useful(year, doy):
     YMD = cyy + cmonth + cdd
     return year, month, day, cyyyy,cdoy, YMD
 
+def prevdoy(year,doy):
+    """
+    given year and doy, return previous year and doy
+    """
+    if (doy == 1):
+        pyear = year -1
+        doyx,cdoyx,cyyyy,cyy = ymd2doy(pyear,12,31)
+        pdoy = doyx
+    else:
+#       doy is decremented by one and year stays the same
+        pdoy = doy - 1
+        pyear = year
+
+    return pyear, pdoy
+
+def nextdoy(year,doy):
+    """
+    given year and doy, return next year and doy
+    """
+    dec31,cdoy,ctmp,ctmp2 = ymd2doy(year,12,31)
+    if (doy == dec31):
+        nyear = year + 1
+        ndoy = 1
+    else:
+        nyear = year
+        ndoy = doy + 1
+
+    return nyear, ndoy

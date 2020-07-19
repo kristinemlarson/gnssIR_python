@@ -1,41 +1,44 @@
 # -*- coding: utf-8 -*-
 """
-# This python code reads a snr file (created by one of my RINEX translators) 
-# and computes Lomb Scargle Periodograms (LSP) 
-# so that a reflector height (RH) can be estimated.
-# It currently makes a plot if requested.
-# Kristine M. Larson
+This python code reads a snr file (created by one of my RINEX translators) 
+and computes Lomb Scargle Periodograms (LSP) 
+so that a reflector height (RH) can be estimated.
+It currently makes a plot if requested.
+Kristine M. Larson
 #
-# This is not currently optimized for tide gauges - the RH dot correction 
-# is not implemented.
+This is not currently optimized for tide gauges - the RH dot correction 
+is not implemented.
 
-# Please note that you need to set a REFL_CODE environment variable to
-# define the location of your input (and output) files
+Please note that you need to set a REFL_CODE environment variable to
+define the location of your input (and output) files
 #
-# I have set this up so that you can run it in the background (no plots and all
-# frequencies from a list of instructions), or just one frequency 
-# (or one satellite) and look at the data/periodograms
+I have set this up so that you can run it in the background (no plots and all
+frequencies from a list of instructions), or just one frequency 
+(or one satellite) and look at the data/periodograms
 # 
-# 19mar01, added refraction and MJD to output
-# 19mar02, added multiple days
-# 19mar13, snow (one day only) vs water levels (midnite crossing corrected by using
-# the day before)
-# 19apr20, changed location of compressed rinex executable
-# 19jun28, change result file naming convetion to include snr file type
-# toggle for overwriting LSP results (default will be ot overwrite, but
-# for cdron jobs, nice not to)
-# 19sep13, code will attempt to make an SNR file for you if one does not exist. 
-# It will be GPS only. i.e. us
-# nav file
-# 2019sep22 added error checking on required inputs
-# added subprocess import
-# 2020mar01 added seekRinex logical. Originally my thinking was to have 
-# everymake their snr files using a separate utility (rinex2snr.py).  But after
-# numerous comments, I added the feature that it would at least try to make it for you
-# if it could find a RINEX file. The problem with this feature is that of course 
-# it keeps looking for RINEX files even when they do not exist and will never exist.
-# so I have a logical called seekRinex.  It is set to False. If you want this 
+19mar01, added refraction and MJD to output
+19mar02, added multiple days
+19mar13, snow (one day only) vs water levels (midnite crossing corrected by using
+the day before)
+19apr20, changed location of compressed rinex executable
+19jun28, change result file naming convetion to include snr file type
+toggle for overwriting LSP results (default will be overwritten, but
+for cron jobs, nice not to)
+19sep13, code will attempt to make an SNR file for you if one does not exist. 
+It will be GPS only. i.e. uses nav file
+2019sep22 added error checking on required inputs
+added subprocess import
+2020mar01 added seekRinex logical. Originally my thinking was to have 
+everymake their snr files using a separate utility (rinex2snr.py).  But after
+numerous comments, I added the feature that it would at least try to make it for you
+if it could find a RINEX file. The problem with this feature is that of course 
+it keeps looking for RINEX files even when they do not exist and will never exist.
+so I have a logical called seekRinex.  It is set to False. If you want this 
 code to look for RINEX files and make snr files for you, by all means change it to True.
+#
+20jul15 do not allow the "peak" to be at either edge of your spectrum - which I had not
+ported from my previous version
+
 """
 import sys
 import os
@@ -103,6 +106,7 @@ parser.add_argument("-azim2", "--azim2", default=None, type=int, help="upper lim
 parser.add_argument("-nooverwrite", "--nooverwrite", default=None, type=int, help="use any integer to not overwrite")
 parser.add_argument("-extension", "--extension", default=None, type=str, help="extension for result file, useful for testing strategies")
 parser.add_argument("-compress", "--compress", default=None, type=str, help="xz compress SNR files after use")
+parser.add_argument("-screenstats", "--screenstats", default=None, type=str, help="some stats printed to screen(default is True)")
 args = parser.parse_args()
 #
 # rename the user inputs as variables
@@ -128,6 +132,10 @@ if (args.compress != None):
 
 # make sure directories are there for orbits
 ann = g.make_nav_dirs(year)
+
+screenstats = True
+if args.screenstats == 'False':
+    screenstats = False
 
 # in case you want to analyze multiple days of data
 if args.doy_end == None:
@@ -324,21 +332,25 @@ for year in year_list:
                                 Noise = np.mean(nij)
 #  this is the main QC statement
                             iAzim = int(avgAzim)
-                            if (delT < delTmax) & (eminObs < (e1 + ediff)) & (emaxObs > (e2 - ediff)) & (maxAmp > reqAmp[ct]) & (maxAmp/Noise > PkNoise):
+                            okPk = True
+                            if abs(maxF - minH) < 0.10: #  peak too close to min value
+                                # even better check would be to compare frequencies ... :wq
+                                okPk = False
+                                print('found a peak too close to the edge')
+                            if okPk & (delT < delTmax) & (eminObs < (e1 + ediff)) & (emaxObs > (e2 - ediff)) & (maxAmp > reqAmp[ct]) & (maxAmp/Noise > PkNoise):
                                 fout.write(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} {8:6.2f} {9:4.0f} {10:3.0f} {11:2.0f} {12:8.5f} {13:6.2f} {14:7.2f} {15:12.6f} {16:1.0f} \n".format(year,doy,maxF,satNu, UTCtime, avgAzim,maxAmp,eminObs,emaxObs,Nv, f,riseSet, Edot2, maxAmp/Noise, delT, MJD,irefr))
-                                print('SUCCESS Azimuth {0:3.0f} Sat {1:3.0f} RH {2:7.3f} m PkNoise {3:4.1f} Fr{4:3.0f}'.format(iAzim,satNu,maxF,maxAmp/Noise,f))
+                                if screenstats:
+                                    print('SUCCESS Azimuth {0:3.0f} Sat {1:3.0f} RH {2:7.3f} m PkNoise {3:4.1f} Fr{4:3.0f}'.format(iAzim,satNu,maxF,maxAmp/Noise,f))
                                 gj +=1
                                 g.update_plot(plt_screen,x,y,px,pz)
                             else:
                                 if eminObs > 15:
-                                    print('useless tiny arc')
+                                    if screenstats:
+                                        print('useless tiny arc')
                                 else:
-                                    print('failed QC for Azimuth {0:.1f} Satellite {1:2.0f} '.format( iAzim,satNu))
-                                    g.write_QC_fails(delT,delTmax,eminObs,emaxObs,e1,e2,ediff,maxAmp, Noise,PkNoise,reqAmp[ct])
-                                    #print(delT,delTmax,eminObs,emaxObs,e1,e2,ediff,maxAmp, Noise,PkNoise,reqAmp[ct])
-                                    #print(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} \
-#{8:6.2f} {9:4.0f} {10:3.0f} {11:2.0f} {12:8.5f} {13:6.2f} {14:7.2f} {15:12.6f} \n".format(year,doy,maxF,satNu, UTCtime,\
-#                      avgAzim,maxAmp,eminObs,emaxObs,Nv, f,riseSet, Edot2,maxAmp/Noise,delT, MJD))
+                                    if screenstats:
+                                        print('failed QC for Azimuth {0:.1f} Satellite {1:2.0f} '.format( iAzim,satNu))
+                                        g.write_QC_fails(delT,delTmax,eminObs,emaxObs,e1,e2,ediff,maxAmp, Noise,PkNoise,reqAmp[ct])
                                     rj +=1
                 print('     good arcs:', gj, ' rejected arcs:', rj)
                 ct += 1

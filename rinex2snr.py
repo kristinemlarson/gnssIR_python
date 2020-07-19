@@ -6,6 +6,11 @@ author: kristine larson
 date: 20 march 2019
 19oct20 changed inputs to put doy_end as an optional input rather than requiring it
 20apr15 tried to streamline data pick up, eventually add compression
+
+20jul15 added a lot of archives, including new zealand (nz), geoscience Australia (ga), BKG,
+and jeff freymueller
+fixed access to CDDIS so they don't shut us out October 1.  I also added a lot of new orbit source
+including JAXA, SHAO, GRG, and Wuhan
 """
 import argparse
 import datetime
@@ -33,7 +38,7 @@ parser.add_argument("station", help="station name", type=str)
 parser.add_argument("year", help="year", type=int)
 parser.add_argument("doy1", help="start day of year", type=int)
 parser.add_argument("snrEnd", help="snr ending", type=str)
-parser.add_argument("orbType", help="orbit type, nav or sp3", type=str)
+parser.add_argument("orbType", help="orbit type, nav or sp3 (igs,igr,gbm,jax,sha,wum,grg)", type=str)
 # optional
 parser.add_argument("-rate", default=None, type=int, help="sampling rate(not req)")
 parser.add_argument("-dec", default=0, type=int, help="decimate (seconds) requires teqc be installed")
@@ -64,6 +69,13 @@ year = args.year
 doy1= args.doy1
 snrt = args.snrEnd
 orbtype = args.orbType
+# currently allowed orbit types
+orbit_list = ['nav', 'igs','igr','gbm','jax','grg','sha','wum']
+if orbtype not in orbit_list:
+    print('You picked an orbit type I do not recognize. Here are the ones I allow')
+    print(orbit_list)
+    sys.exit()
+
 # if true ony use local RINEX files, which speeds up analysis of local datasets
 # but for some goofy reason i make it a string and have to set boolean later
 nolook = args.nolook

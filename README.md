@@ -33,6 +33,24 @@ GPS signals as an ITRF-defined tide gauge, the antenna calibrations will be need
 
 # Recent Updates
 
+July 2020
+I have made a lot of small changes - mostly to increase capability for multi-GNSS.
+archive is now an input for rinex2snr.py. So if you know where a file is, you can set that
+and the code will run faster. Currently allowed archives:
+
+unavco, sopac, cddis, sonel, ga (geoscience Australia), nz (New Zealand), and bkg
+
+Currently allowed orbits: 
+
+nav - GPS broadcast 
+
+igs (IGS final), igr (IGS rapid), jax (JAXA), gbm (GFZ rapid), grg (CNES), wum (Wuhan Ultra), sha (Shanghai)
+
+screenstats and compress are now boolean inputs to gnssIR_lomb.py
+
+JAX orbits required a change to gnssSNR, so you will need to download a new version.
+The Wuhan orbits (which are 48 hours long) required a bit of a trick which hopefully you will not notice.
+
 June 2020
 Changed access to CDDIS archive to be secure ftp capable, per their instructions
 https://cddis.nasa.gov/Data_and_Derived_Products/CDDIS_Archive_Access.html
