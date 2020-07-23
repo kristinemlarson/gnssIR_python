@@ -340,7 +340,7 @@ for year in year_list:
                             if okPk & (delT < delTmax) & (eminObs < (e1 + ediff)) & (emaxObs > (e2 - ediff)) & (maxAmp > reqAmp[ct]) & (maxAmp/Noise > PkNoise):
                                 fout.write(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} {8:6.2f} {9:4.0f} {10:3.0f} {11:2.0f} {12:8.5f} {13:6.2f} {14:7.2f} {15:12.6f} {16:1.0f} \n".format(year,doy,maxF,satNu, UTCtime, avgAzim,maxAmp,eminObs,emaxObs,Nv, f,riseSet, Edot2, maxAmp/Noise, delT, MJD,irefr))
                                 if screenstats:
-                                    print('SUCCESS Azimuth {0:3.0f} Sat {1:3.0f} RH {2:7.3f} m PkNoise {3:4.1f} Fr{4:3.0f}'.format(iAzim,satNu,maxF,maxAmp/Noise,f))
+                                    print('SUCCESS Azimuth {0:3.0f} Sat {1:3.0f} RH {2:7.3f} m PkNoise {3:4.1f} AMp {4:4.1f} Fr{5:3.0f}'.format(iAzim,satNu,maxF,maxAmp/Noise,maxAmp, f))
                                 gj +=1
                                 g.update_plot(plt_screen,x,y,px,pz)
                             else:

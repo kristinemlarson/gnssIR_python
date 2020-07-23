@@ -138,7 +138,7 @@ for year in year_list:
             if nol:
                 if os.path.exists(r):
                     print('rinex file exists locally')
-                    g.quick_rinex_snrC(year, doy, station, snrt, orbtype,rate, dec_rate )
+                    g.quick_rinex_snrC(year, doy, station, snrt, orbtype,rate, dec_rate,archive)
             else:
                 print('will look locally and externally')
                 if version == 3:
