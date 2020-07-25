@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 """
 This python code reads a snr file (created by one of my RINEX translators) 
 and computes Lomb Scargle Periodograms (LSP) 
@@ -39,6 +40,22 @@ code to look for RINEX files and make snr files for you, by all means change it 
 20jul15 do not allow the "peak" to be at either edge of your spectrum - which I had not
 ported from my previous version
 
+20jul24 fixed the bug where an arc that rose and set in the same quadrant of the sky was 
+being used as one arc.  Now it picks the one with the longest elevation angle range.
+Also am allowing a case specific input instruvction file.  useful for when you want to 
+compare different analysis strategies.  Use extension in gnssIR_lomb.py and it will look
+for a file with station name and that extension in the input directory. Example, if station
+is ac12 and extension xyz, it will look for file ac12.xyz. If it does not find it, it will 
+use file ac12
+
+delTmax is now an optional input.  Minutes of an allowed arc. You want it to be long for 
+snow sensing (with large elevation angle ranges), but for not for low elevation focused studies.
+
+compress is now an optional input. boolean.  compresses the SNR files.
+
+screenstats is now an optional input.  boolean.  incase you don't like the whole SUCCESS and FAILURE thing going to the screen
+
+
 """
 import sys
 import os
@@ -63,6 +80,9 @@ import datetime
 seekRinex =False 
 # pick up the environment variable for where you are keeping your LSP data
 xdir = os.environ['REFL_CODE']
+print('=================================================================================')
+print('===========================RUNNING GNSS IR ======================================')
+print('=================================================================================')
 # make sure the input directory exists, if not, create it
 outputdir  = xdir + '/input'
 if not os.path.isdir(outputdir):
@@ -81,6 +101,7 @@ allowMidniteCross = False
 
 # eventually we will use something else but this restricts arcs to two hours
 # units are in minutes
+# 2020 jul24, now an optional input
 delTmax = 120
 #
 # user inputs the observation file information
@@ -107,6 +128,7 @@ parser.add_argument("-nooverwrite", "--nooverwrite", default=None, type=int, hel
 parser.add_argument("-extension", "--extension", default=None, type=str, help="extension for result file, useful for testing strategies")
 parser.add_argument("-compress", "--compress", default=None, type=str, help="xz compress SNR files after use")
 parser.add_argument("-screenstats", "--screenstats", default=None, type=str, help="some stats printed to screen(default is True)")
+parser.add_argument("-delTmax", "--delTmax", default=None, type=int, help="How long a satellite arc can be (in minutes)")
 args = parser.parse_args()
 #
 # rename the user inputs as variables
@@ -123,10 +145,15 @@ exitS = g.check_inputs(station,year,doy,snr_type)
 if exitS:
     sys.exit()
 
+if (args.delTmax != None):
+    delTmax = args.delTmax
+    print('Using user defined maximum satellite arc time (minutes) ', delTmax)
+
 # though I would think not many people would do this ... 
 if (args.compress != None):
     if args.compress == 'True':
         wantCompression = True
+        print('xz compressing SNR files')
     else:
         wantCompression = False
 
@@ -135,6 +162,7 @@ ann = g.make_nav_dirs(year)
 
 screenstats = True
 if args.screenstats == 'False':
+    print('no statistics to the screen')
     screenstats = False
 
 # in case you want to analyze multiple days of data
@@ -197,14 +225,14 @@ dmjd, fracS = g.mjd(year,month,day,0,0,0)
 
 # retrieve the inputs needed to window the data and compute Lomb Scargle Periodograms 
 # changed long to lon
-lat,lon, ht,elval,azval,freqs,reqAmp,polyV,desiredP,Hlimits,ediff,pele,NReg,PkNoise = g.read_inputs(station) 
+lat,lon, ht,elval,azval,freqs,reqAmp,polyV,desiredP,Hlimits,ediff,pele,NReg,PkNoise = g.read_inputs(station,extension=extension) 
 
 # You should not use the peak periodogram value unless it is significant. Using a 
 # peak to noise value is one way of defining that significance (not the only way).
 # I often use 3, but for now it is set to 2.7. For snow, I would suggest 3.5
 if PkNoise == 0:
     PkNoise = 2.7
-    print('You have not set a peak 2 noise ratio in the input file for station ', station)
+    print('You have not set a peak to noise ratio in the input file for station ', station)
     print('Default value being used: ', PkNoise)
 
 # You can have peaks in two regions, and you may only be interested in one of them.
@@ -241,7 +269,7 @@ if InputFromScreen:
 #    reqAmp[0] = 10
     freqs = [args.onefreq] 
     if (args.ampl == None):
-        reqAmp[0] = 10
+        reqAmp[0] = 8
     else:
         reqAmp[0] = args.ampl
 
@@ -340,7 +368,7 @@ for year in year_list:
                             if okPk & (delT < delTmax) & (eminObs < (e1 + ediff)) & (emaxObs > (e2 - ediff)) & (maxAmp > reqAmp[ct]) & (maxAmp/Noise > PkNoise):
                                 fout.write(" {0:4.0f} {1:3.0f} {2:6.3f} {3:3.0f} {4:6.3f} {5:6.2f} {6:6.2f} {7:6.2f} {8:6.2f} {9:4.0f} {10:3.0f} {11:2.0f} {12:8.5f} {13:6.2f} {14:7.2f} {15:12.6f} {16:1.0f} \n".format(year,doy,maxF,satNu, UTCtime, avgAzim,maxAmp,eminObs,emaxObs,Nv, f,riseSet, Edot2, maxAmp/Noise, delT, MJD,irefr))
                                 if screenstats:
-                                    print('SUCCESS Azimuth {0:3.0f} Sat {1:3.0f} RH {2:7.3f} m PkNoise {3:4.1f} AMp {4:4.1f} Fr{5:3.0f}'.format(iAzim,satNu,maxF,maxAmp/Noise,maxAmp, f))
+                                    print('SUCCESS Azimuth {0:3.0f} Sat {1:3.0f} RH {2:7.3f} m PkNoise {3:4.1f} AMp {4:4.1f} Fr{5:3.0f} UTC{6:5.2f}'.format(iAzim,satNu,maxF,maxAmp/Noise,maxAmp, f,UTCtime))
                                 gj +=1
                                 g.update_plot(plt_screen,x,y,px,pz)
                             else:
@@ -349,10 +377,13 @@ for year in year_list:
                                         print('useless tiny arc')
                                 else:
                                     if screenstats:
-                                        print('failed QC for Azimuth {0:.1f} Satellite {1:2.0f} '.format( iAzim,satNu))
-                                        g.write_QC_fails(delT,delTmax,eminObs,emaxObs,e1,e2,ediff,maxAmp, Noise,PkNoise,reqAmp[ct])
+                                        if (UTCtime > 6) & (UTCtime < 11):
+                                            print('FAILED QC for Azimuth {0:.1f} Satellite {1:2.0f} UTC {2:5.2f}'.format( iAzim,satNu,UTCtime))
+                                            g.write_QC_fails(delT,delTmax,eminObs,emaxObs,e1,e2,ediff,maxAmp, Noise,PkNoise,reqAmp[ct])
                                     rj +=1
-                print('     good arcs:', gj, ' rejected arcs:', rj)
+                print('=================================================================================')
+                print('     good arcs:', gj, ' rejected arcs:', rj, ' Frequency ', f)
+                print('=================================================================================')
                 ct += 1
                 total_arcs = gj + total_arcs
 # close the output files

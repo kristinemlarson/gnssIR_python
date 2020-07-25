@@ -137,7 +137,7 @@ def define_filename_prevday(station,year,doy,snr):
     print('snr filename for the previous day is ', fname) 
     return fname, fname2
 
-def read_inputs(station):
+def read_inputs(station,**kwargs):
     """
     given station name, read LSP parameters for strip_snrfile.py
     author: Kristine M Larson
@@ -169,6 +169,14 @@ def read_inputs(station):
     desiredP = 0.01
     ediff = 2
     noiseRegion = [0.25, 6]
+    default_extension = ''
+    extension = kwargs.get('extension',default_extension)
+    if os.path.exists(fname + '.' + extension):
+        fname = fname + '.' + extension
+        print('extension input file found: ', fname)
+    else:
+        print('use the original input file')
+                
     try:
         f = open(fname, 'r')
 #       read all the lines
@@ -2036,6 +2044,29 @@ def window_data(s1,s2,s5,s6,s7,s8, sat,ele,azi,seconds,edot,f,az1,az2,e1,e2,satN
         ed = edot[(ele > e1) & (ele < e2) & (azi > az1) & (azi < az2)]
         a =   azi[(ele > e1) & (ele < e2) & (azi > az1) & (azi < az2)]
         t = seconds[(ele > e1) & (ele < e2) & (azi > az1) & (azi < az2)]
+        ijkl = np.argmax(x)
+        ifound = 0
+        if ijkl == 0:
+            #print('ok, at the beginning ')
+            ifound = 1;
+        elif (ijkl == len(x)-1):
+            #print('ok, at the end')
+            ifound = 2;
+        else:
+            ifound = 3;
+            print(' >>>>>>>>>>>>>>>>>> FOUND AN ARC THAT RISES AND SETS <<<<<<<<<<<<<<<<<<<<<<<<')
+            print("Length of arc %5.0f and location of peak %5.0f "% (len(x),ijkl) )
+            print("Elevation angles: begin %6.2f end %6.2f peak %6.2f"% (x[0],x[-1], x[ijkl] ) )
+            edif1 = x[ijkl] - x[0]
+            edif2 = x[ijkl] - x[-1]
+            if edif1 > edif2:
+                x = x[0:ijkl]; y = y[0:ijkl]; ed = ed[0:ijkl]
+                a = a[0:ijkl]; t = t[0:ijkl]
+            else:
+                x = x[ijkl:-1]; y = y[ijkl:-1]; ed = ed[ijkl:-1]
+                a = a[ijkl:-1]; t = t[ijkl:-1]
+            print('length of the arc is now', len(x))
+            print(' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
         sumval = np.sum(y)
         if sumval == 0:
             x = []; y=[] ; Nv = 0 ; Nvv = 0
