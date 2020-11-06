@@ -1,3 +1,18 @@
+# Deprecated 
+
+gnssIR_python has been deprecated. 
+
+Please use [gnssrefl instead](https://github.com/kristinemlarson/gnssrefl).
+gnssrefl is also on [pypi](https://pypi.org/project/gnssrefl/) 
+and can be installed directly with pip.
+
+The remainder of this README is included for historical value only.
+
+Note: though the guts of this code may still work, too many GNSS data archives
+change their rules about filenames and security protocols to make it possible to maintain 
+this code without significant intervention.  
+
+
 # Overview Comments on this Repository
 
 The goal of this repository is to help you compute (and evaluate) GNSS 
